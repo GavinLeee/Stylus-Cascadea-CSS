@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           Google Apple 克制卡片与动效
 @namespace      google-apple-card-motion
-@version        1.5.13
+@version        1.5.14
 @description    为 Google 搜索结果与顶部控件添加克制的 Apple 风格动效和磨砂玻璃
 @author         Codex
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/google-apple.user.css
@@ -614,6 +614,22 @@
     border-bottom-color: transparent !important;
     box-shadow: none !important;
     background-image: none !important;
+  }
+
+  /*
+   * 分类标签栏与其下方过渡条统一使用分组结果卡片的强背景材质，
+   * 不再叠加顶栏磨砂，避免同一区域出现不同深浅。
+   */
+  body:has(#search) :is(
+    div.YNk70c.iFByke,
+    div.xrOgrb
+  ) {
+    background: var(--g-apple-card-bg-strong) !important;
+    background-color: var(--g-apple-card-bg-strong) !important;
+    background-image: none !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
   }
 
   /* ---------- 5.5 工具筛选栏（Any time / All results 等）背景条 ---------- */
