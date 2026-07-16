@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           YouTube Apple 克制卡片与动效
 @namespace      youtube-apple-card-motion
-@version        2.20.43
+@version        2.20.44
 @description    顶栏、分类栏、左侧导航和视频卡片的克制 Apple 风格悬浮动效
 @author         Codex
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/youtube-apple.user.css
@@ -1985,7 +1985,7 @@
   }
 }
 
-/* Channel pages v2.20.43: preserve YouTube's native layout and animate only
+/* Channel pages v2.20.44: preserve YouTube's native layout and animate only
    composited visual properties. */
 @-moz-document regexp("^https://www\\.youtube\\.com/(?:@[^/?#]+|channel/[^/?#]+|c/[^/?#]+|user/[^/?#]+)(?:[/?#].*)?$") {
   :root {
@@ -2026,6 +2026,12 @@
 
   /* Leave the banner and channel profile fully under YouTube's control:
      stacking, surface, borders, actions and condensing motion remain native. */
+  ytd-tabbed-page-header tp-yt-app-header#header {
+    top: var(--ytd-masthead-height, 56px) !important;
+  }
+
+  /* Keep YouTube's native channel header model, but anchor its fixed top edge
+     below the separately fixed masthead instead of at the viewport's top edge. */
 
   /* Paint the channel tabs on one isolated glass sheet inside the shared,
      normally scrolling channel-header module. */
