@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           X Apple 克制卡片与悬浮动效
 @namespace      x-apple-restrained-cards
-@version        1.7.7
+@version        1.7.8
 @description    为 X 的右栏模块、推文信息流和左侧导航添加克制的 Apple 风格卡片与悬浮动画
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/x-apple.user.css
 ==/UserStyle== */
@@ -101,7 +101,7 @@
     z-index: 0 !important;
     border-radius: 0 !important;
     background-color: transparent !important;
-    box-shadow: none !important;
+    box-shadow: inset 0 -1px 0 var(--x-apple-tweet-divider) !important;
     translate: 0 0;
     transform-origin: center center;
     transition:
@@ -120,9 +120,19 @@
   }
 
   /*
-   * cellInnerDiv 是 X 虚拟列表的定位层，绝不能覆盖它的 transform。
-   * 卡片悬停时仅隐藏外层原生分隔线，不再额外绘制推文外框。
+   * X 的部分时间线会同时在 article 与外层包装器绘制分隔线。
+   * 清除这些原生上下边框后，由 article 的 inset shadow 统一绘制一条分隔线；
+   * cellInnerDiv 仍只处理边框，绝不覆盖虚拟列表自身的 transform。
    */
+  main [data-testid="cellInnerDiv"]:has(article[data-testid="tweet"]),
+  main [data-testid="cellInnerDiv"]:has(article[data-testid="tweet"])
+  div:has(article[data-testid="tweet"]),
+  main article[data-testid="tweet"] {
+    border-top-color: transparent !important;
+    border-bottom-color: transparent !important;
+  }
+
+  /* 卡片悬停时清除当前单元剩余的原生分隔线。 */
   main [data-testid="cellInnerDiv"]:has(article[data-testid="tweet"]:hover),
   main [data-testid="cellInnerDiv"]:has(article[data-testid="tweet"]:hover) > div,
   main [data-testid="cellInnerDiv"]:has(article[data-testid="tweet"]:hover)
