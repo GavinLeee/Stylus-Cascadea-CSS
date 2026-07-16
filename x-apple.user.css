@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           X Apple 克制卡片与悬浮动效
 @namespace      x-apple-restrained-cards
-@version        1.7.4
+@version        1.7.5
 @description    为 X 的右栏模块、推文信息流和左侧导航添加克制的 Apple 风格卡片与悬浮动画
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/x-apple.user.css
 ==/UserStyle== */
@@ -87,7 +87,7 @@
   ):hover {
     z-index: 3 !important;
     background-color: var(--x-apple-panel-hover) !important;
-    border-color: var(--x-apple-border-hover) !important;
+    border-color: transparent !important;
     box-shadow: var(--x-apple-shadow-hover) !important;
     transform: translateY(-3px);
   }
@@ -99,14 +99,11 @@
     border-radius: 0 !important;
     background-color: transparent !important;
     box-shadow: none !important;
-    outline: 1px solid transparent;
-    outline-offset: -1px;
     translate: 0 0;
     transform-origin: center center;
     transition:
       translate 240ms var(--x-apple-ease),
       background-color 190ms ease,
-      outline-color 190ms ease,
       box-shadow 240ms var(--x-apple-ease) !important;
   }
 
@@ -115,14 +112,13 @@
     border-radius: 0 !important;
     border-color: transparent !important;
     background-color: var(--x-apple-tweet-hover) !important;
-    outline-color: var(--x-apple-outline-hover);
     box-shadow: var(--x-apple-shadow-hover) !important;
     translate: 0 -3px;
   }
 
   /*
    * cellInnerDiv 是 X 虚拟列表的定位层，绝不能覆盖它的 transform。
-   * 卡片悬停时仅隐藏外层原生分隔线，并由 article 的 outline 绘制随动边框。
+   * 卡片悬停时仅隐藏外层原生分隔线，不再额外绘制推文外框。
    */
   main [data-testid="cellInnerDiv"]:has(article[data-testid="tweet"]:hover),
   main [data-testid="cellInnerDiv"]:has(article[data-testid="tweet"]:hover)
@@ -626,13 +622,10 @@
     z-index: 0 !important;
     background-color: transparent !important;
     box-shadow: none !important;
-    outline: 1px solid transparent;
-    outline-offset: -1px;
     transform: translateX(0);
     transition:
       transform 220ms var(--x-apple-ease),
       background-color 180ms ease,
-      outline-color 180ms ease,
       box-shadow 220ms var(--x-apple-ease) !important;
   }
 
@@ -646,7 +639,6 @@
     z-index: 3 !important;
     border-color: transparent !important;
     background-color: var(--x-apple-nav-hover) !important;
-    outline-color: var(--x-apple-outline-hover);
     box-shadow: var(--x-apple-shadow) !important;
     transform: translateX(3px);
   }
