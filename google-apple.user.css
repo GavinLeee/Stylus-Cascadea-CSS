@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           Google Apple 克制卡片与动效
 @namespace      google-apple-card-motion
-@version        1.5.10
+@version        1.5.11
 @description    为 Google 搜索结果与顶部控件添加克制的 Apple 风格动效和磨砂玻璃
 @author         Codex
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/google-apple.user.css
@@ -370,6 +370,17 @@
     transition-duration: 90ms !important;
   }
 
+  /* 首页当前高亮的搜索历史条目仅轻微左移，不改变原生配色。 */
+  body:not(:has(#search)) li.sbct {
+    translate: none !important;
+    transform: translateX(0) !important;
+    transition: transform var(--g-apple-motion-spring) !important;
+  }
+
+  body:not(:has(#search)) li.sbct.sbhl {
+    transform: translateX(-3px) !important;
+  }
+
   body:not(:has(#search)) form[role="search"] :is(
     input.gNO89b,
     input.RNmpXc
@@ -395,6 +406,24 @@
     background-color: revert !important;
     box-shadow: revert !important;
     transition: none !important;
+  }
+
+  /* AI 页面工具按钮：仅添加缩放，不覆盖按钮原生背景与图标。 */
+  button.UTNPFf {
+    transform: scale(1);
+    transform-origin: center;
+    transition: transform var(--g-apple-motion-spring) !important;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    button.UTNPFf:hover {
+      transform: scale(1.09);
+    }
+  }
+
+  button.UTNPFf:active {
+    transform: scale(0.94);
+    transition-duration: 90ms !important;
   }
 
   /* ---------- 3. 顶部搜索类型与工具标签：只做位移 ---------- */
@@ -452,6 +481,57 @@
   :is(#logo, .jfN4p, a[aria-label="Google"]):active,
   svg[width="92"][height="30"]:active {
     transform: translateY(0) scale(0.975);
+    box-shadow: var(--g-apple-card-shadow-pressed) !important;
+    transition-duration: 90ms !important;
+  }
+
+  /*
+   * Google 右上角 Upgrade、应用菜单和账户入口。
+   * 使用稳定的 aria-label / href 锚点，并为新版账户按钮类名提供兜底。
+   */
+  :is(
+    a.gb_C.gb_6a,
+    a[aria-label*="Google apps" i],
+    a[aria-label*="Google Account" i],
+    :is(a, button, [role="button"])[aria-label*="Upgrade" i],
+    a[href*="one.google.com"]
+  ) {
+    position: relative !important;
+    z-index: 0;
+    border-color: transparent !important;
+    border-radius: 9999px !important;
+    box-shadow: none !important;
+    transform: translateY(0) scale(1);
+    transform-origin: center;
+    transition:
+      transform var(--g-apple-motion-spring),
+      background-color var(--g-apple-motion),
+      box-shadow var(--g-apple-motion) !important;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    :is(
+      a.gb_C.gb_6a,
+      a[aria-label*="Google apps" i],
+      a[aria-label*="Google Account" i],
+      :is(a, button, [role="button"])[aria-label*="Upgrade" i],
+      a[href*="one.google.com"]
+    ):hover {
+      z-index: 5;
+      background-color: var(--g-apple-card-bg-strong) !important;
+      box-shadow: var(--g-apple-card-shadow-soft) !important;
+      transform: translateY(-2px) scale(1.06);
+    }
+  }
+
+  :is(
+    a.gb_C.gb_6a,
+    a[aria-label*="Google apps" i],
+    a[aria-label*="Google Account" i],
+    :is(a, button, [role="button"])[aria-label*="Upgrade" i],
+    a[href*="one.google.com"]
+  ):active {
+    transform: translateY(0) scale(0.96);
     box-shadow: var(--g-apple-card-shadow-pressed) !important;
     transition-duration: 90ms !important;
   }
@@ -689,15 +769,15 @@
    * 会遮挡或错位该点击层，因此保持其原生布局。
    * 注意 ul.aajpme 与第 6 节的搜索建议容器 .aajZCb 是不同类名，互不影响。
    */
-  ul.aajpme,
-  li.Ndm2cf {
+  ul.aajpme {
     overflow: visible !important;
   }
 
-  li.Ndm2cf > div.MFrAxb {
+  li.Ndm2cf {
     position: relative !important;
     isolation: isolate;
     z-index: 0;
+    overflow: visible !important;
     border-radius: 14px !important;
     transform: translateY(0) scale(1);
     transform-origin: center;
@@ -707,6 +787,17 @@
       box-shadow var(--g-apple-motion),
       filter var(--g-apple-motion) !important;
     will-change: transform;
+  }
+
+  /* 内层只负责内容，不能再单独形成会与链接命中区错位的动画层。 */
+  li.Ndm2cf > div.MFrAxb {
+    isolation: auto !important;
+    z-index: auto !important;
+    border-radius: inherit !important;
+    transform: none !important;
+    box-shadow: none !important;
+    transition: none !important;
+    will-change: auto !important;
   }
 
   /*
@@ -721,16 +812,21 @@
    * 导航仍会计入，因此能同时修掉误触发并保留键盘用户的浮起反馈。
    */
   @media (hover: hover) and (pointer: fine) {
-    li.Ndm2cf > div.MFrAxb:is(:hover, :has(:focus-visible)) {
+    li.Ndm2cf:is(:hover, :has(:focus-visible)) {
       z-index: 10;
       transform: translateY(-3px) scale(1.008);
       background-color: var(--g-apple-card-bg-strong) !important;
       box-shadow: var(--g-apple-card-shadow-soft) !important;
       filter: brightness(1.02);
     }
+
+    li.Ndm2cf:is(:hover, :has(:focus-visible)) > div.MFrAxb {
+      background-color: transparent !important;
+      box-shadow: none !important;
+    }
   }
 
-  li.Ndm2cf > div.MFrAxb:active {
+  li.Ndm2cf:active {
     transform: translateY(-1px) scale(0.995);
     filter: none;
     box-shadow: var(--g-apple-card-shadow-pressed) !important;
@@ -738,7 +834,7 @@
   }
 
   /* 卡片内缩略图轻微放大，与自然结果保持一致的节奏。 */
-  li.Ndm2cf > div.MFrAxb img {
+  li.Ndm2cf img {
     transform: scale(1);
     transition: transform 500ms cubic-bezier(0.2, 0.8, 0.2, 1) !important;
   }
@@ -768,8 +864,20 @@
     pointer-events: auto !important;
   }
 
+  /* 分组卡片内的真实链接和按钮始终保持可点击。 */
+  li.Ndm2cf :is(
+    a[href],
+    button,
+    [role="link"],
+    [role="button"]
+  ) {
+    position: relative !important;
+    z-index: 2 !important;
+    pointer-events: auto !important;
+  }
+
   @media (hover: hover) and (pointer: fine) {
-    li.Ndm2cf > div.MFrAxb:is(:hover, :has(:focus-visible)) img {
+    li.Ndm2cf:is(:hover, :has(:focus-visible)) img {
       transform: scale(1.03);
     }
   }
@@ -798,8 +906,16 @@
     div.b3puKe,
     div.b2Rnsc,
     a.NDNGvf,
-    li.Ndm2cf > div.MFrAxb,
-    li.Ndm2cf > div.MFrAxb img {
+    li.Ndm2cf,
+    li.Ndm2cf img,
+    button.UTNPFf,
+    :is(
+      a.gb_C.gb_6a,
+      a[aria-label*="Google apps" i],
+      a[aria-label*="Google Account" i],
+      :is(a, button, [role="button"])[aria-label*="Upgrade" i],
+      a[href*="one.google.com"]
+    ) {
       translate: none !important;
       transform: none !important;
       transition: none !important;
