@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           X Apple 克制卡片与悬浮动效
 @namespace      x-apple-restrained-cards
-@version        1.7.1
+@version        1.7.2
 @description    为 X 的右栏模块、推文信息流和左侧导航添加克制的 Apple 风格卡片与悬浮动画
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/x-apple.user.css
 ==/UserStyle== */
@@ -18,6 +18,8 @@
     --x-apple-tweet-divider: rgb(239, 243, 244);   /* 实测自推文区域原生分割线颜色 */
     --x-apple-border: rgba(15, 23, 42, 0.085);
     --x-apple-border-hover: rgba(15, 23, 42, 0.13);
+    --x-apple-outline-hover: rgba(15, 23, 42, 0.09);
+    --x-apple-nested-hover: rgba(235, 235, 238, 0.98);
     --x-apple-button-hover-text: rgb(15, 20, 25);
     --x-apple-shadow:
       0 1px 2px rgba(15, 23, 42, 0.035),
@@ -51,6 +53,8 @@
     --x-apple-tweet-divider: rgb(56, 68, 77);      /* X 深色(Dim)主题官方分割线色，非本次实测 */
     --x-apple-border: rgba(255, 255, 255, 0.095);
     --x-apple-border-hover: rgba(255, 255, 255, 0.16);
+    --x-apple-outline-hover: rgba(255, 255, 255, 0.09);
+    --x-apple-nested-hover: #3A3A3C;
     --x-apple-button-hover-text: rgb(242, 242, 247);
     --x-apple-shadow:
       0 1px 2px rgba(0, 0, 0, 0.20),
@@ -82,12 +86,7 @@
   [data-testid="sidebarColumn"] :is(
     .r-1867qdf.r-1phboty.r-rs99b7,
     .jetfuel-style-root > div
-  ):hover:not(:has(
-    [data-testid="trend"]:hover,
-    div[role="link"]:hover,
-    a[role="link"][href*="/i/trending/"]:hover,
-    a[role="link"][href*="/i/topics/"]:hover
-  )) {
+  ):hover {
     z-index: 3 !important;
     background-color: var(--x-apple-panel-hover) !important;
     border-color: var(--x-apple-border-hover) !important;
@@ -116,8 +115,9 @@
   main article[data-testid="tweet"]:hover {
     z-index: 4 !important;
     border-radius: 0 !important;
+    border-color: transparent !important;
     background-color: var(--x-apple-tweet-hover) !important;
-    outline-color: var(--x-apple-tweet-divider);
+    outline-color: var(--x-apple-outline-hover);
     box-shadow: var(--x-apple-shadow-hover) !important;
     transform: translateY(-2px);
   }
@@ -135,6 +135,7 @@
   /* 防止 X 自带的悬停底色覆盖自定义卡片背景 */
   main article[data-testid="tweet"]:hover > div {
     background-color: transparent !important;
+    border-color: transparent !important;
   }
 
   /* 3. 左侧导航：只处理每个选项自身的胶囊容器，不改变栏宽和排版 */
@@ -484,8 +485,9 @@
   main [data-testid="cellInnerDiv"]
   > div > div.r-16y2uox.r-1wbh5a2.r-1777fci:hover {
     z-index: 3 !important;
+    border-color: transparent !important;
     background-color: var(--x-apple-nav-hover) !important;
-    outline-color: var(--x-apple-tweet-divider);
+    outline-color: var(--x-apple-outline-hover);
     box-shadow: var(--x-apple-shadow) !important;
     transform: translateY(-1px);
   }
@@ -496,6 +498,11 @@
   main [data-testid="cellInnerDiv"]:has(
     > div > div.r-16y2uox.r-1wbh5a2.r-1777fci:hover
   ) > div {
+    border-color: transparent !important;
+  }
+
+  main [data-testid="cellInnerDiv"]
+  > div > div.r-16y2uox.r-1wbh5a2.r-1777fci:hover > div {
     border-color: transparent !important;
   }
 
@@ -571,8 +578,9 @@
     a[role="link"][href*="/i/topics/"]
   ):hover {
     z-index: 3 !important;
+    border-color: transparent !important;
     background-color: var(--x-apple-nav-hover) !important;
-    outline-color: var(--x-apple-tweet-divider);
+    outline-color: var(--x-apple-outline-hover);
     box-shadow: var(--x-apple-shadow) !important;
     transform: translateX(3px);
   }
@@ -593,6 +601,15 @@
       a[role="link"][href*="/i/topics/"]:hover
     )
   ) > div {
+    border-color: transparent !important;
+  }
+
+  main :is(
+    [data-testid="trend"],
+    [data-testid="UserCell"],
+    a[role="link"][href*="/i/trending/"]:not(:has([data-testid="trend"])),
+    a[role="link"][href*="/i/topics/"]
+  ):hover > div {
     border-color: transparent !important;
   }
 
@@ -627,10 +644,20 @@
     a[role="link"][href*="/i/topics/"]:not([data-testid="trend"] *)
   ):hover {
     z-index: 4 !important;
-    background-color: var(--x-apple-nav-hover) !important;
-    outline-color: var(--x-apple-border-hover);
+    border-color: transparent !important;
+    background-color: var(--x-apple-nested-hover) !important;
+    outline-color: var(--x-apple-outline-hover);
     box-shadow: var(--x-apple-shadow) !important;
     transform: translateX(3px);
+  }
+
+  [data-testid="sidebarColumn"] :is(
+    [data-testid="trend"],
+    .jetfuel-style-root div[role="link"],
+    a[role="link"][href*="/i/trending/"]:not([data-testid="trend"] *),
+    a[role="link"][href*="/i/topics/"]:not([data-testid="trend"] *)
+  ):hover > div {
+    border-color: transparent !important;
   }
 
   /* 尊重系统的“减少动态效果”设置 */
