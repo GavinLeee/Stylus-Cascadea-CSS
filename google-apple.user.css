@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           Google Apple 克制卡片与动效
 @namespace      google-apple-card-motion
-@version        1.5.8
+@version        1.5.9
 @description    为 Google 搜索结果与顶部控件添加克制的 Apple 风格动效和磨砂玻璃
 @author         Codex
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/google-apple.user.css
@@ -36,6 +36,7 @@
     --g-apple-glass-control: rgba(255, 255, 255, 0.78);
     --g-apple-glass-stroke: rgba(0, 0, 0, 0.08);
     --g-apple-glass-shadow: 0 8px 26px rgba(15, 23, 42, 0.10);
+    --g-apple-ai-button-bg: rgba(232, 234, 237, 0.96);
     --g-apple-motion: 220ms cubic-bezier(0.2, 0.75, 0.25, 1);
     --g-apple-motion-spring: 280ms cubic-bezier(0.18, 0.89, 0.32, 1.18);
     --g-apple-card-lift: -3px;
@@ -63,6 +64,7 @@
     --g-apple-glass-control: rgba(42, 42, 45, 0.78);
     --g-apple-glass-stroke: rgba(255, 255, 255, 0.10);
     --g-apple-glass-shadow: 0 9px 28px rgba(0, 0, 0, 0.32);
+    --g-apple-ai-button-bg: #5f6368;
   }
 
   @media (prefers-color-scheme: dark) {
@@ -83,6 +85,7 @@
       --g-apple-glass-control: rgba(42, 42, 45, 0.78);
       --g-apple-glass-stroke: rgba(255, 255, 255, 0.10);
       --g-apple-glass-shadow: 0 9px 28px rgba(0, 0, 0, 0.32);
+      --g-apple-ai-button-bg: #5f6368;
     }
   }
 
@@ -223,7 +226,7 @@
     .nDcEnd,
     .HZVG1b,
     .Tg7LZd
-  ):not(.RNNXgb) {
+  ):not(.RNNXgb):not(.byUkz):not(.byUkz *):not(:has(.byUkz)) {
     transform: translateY(0) scale(1);
     transform-origin: center;
     transition: transform var(--g-apple-motion-spring) !important;
@@ -238,7 +241,7 @@
       .nDcEnd,
       .HZVG1b,
       .Tg7LZd
-    ):not(.RNNXgb):hover {
+    ):not(.RNNXgb):not(.byUkz):not(.byUkz *):not(:has(.byUkz)):hover {
       background-color: transparent !important;
       box-shadow: none !important;
       transform: translateY(-2px) scale(1.055);
@@ -253,8 +256,36 @@
     .nDcEnd,
     .HZVG1b,
     .Tg7LZd
-  ):not(.RNNXgb):active {
+  ):not(.RNNXgb):not(.byUkz):not(.byUkz *):not(:has(.byUkz)):active {
     transform: translateY(0) scale(0.94);
+    transition-duration: 90ms !important;
+  }
+
+  /*
+   * AI Mode 胶囊由 byUkz 的伪元素覆盖彩虹底层。
+   * 动画只移动完整外壳，避免内部按钮与伪元素分离后露出彩虹条。
+   */
+  form[role="search"] div.byUkz {
+    transform: translateY(0) scale(1);
+    transform-origin: center;
+    transition: transform var(--g-apple-motion-spring) !important;
+  }
+
+  form[role="search"] div.byUkz::after,
+  form[role="search"] div.byUkz:is(:hover, :active, :focus-within)::after {
+    opacity: 1 !important;
+    background: var(--g-apple-ai-button-bg) !important;
+    background-image: none !important;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    form[role="search"] div.byUkz:hover {
+      transform: translateY(-2px) scale(1.025);
+    }
+  }
+
+  form[role="search"] div.byUkz:active {
+    transform: translateY(0) scale(0.975);
     transition-duration: 90ms !important;
   }
 
@@ -270,6 +301,27 @@
     background-color: transparent !important;
     box-shadow: none !important;
     transition: none !important;
+  }
+
+  /* 普通建议行取消阴影，仅以轻微左移提供反馈。 */
+  li.sbct:not(.PZPZlf) {
+    translate: none !important;
+    transform: translateX(0) !important;
+    box-shadow: none !important;
+    transition: transform var(--g-apple-motion-spring) !important;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    li.sbct:not(.PZPZlf):hover {
+      transform: translateX(-3px) !important;
+      box-shadow: none !important;
+    }
+  }
+
+  li.sbct:not(.PZPZlf):active {
+    transform: translateX(-1px) !important;
+    box-shadow: none !important;
+    transition-duration: 90ms !important;
   }
 
   /* ---------- 3. 顶部搜索类型与工具标签：只做位移 ---------- */
@@ -455,6 +507,13 @@
     -webkit-backdrop-filter: saturate(180%) blur(28px) !important;
   }
 
+  /* AI Mode 搜索历史面板本体保持透明，只保留内部内容与原生圆角裁切。 */
+  .UUbT9.EyBRub {
+    background: transparent !important;
+    background-color: transparent !important;
+    background-image: none !important;
+  }
+
   /* 展开层内部保持透明，让磨砂材质能够透出；悬停行仍由 Google 自己高亮。 */
   :is(.aajZCb, .UUbT9, .erkvQe) > div:not(:hover),
   form[role="search"] [role="listbox"] > div:not(:hover) {
@@ -609,6 +668,31 @@
   li.Ndm2cf > div.MFrAxb img {
     transform: scale(1);
     transition: transform 500ms cubic-bezier(0.2, 0.8, 0.2, 1) !important;
+  }
+
+  /*
+   * 独立站点结果的视觉层会覆盖 Google 的真实链接命中层。
+   * 容器自身允许事件穿透；内部真实链接和菜单按钮继续正常接收点击。
+   */
+  div.MFrAxb.BKnikc {
+    isolation: auto !important;
+    z-index: auto !important;
+    translate: none !important;
+    transform: none !important;
+    filter: none !important;
+    will-change: auto !important;
+    pointer-events: none !important;
+  }
+
+  div.MFrAxb.BKnikc :is(
+    a[href],
+    button,
+    [role="link"],
+    [role="button"]
+  ) {
+    position: relative !important;
+    z-index: 1 !important;
+    pointer-events: auto !important;
   }
 
   @media (hover: hover) and (pointer: fine) {
