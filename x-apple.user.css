@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           X Apple 克制卡片与悬浮动效
 @namespace      x-apple-restrained-cards
-@version        1.6.9
+@version        1.7.0
 @description    为 X 的右栏模块、推文信息流和左侧导航添加克制的 Apple 风格卡片与悬浮动画
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/x-apple.user.css
 ==/UserStyle== */
@@ -82,7 +82,12 @@
   [data-testid="sidebarColumn"] :is(
     .r-1867qdf.r-1phboty.r-rs99b7,
     .jetfuel-style-root > div
-  ):hover {
+  ):hover:not(:has(
+    [data-testid="trend"]:hover,
+    div[role="link"]:hover,
+    a[role="link"][href*="/i/trending/"]:hover,
+    a[role="link"][href*="/i/topics/"]:hover
+  )) {
     z-index: 3 !important;
     background-color: var(--x-apple-panel-hover) !important;
     border-color: var(--x-apple-border-hover) !important;
@@ -91,10 +96,9 @@
   }
 
   /* 2. 中间推文：平时保持原布局，仅在整张推文悬停时产生差异 */
-  main article[data-testid="tweet"] {
+  main [data-testid="cellInnerDiv"]:has(article[data-testid="tweet"]) {
     position: relative !important;
     z-index: 0 !important;
-    border-radius: 0 !important;
     background-color: transparent !important;
     box-shadow: none !important;
     transform: translateY(0);
@@ -105,16 +109,27 @@
       box-shadow 240ms var(--x-apple-ease) !important;
   }
 
-  main article[data-testid="tweet"]:hover {
+  main [data-testid="cellInnerDiv"]:has(article[data-testid="tweet"]):hover {
     z-index: 4 !important;
-    border-radius: 0 !important;
     background-color: var(--x-apple-tweet-hover) !important;
     box-shadow: var(--x-apple-shadow-hover) !important;
     transform: translateY(-2px);
   }
 
-  /* 防止 X 自带的悬停底色覆盖自定义的整卡背景 */
-  main article[data-testid="tweet"]:hover > div {
+  /*
+   * 动画放在带原生分隔线的 cellInnerDiv 上，分隔线会随卡片一起移动。
+   * article 本身只负责保持透明，避免内容层再次位移。
+   */
+  main [data-testid="cellInnerDiv"]:has(article[data-testid="tweet"])
+  article[data-testid="tweet"] {
+    background-color: transparent !important;
+    box-shadow: none !important;
+    transform: none !important;
+  }
+
+  /* 防止 X 自带的悬停底色覆盖外层卡片背景 */
+  main [data-testid="cellInnerDiv"]:has(article[data-testid="tweet"]):hover
+  article[data-testid="tweet"] > div {
     background-color: transparent !important;
   }
 
@@ -445,9 +460,10 @@
     transform: translateY(-2px) scale(1.06);
   }
 
-  /* 尊重系统的"减少动态效果"设置 */
   /* 10. 新推文提示条：例如 “Show 70 posts” */
-  main [data-testid="cellInnerDiv"] > div > div.r-16y2uox.r-1wbh5a2.r-1777fci {
+  main [data-testid="cellInnerDiv"]:has(
+    > div > div.r-16y2uox.r-1wbh5a2.r-1777fci
+  ) {
     position: relative !important;
     z-index: 0 !important;
     background-color: transparent !important;
@@ -459,7 +475,9 @@
       box-shadow 220ms var(--x-apple-ease) !important;
   }
 
-  main [data-testid="cellInnerDiv"] > div > div.r-16y2uox.r-1wbh5a2.r-1777fci:hover {
+  main [data-testid="cellInnerDiv"]:has(
+    > div > div.r-16y2uox.r-1wbh5a2.r-1777fci
+  ):hover {
     z-index: 3 !important;
     background-color: var(--x-apple-nav-hover) !important;
     box-shadow: var(--x-apple-shadow) !important;
@@ -511,11 +529,13 @@
    * 12. Trending / Explore / Who to follow 条目。
    * 同时覆盖右栏单条趋势、Explore 的 For You / Trending 内容与推荐用户。
    */
-  main :is(
-    [data-testid="trend"],
-    [data-testid="UserCell"],
-    a[role="link"][href*="/i/trending/"]:not(:has([data-testid="trend"])),
-    a[role="link"][href*="/i/topics/"]
+  main [data-testid="cellInnerDiv"]:has(
+    :is(
+      [data-testid="trend"],
+      [data-testid="UserCell"],
+      a[role="link"][href*="/i/trending/"],
+      a[role="link"][href*="/i/topics/"]
+    )
   ) {
     position: relative !important;
     z-index: 0 !important;
@@ -528,11 +548,13 @@
       box-shadow 220ms var(--x-apple-ease) !important;
   }
 
-  main :is(
-    [data-testid="trend"],
-    [data-testid="UserCell"],
-    a[role="link"][href*="/i/trending/"]:not(:has([data-testid="trend"])),
-    a[role="link"][href*="/i/topics/"]
+  main [data-testid="cellInnerDiv"]:has(
+    :is(
+      [data-testid="trend"],
+      [data-testid="UserCell"],
+      a[role="link"][href*="/i/trending/"],
+      a[role="link"][href*="/i/topics/"]
+    )
   ):hover {
     z-index: 3 !important;
     background-color: var(--x-apple-nav-hover) !important;
@@ -540,12 +562,50 @@
     transform: translateX(3px);
   }
 
+  /*
+   * 13. 右栏 Today’s News / Trending 的每一条内容。
+   * 使用条目自身原有矩形外形，悬停时用原卡片边框色绘制随动轮廓。
+   */
+  [data-testid="sidebarColumn"] :is(
+    [data-testid="trend"],
+    .jetfuel-style-root div[role="link"],
+    a[role="link"][href*="/i/trending/"]:not([data-testid="trend"] *),
+    a[role="link"][href*="/i/topics/"]:not([data-testid="trend"] *)
+  ) {
+    position: relative !important;
+    z-index: 0 !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    outline: 1px solid transparent;
+    outline-offset: -1px;
+    transform: translateX(0);
+    transition:
+      transform 220ms var(--x-apple-ease),
+      background-color 180ms ease,
+      outline-color 180ms ease,
+      box-shadow 220ms var(--x-apple-ease) !important;
+  }
+
+  [data-testid="sidebarColumn"] :is(
+    [data-testid="trend"],
+    .jetfuel-style-root div[role="link"],
+    a[role="link"][href*="/i/trending/"]:not([data-testid="trend"] *),
+    a[role="link"][href*="/i/topics/"]:not([data-testid="trend"] *)
+  ):hover {
+    z-index: 4 !important;
+    background-color: var(--x-apple-nav-hover) !important;
+    outline-color: var(--x-apple-border-hover);
+    box-shadow: var(--x-apple-shadow) !important;
+    transform: translateX(3px);
+  }
+
+  /* 尊重系统的“减少动态效果”设置 */
   @media (prefers-reduced-motion: reduce) {
     [data-testid="sidebarColumn"] :is(
       .r-1867qdf.r-1phboty.r-rs99b7,
       .jetfuel-style-root > div
     ),
-    main article[data-testid="tweet"],
+    main [data-testid="cellInnerDiv"]:has(article[data-testid="tweet"]),
     header nav[aria-label="Primary"] > :is(a, button) > div,
     header :is(
       [data-testid="SideNav_NewTweet_Button"],
@@ -560,18 +620,28 @@
     main [role="tablist"] [role="tab"],
     a[href="/home"][aria-label="X"],
     main div.r-1h8ys4a:has([data-testid^="UserAvatar-Container-"]):has([data-testid^="tweetTextarea_"]):has([data-testid="toolBar"]),
-    main [data-testid="cellInnerDiv"] > div > div.r-16y2uox.r-1wbh5a2.r-1777fci,
+    main [data-testid="cellInnerDiv"]:has(
+      > div > div.r-16y2uox.r-1wbh5a2.r-1777fci
+    ),
     :is(
       button[data-testid$="-follow"],
       button[data-testid$="-unfollow"],
       button[aria-label^="Follow @"],
       button[aria-label^="Following @"]
     ),
-    main :is(
+    main [data-testid="cellInnerDiv"]:has(
+      :is(
+        [data-testid="trend"],
+        [data-testid="UserCell"],
+        a[role="link"][href*="/i/trending/"],
+        a[role="link"][href*="/i/topics/"]
+      )
+    ),
+    [data-testid="sidebarColumn"] :is(
       [data-testid="trend"],
-      [data-testid="UserCell"],
-      a[role="link"][href*="/i/trending/"]:not(:has([data-testid="trend"])),
-      a[role="link"][href*="/i/topics/"]
+      .jetfuel-style-root div[role="link"],
+      a[role="link"][href*="/i/trending/"]:not([data-testid="trend"] *),
+      a[role="link"][href*="/i/topics/"]:not([data-testid="trend"] *)
     ),
     :is(
       button[aria-label="Grok"],
