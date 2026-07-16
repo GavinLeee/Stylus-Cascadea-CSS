@@ -1,0 +1,246 @@
+/* ==UserStyle==
+@name           Instagram Apple 克制卡片与悬浮动效
+@namespace      instagram-apple-restrained-cards
+@version        1.0.0
+@description    为 Instagram 的左侧导航、快拍行、信息流贴文和 Messages 浮钮添加克制的 Apple 风格卡片与悬浮动画
+@updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/instagram-apple.user.css
+==/UserStyle== */
+
+@-moz-document domain("instagram.com") {
+
+  /*
+   * 渲染策略（与本仓库其他样式表不同，实测后专门为消除抖动设计）：
+   * 底色、描边、阴影一律预绘在伪元素上，悬停只过渡 opacity；
+   * 位移与缩放单独走合成器（transform），全程不触发重绘。
+   * 缩放不作用于带 1px 描边的层，避免次像素闪烁。
+   */
+
+  :root {
+    --iga-hl: rgba(120, 130, 148, 0.14);
+    --iga-hl-line: rgba(20, 30, 48, 0.08);
+    --iga-card: rgba(246, 246, 248, 0.98);
+    --iga-card-ring: rgba(20, 30, 48, 0.09);
+    --iga-card-shadow:
+      0 2px 4px rgba(20, 30, 48, 0.05),
+      0 16px 38px rgba(30, 42, 66, 0.13);
+    --iga-nav-shadow:
+      0 1px 2px rgba(16, 24, 40, 0.05),
+      0 7px 18px rgba(24, 36, 58, 0.10);
+    --iga-msg-shadow:
+      0 2px 5px rgba(20, 30, 48, 0.10),
+      0 14px 32px rgba(30, 42, 66, 0.18);
+    --iga-avatar-glow: drop-shadow(0 6px 12px rgba(24, 34, 54, 0.22));
+    --iga-ease: cubic-bezier(0.25, 0.75, 0.2, 1);
+    /* Dock 进场用，末端 1.06 极轻过冲；退场一律纯缓出 */
+    --iga-ease-dock: cubic-bezier(0.25, 0.9, 0.3, 1.06);
+  }
+
+  /* 深色主题标记实测为 html.__fb-dark-mode（Meta 系通用，切换主题即时生效）。
+     深色页面底实测为 rgb(12,16,20) 而非纯黑，卡片色向它靠拢。 */
+  html.__fb-dark-mode {
+    --iga-hl: rgba(160, 170, 190, 0.16);
+    --iga-hl-line: rgba(255, 255, 255, 0.09);
+    --iga-card: #171b20;
+    --iga-card-ring: rgba(255, 255, 255, 0.085);
+    --iga-card-shadow:
+      0 2px 5px rgba(0, 0, 0, 0.36),
+      0 18px 44px rgba(0, 0, 0, 0.50);
+    --iga-nav-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.30),
+      0 8px 20px rgba(0, 0, 0, 0.36);
+    --iga-msg-shadow:
+      0 3px 6px rgba(0, 0, 0, 0.38),
+      0 16px 36px rgba(0, 0, 0, 0.52);
+    --iga-avatar-glow: drop-shadow(0 7px 14px rgba(0, 0, 0, 0.50));
+  }
+
+  /*
+   * 1. 左侧导航（含 Instagram 标志与底部 更多/Meta 按钮）。
+   * 页面没有 <nav>，实测结构为 a[role="link"] > div(胶囊 48x48, 原生圆角 8px)。
+   * 胶囊层类组合 x1obq294.x5a5i1n.xde0f50 为筛选依据（原子类按声明内容哈希，
+   * 相对稳定；若失效优先核对这一组）。:not(main *) 排除信息流中的一切链接。
+   */
+  a[role="link"]:not(main *) > div.x1obq294.x5a5i1n.xde0f50 {
+    position: relative !important;
+    z-index: 0 !important;
+    /* 原生 transition: all 是抖动来源之一，收窄为无 */
+    transition: none !important;
+    background-color: transparent !important;
+  }
+
+  a[role="link"]:not(main *) > div.x1obq294.x5a5i1n.xde0f50::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: 11px;
+    background: var(--iga-hl);
+    box-shadow:
+      inset 0 0 0 1px var(--iga-hl-line),
+      var(--iga-nav-shadow);
+    opacity: 0;
+    transition: opacity 200ms var(--iga-ease);
+    pointer-events: none;
+  }
+
+  a[role="link"]:not(main *):hover > div.x1obq294.x5a5i1n.xde0f50::before {
+    opacity: 1;
+  }
+
+  /* 压掉 IG 自己的悬停底色，避免与预绘胶囊叠色 */
+  a[role="link"]:not(main *):hover > div.x1obq294.x5a5i1n.xde0f50 {
+    background-color: transparent !important;
+  }
+
+  /* 缩放只给图标本体（svg；个人主页项为 img 头像），描边层不参与 */
+  a[role="link"]:not(main *) > div.x1obq294.x5a5i1n.xde0f50 :is(svg, img) {
+    transform: scale(1) translateZ(0);
+    transition: transform 260ms var(--iga-ease);
+  }
+
+  a[role="link"]:not(main *):hover > div.x1obq294.x5a5i1n.xde0f50 :is(svg, img) {
+    transform: scale(1.07) translateZ(0);
+  }
+
+  a[role="link"]:not(main *):active > div.x1obq294.x5a5i1n.xde0f50 :is(svg, img) {
+    transform: scale(0.94) translateZ(0);
+    transition-duration: 90ms;
+  }
+
+  /*
+   * 2. 快拍行：单点 Dock 放大，邻居不动。
+   * 实测结构 ul > li > div[role="button"]（li 90x108，按钮 90x102，
+   * 头像圈为按钮内第一个 div 中的 canvas）。
+   * 触发挂在 li 上、变换挂在按钮的第一个子 div 上并令其不接收指针事件：
+   * 命中网格因此永不变形，放大层盖到邻居也不会产生粘滞回环。
+   */
+  main ul li:has(> div[role="button"] canvas) {
+    position: relative !important;
+    z-index: 0 !important;
+  }
+
+  main ul li:has(> div[role="button"] canvas):hover {
+    z-index: 20 !important;
+  }
+
+  main ul li > div[role="button"]:has(canvas) > div:first-of-type {
+    pointer-events: none;
+    transform: translateY(0) scale(1) translateZ(0);
+    transform-origin: center bottom;
+    filter: none;
+    /* 退场 360ms 纯缓出：响应干脆、落回从容 */
+    transition:
+      transform 360ms var(--iga-ease),
+      filter 360ms var(--iga-ease);
+  }
+
+  main ul li:hover > div[role="button"]:has(canvas) > div:first-of-type {
+    transform: translateY(-5px) scale(1.15) translateZ(0);
+    filter: var(--iga-avatar-glow);
+    /* 进场 190ms 轻过冲 */
+    transition:
+      transform 190ms var(--iga-ease-dock),
+      filter 190ms ease;
+  }
+
+  /*
+   * 3. 信息流贴文：预绘卡片浮起，10px 圆角。
+   * article 无任何类名，main article 即最稳锚点。媒体区全宽出血，
+   * 卡片底色从头部与文案区透出，与 X 版推文的处理一致。
+   */
+  main article {
+    position: relative !important;
+    z-index: 0 !important;
+    transform: translateY(0) translateZ(0);
+    transition: transform 300ms var(--iga-ease);
+  }
+
+  main article::before {
+    content: "";
+    position: absolute;
+    inset: -4px -14px;
+    z-index: -1;
+    border-radius: 10px;
+    background: var(--iga-card);
+    box-shadow:
+      inset 0 0 0 1px var(--iga-card-ring),
+      var(--iga-card-shadow);
+    opacity: 0;
+    transition: opacity 220ms ease;
+    pointer-events: none;
+  }
+
+  main article:hover {
+    z-index: 4 !important;
+    transform: translateY(-2px) translateZ(0);
+  }
+
+  main article:hover::before {
+    opacity: 1;
+  }
+
+  /* 贴文下部的互动/文案块自带页面底色（实测承载类为 xvbhtw8，
+     即 IG 的"主背景色"原子类，页面共 8 处、每篇贴文 1 处），
+     悬停时透明化，否则会在卡片上破出一块页面色的洞 */
+  main article:hover .xvbhtw8 {
+    background-color: transparent !important;
+  }
+
+  /*
+   * 4. 右下角 Messages 浮钮。
+   * 实测为 fixed 容器内的 div[role="button"]：窄视口 56x56 圆钮，
+   * 宽视口 251x56 胶囊（含文字与三个头像），圆角均 44px、
+   * 自带底色 rgb(33,35,40) 与 transition: all——后者必须收窄。
+   * 侧栏的 Messages 是 <a>，不会被此选择器命中。
+   */
+  div[role="button"]:has(svg[aria-label="Messages"]) {
+    position: relative !important;
+    transform: translateY(0) translateZ(0);
+    transition: transform 260ms var(--iga-ease) !important;
+  }
+
+  div[role="button"]:has(svg[aria-label="Messages"])::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    box-shadow: var(--iga-msg-shadow);
+    opacity: 0;
+    transition: opacity 220ms ease;
+    pointer-events: none;
+  }
+
+  div[role="button"]:has(svg[aria-label="Messages"]):hover {
+    transform: translateY(-2px) translateZ(0);
+  }
+
+  div[role="button"]:has(svg[aria-label="Messages"]):hover::after {
+    opacity: 1;
+  }
+
+  div[role="button"]:has(svg[aria-label="Messages"]):active {
+    transform: translateY(0) scale(0.98) translateZ(0);
+    transition-duration: 90ms !important;
+  }
+
+  /* 尊重系统的"减少动态效果"设置 */
+  @media (prefers-reduced-motion: reduce) {
+    a[role="link"]:not(main *) > div.x1obq294.x5a5i1n.xde0f50::before,
+    a[role="link"]:not(main *) > div.x1obq294.x5a5i1n.xde0f50 :is(svg, img),
+    main ul li > div[role="button"]:has(canvas) > div:first-of-type,
+    main article,
+    main article::before,
+    div[role="button"]:has(svg[aria-label="Messages"]),
+    div[role="button"]:has(svg[aria-label="Messages"])::after {
+      transition: none !important;
+    }
+
+    a[role="link"]:not(main *):hover > div.x1obq294.x5a5i1n.xde0f50 :is(svg, img),
+    main ul li:hover > div[role="button"]:has(canvas) > div:first-of-type,
+    main article:hover,
+    div[role="button"]:has(svg[aria-label="Messages"]):hover {
+      transform: none !important;
+    }
+  }
+}
