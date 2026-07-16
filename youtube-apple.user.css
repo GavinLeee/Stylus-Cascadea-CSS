@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           YouTube Apple 克制卡片与动效
 @namespace      youtube-apple-card-motion
-@version        2.20.41
+@version        2.20.42
 @description    顶栏、分类栏、左侧导航和视频卡片的克制 Apple 风格悬浮动效
 @author         Codex
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/youtube-apple.user.css
@@ -1985,13 +1985,15 @@
   }
 }
 
-/* Channel pages v2.20.41: preserve YouTube's native layout and animate only
+/* Channel pages v2.20.42: preserve YouTube's native layout and animate only
    composited visual properties. */
 @-moz-document regexp("^https://www\\.youtube\\.com/(?:@[^/?#]+|channel/[^/?#]+|c/[^/?#]+|user/[^/?#]+)(?:[/?#].*)?$") {
   :root {
     --yt-channel-dock-motion: 480ms cubic-bezier(0.16, 1, 0.30, 1);
     --yt-channel-dock-lift: -4px;
     --yt-channel-dock-scale: 1.028;
+    --yt-channel-featured-motion: 320ms cubic-bezier(0.20, 0.88, 0.24, 1);
+    --yt-channel-featured-lift: -3px;
   }
 
   /* Channel pages do not enable YouTube's Home-page frosted layer. Paint the
@@ -2025,6 +2027,14 @@
   /* Leave the banner, channel profile and their native condensing motion fully
      under YouTube's control. In particular, do not replace the shared header's
      transform with a custom scroll timeline. */
+  ytd-tabbed-page-header,
+  ytd-tabbed-page-header tp-yt-app-header#header {
+    z-index: 99000 !important;
+  }
+
+  /* The masthead owns the higher layer (100000). Keeping the complete native
+     channel header immediately below it prevents SPA updates from painting the
+     profile sheet over the top bar without changing YouTube's scroll geometry. */
 
   /* Paint the channel tabs on one isolated glass sheet inside the shared,
      normally scrolling channel-header module. */
@@ -2170,13 +2180,41 @@
     margin: 0 !important;
   }
 
+  /* The featured channel video is a large horizontal module. Do not let its
+     nested lockup also run the generic thumbnail/card motion: one promoted
+     transform on the outer module is enough and avoids duplicate animation. */
+  ytd-channel-featured-content-renderer {
+    position: relative !important;
+    isolation: isolate;
+    z-index: 0;
+    transform: translate3d(0, 0, 0);
+    transition: transform var(--yt-channel-featured-motion) !important;
+    will-change: transform;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    ytd-channel-featured-content-renderer:is(:hover, :focus-within) {
+      z-index: 8;
+      transform: translate3d(
+        0,
+        var(--yt-channel-featured-lift),
+        0
+      );
+    }
+  }
+
 
   /* The modern lockup element is shared by videos, channels and other shelves.
      Requiring a watch link prevents channel headers and Shorts shelves from being
      mistaken for video cards. No display, size, position or spacing is changed. */
   yt-lockup-view-model:has(
     :is(a[href^="/watch"], a[href*="youtube.com/watch"])
-  ):not(:is(ytd-rich-item-renderer, ytd-grid-video-renderer, ytd-video-renderer) *) {
+  ):not(:is(
+    ytd-rich-item-renderer,
+    ytd-grid-video-renderer,
+    ytd-video-renderer,
+    ytd-channel-featured-content-renderer
+  ) *) {
     position: relative !important;
     z-index: 0;
     translate: 0 0 !important;
@@ -2189,7 +2227,12 @@
      body together; the thumbnail alone owns magnification. */
   yt-lockup-view-model:has(
     :is(a[href^="/watch"], a[href*="youtube.com/watch"])
-  ):not(:is(ytd-rich-item-renderer, ytd-grid-video-renderer, ytd-video-renderer) *)
+  ):not(:is(
+    ytd-rich-item-renderer,
+    ytd-grid-video-renderer,
+    ytd-video-renderer,
+    ytd-channel-featured-content-renderer
+  ) *)
   :is(yt-thumbnail-view-model, ytd-thumbnail) {
     position: relative;
     z-index: 0;
@@ -2202,7 +2245,12 @@
 
   yt-lockup-view-model:has(
     :is(a[href^="/watch"], a[href*="youtube.com/watch"])
-  ):not(:is(ytd-rich-item-renderer, ytd-grid-video-renderer, ytd-video-renderer) *)
+  ):not(:is(
+    ytd-rich-item-renderer,
+    ytd-grid-video-renderer,
+    ytd-video-renderer,
+    ytd-channel-featured-content-renderer
+  ) *)
   :is(yt-thumbnail-view-model, ytd-thumbnail) img {
     transform: none !important;
     filter: none !important;
@@ -2212,7 +2260,12 @@
   @media (hover: hover) and (pointer: fine) {
     yt-lockup-view-model:has(
       :is(a[href^="/watch"], a[href*="youtube.com/watch"])
-    ):not(:is(ytd-rich-item-renderer, ytd-grid-video-renderer, ytd-video-renderer) *):is(
+    ):not(:is(
+      ytd-rich-item-renderer,
+      ytd-grid-video-renderer,
+      ytd-video-renderer,
+      ytd-channel-featured-content-renderer
+    ) *):is(
       :hover,
       :focus-within
     ) {
@@ -2222,7 +2275,12 @@
 
     yt-lockup-view-model:has(
       :is(a[href^="/watch"], a[href*="youtube.com/watch"])
-    ):not(:is(ytd-rich-item-renderer, ytd-grid-video-renderer, ytd-video-renderer) *):is(
+    ):not(:is(
+      ytd-rich-item-renderer,
+      ytd-grid-video-renderer,
+      ytd-video-renderer,
+      ytd-channel-featured-content-renderer
+    ) *):is(
       :hover,
       :focus-within
     ) :is(yt-thumbnail-view-model, ytd-thumbnail) {
@@ -2232,11 +2290,12 @@
       filter: none !important;
     }
 
-    /* Keep YouTube's detached preview aligned when any part of the source card
-       is hovered, including its title and metadata. */
-    ytd-app:has(
-      yt-lockup-view-model:is(:hover, :focus-within)
-      :is(a[href^="/watch"], a[href*="youtube.com/watch"])
+    /* The helper script exposes the hovered preview type on <html>. This avoids
+       four page-wide ytd-app:has(...) selectors being reevaluated whenever the
+       pointer crosses a large channel card. */
+    html:is(
+      [data-yt-channel-preview-hover="video"],
+      [data-yt-channel-preview-hover="playlist"]
     ) ytd-video-preview {
       z-index: 900 !important;
       translate: 0 var(--yt-channel-dock-lift) !important;
@@ -2244,10 +2303,8 @@
       transition: translate var(--yt-channel-dock-motion) !important;
     }
 
-    ytd-app:has(
-      yt-lockup-view-model:is(:hover, :focus-within)
-      :is(a[href^="/watch"], a[href*="youtube.com/watch"])
-    ) ytd-video-preview #media-container {
+    html[data-yt-channel-preview-hover="video"]
+    ytd-video-preview #media-container {
       scale: var(--yt-channel-dock-scale) !important;
       transform-origin: center !important;
       transition: scale var(--yt-channel-dock-motion) !important;
@@ -2257,13 +2314,25 @@
        Compensate for that native oversize so the final 1.0105 preview scale
        exactly matches the thumbnail's 1.028 Dock scale instead of jumping wider
        when playback replaces the static cover. */
-    ytd-app:has(
-      yt-lockup-view-model:is(:hover, :focus-within)
-      a[href^="/playlist?list="]
-    ) ytd-video-preview #media-container {
+    html[data-yt-channel-preview-hover="playlist"]
+    ytd-video-preview #media-container {
       scale: 1.0105 !important;
       transform-origin: center !important;
       transition: scale var(--yt-channel-dock-motion) !important;
+    }
+
+    html[data-yt-channel-preview-hover="featured"] ytd-video-preview {
+      z-index: 900 !important;
+      translate: 0 var(--yt-channel-featured-lift) !important;
+      scale: 1 !important;
+      transition: translate var(--yt-channel-featured-motion) !important;
+    }
+
+    html[data-yt-channel-preview-hover="featured"]
+    ytd-video-preview #media-container {
+      scale: 1 !important;
+      transform-origin: center !important;
+      transition: none !important;
     }
   }
 
@@ -2284,9 +2353,9 @@
 
   /* The global 1.012 player overscan is useful for ordinary cards, but on a
      playlist it creates a second zoom exactly when playback begins. */
-  ytd-app:has(
-    yt-lockup-view-model:is(:hover, :focus-within)
-    a[href^="/playlist?list="]
+  html:is(
+    [data-yt-channel-preview-hover="playlist"],
+    [data-yt-channel-preview-hover="featured"]
   ) ytd-video-preview[playing] ytd-player {
     scale: 1 !important;
   }
