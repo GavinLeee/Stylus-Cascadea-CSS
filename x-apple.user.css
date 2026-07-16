@@ -1,12 +1,9 @@
 /* ==UserStyle==
 @name           X Apple 克制卡片与悬浮动效
 @namespace      x-apple-restrained-cards
-@version        1.6.7
+@version        1.6.8
 @description    为 X 的右栏模块、推文信息流和左侧导航添加克制的 Apple 风格卡片与悬浮动画
-@match          https://x.com/*
-@match          https://twitter.com/*
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/x-apple.user.css
-@downloadURL    https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/x-apple.user.css
 ==/UserStyle== */
 
 @-moz-document domain("x.com"), domain("twitter.com") {
@@ -30,7 +27,20 @@
     --x-apple-ease: cubic-bezier(0.22, 0.8, 0.24, 1);
   }
 
-  body[data-theme="dark"] {
+  /*
+   * X 的主题标记并不稳定：旧版使用 body[data-theme]，新版通常直接
+   * 修改 body 背景色或 html 的 color-scheme。以下选择器同时兼容
+   * Lights Out、Dim 以及旧版主题属性，并会在切换主题时立即重算。
+   */
+  :is(
+    body[data-theme="dark"],
+    body[style*="rgb(0, 0, 0)"],
+    body[style*="rgb(21, 32, 43)"],
+    html[data-theme="dark"] body,
+    html[data-color-mode="dark"] body,
+    html[style*="color-scheme: dark"] body,
+    html[style*="color-scheme:dark"] body
+  ) {
     --x-apple-panel: rgba(22, 24, 28, 0.76);
     --x-apple-panel-hover: rgba(44, 44, 46, 0.97);
     --x-apple-panel-solid: rgba(28, 30, 35, 0.96);
@@ -189,7 +199,15 @@
     transition-delay: 0s !important;
   }
 
-  body[data-theme="dark"] :is(
+  :is(
+    body[data-theme="dark"],
+    body[style*="rgb(0, 0, 0)"],
+    body[style*="rgb(21, 32, 43)"],
+    html[data-theme="dark"] body,
+    html[data-color-mode="dark"] body,
+    html[style*="color-scheme: dark"] body,
+    html[style*="color-scheme:dark"] body
+  ) :is(
     [data-testid^="UserAvatar-Container-"],
     [data-testid="Tweet-User-Avatar"]:not(:has([data-testid^="UserAvatar-Container-"]))
   ):hover {
