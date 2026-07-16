@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           Google Apple 克制卡片与动效
 @namespace      google-apple-card-motion
-@version        1.5.15
+@version        1.5.16
 @description    为 Google 搜索结果与顶部控件添加克制的 Apple 风格动效和磨砂玻璃
 @author         Codex
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/google-apple.user.css
@@ -622,10 +622,11 @@
    */
   body:has(#search) :is(
     div.YNk70c.iFByke,
+    div.YNk70c.iFBYke,
     div.xrOgrb
   ) {
-    background: var(--g-apple-card-bg-strong) !important;
-    background-color: var(--g-apple-card-bg-strong) !important;
+    background: #1A1C21 !important;
+    background-color: #1A1C21 !important;
     background-image: none !important;
     box-shadow: none !important;
     backdrop-filter: none !important;
