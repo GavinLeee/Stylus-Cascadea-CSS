@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           X Apple 克制卡片与悬浮动效
 @namespace      x-apple-restrained-cards
-@version        1.6.8
+@version        1.6.9
 @description    为 X 的右栏模块、推文信息流和左侧导航添加克制的 Apple 风格卡片与悬浮动画
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/x-apple.user.css
 ==/UserStyle== */
@@ -18,6 +18,7 @@
     --x-apple-tweet-divider: rgb(239, 243, 244);   /* 实测自推文区域原生分割线颜色 */
     --x-apple-border: rgba(15, 23, 42, 0.085);
     --x-apple-border-hover: rgba(15, 23, 42, 0.13);
+    --x-apple-button-hover-text: rgb(15, 20, 25);
     --x-apple-shadow:
       0 1px 2px rgba(15, 23, 42, 0.035),
       0 10px 28px rgba(38, 51, 77, 0.09);
@@ -42,14 +43,15 @@
     html[style*="color-scheme:dark"] body
   ) {
     --x-apple-panel: rgba(22, 24, 28, 0.76);
-    --x-apple-panel-hover: rgba(44, 44, 46, 0.97);
+    --x-apple-panel-hover: #2F2F30;
     --x-apple-panel-solid: rgba(28, 30, 35, 0.96);
-    --x-apple-tweet-hover: rgba(44, 44, 46, 0.97);
-    --x-apple-nav-hover: rgba(44, 44, 46, 0.97);
+    --x-apple-tweet-hover: #2F2F30;
+    --x-apple-nav-hover: #2F2F30;
     --x-apple-topbar: rgba(0, 0, 0, 0.65);         /* X 深色主题原生顶栏 */
     --x-apple-tweet-divider: rgb(56, 68, 77);      /* X 深色(Dim)主题官方分割线色，非本次实测 */
     --x-apple-border: rgba(255, 255, 255, 0.095);
     --x-apple-border-hover: rgba(255, 255, 255, 0.16);
+    --x-apple-button-hover-text: rgb(242, 242, 247);
     --x-apple-shadow:
       0 1px 2px rgba(0, 0, 0, 0.20),
       0 12px 30px rgba(0, 0, 0, 0.28);
@@ -444,6 +446,100 @@
   }
 
   /* 尊重系统的"减少动态效果"设置 */
+  /* 10. 新推文提示条：例如 “Show 70 posts” */
+  main [data-testid="cellInnerDiv"] > div > div.r-16y2uox.r-1wbh5a2.r-1777fci {
+    position: relative !important;
+    z-index: 0 !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    transform: translateY(0);
+    transition:
+      transform 220ms var(--x-apple-ease),
+      background-color 180ms ease,
+      box-shadow 220ms var(--x-apple-ease) !important;
+  }
+
+  main [data-testid="cellInnerDiv"] > div > div.r-16y2uox.r-1wbh5a2.r-1777fci:hover {
+    z-index: 3 !important;
+    background-color: var(--x-apple-nav-hover) !important;
+    box-shadow: var(--x-apple-shadow) !important;
+    transform: translateY(-1px);
+  }
+
+  /*
+   * 11. Follow / Following 按钮：data-testid 是 X 的稳定锚点，
+   * aria-label 用于兼容部分实验版 DOM。
+   */
+  :is(
+    button[data-testid$="-follow"],
+    button[data-testid$="-unfollow"],
+    button[aria-label^="Follow @"],
+    button[aria-label^="Following @"]
+  ) {
+    transition:
+      transform 220ms var(--x-apple-ease),
+      background-color 180ms ease,
+      border-color 180ms ease,
+      box-shadow 220ms var(--x-apple-ease),
+      filter 180ms ease !important;
+  }
+
+  :is(
+    button[data-testid$="-follow"],
+    button[data-testid$="-unfollow"],
+    button[aria-label^="Follow @"],
+    button[aria-label^="Following @"]
+  ):hover {
+    background-color: var(--x-apple-nav-hover) !important;
+    border-color: var(--x-apple-border-hover) !important;
+    box-shadow: var(--x-apple-shadow) !important;
+    color: var(--x-apple-button-hover-text) !important;
+    filter: brightness(1.025) saturate(0.98);
+    transform: translateY(-1px);
+  }
+
+  :is(
+    button[data-testid$="-follow"],
+    button[data-testid$="-unfollow"],
+    button[aria-label^="Follow @"],
+    button[aria-label^="Following @"]
+  ):hover * {
+    color: inherit !important;
+  }
+
+  /*
+   * 12. Trending / Explore / Who to follow 条目。
+   * 同时覆盖右栏单条趋势、Explore 的 For You / Trending 内容与推荐用户。
+   */
+  main :is(
+    [data-testid="trend"],
+    [data-testid="UserCell"],
+    a[role="link"][href*="/i/trending/"]:not(:has([data-testid="trend"])),
+    a[role="link"][href*="/i/topics/"]
+  ) {
+    position: relative !important;
+    z-index: 0 !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    transform: translateX(0);
+    transition:
+      transform 220ms var(--x-apple-ease),
+      background-color 180ms ease,
+      box-shadow 220ms var(--x-apple-ease) !important;
+  }
+
+  main :is(
+    [data-testid="trend"],
+    [data-testid="UserCell"],
+    a[role="link"][href*="/i/trending/"]:not(:has([data-testid="trend"])),
+    a[role="link"][href*="/i/topics/"]
+  ):hover {
+    z-index: 3 !important;
+    background-color: var(--x-apple-nav-hover) !important;
+    box-shadow: var(--x-apple-shadow) !important;
+    transform: translateX(3px);
+  }
+
   @media (prefers-reduced-motion: reduce) {
     [data-testid="sidebarColumn"] :is(
       .r-1867qdf.r-1phboty.r-rs99b7,
@@ -464,6 +560,19 @@
     main [role="tablist"] [role="tab"],
     a[href="/home"][aria-label="X"],
     main div.r-1h8ys4a:has([data-testid^="UserAvatar-Container-"]):has([data-testid^="tweetTextarea_"]):has([data-testid="toolBar"]),
+    main [data-testid="cellInnerDiv"] > div > div.r-16y2uox.r-1wbh5a2.r-1777fci,
+    :is(
+      button[data-testid$="-follow"],
+      button[data-testid$="-unfollow"],
+      button[aria-label^="Follow @"],
+      button[aria-label^="Following @"]
+    ),
+    main :is(
+      [data-testid="trend"],
+      [data-testid="UserCell"],
+      a[role="link"][href*="/i/trending/"]:not(:has([data-testid="trend"])),
+      a[role="link"][href*="/i/topics/"]
+    ),
     :is(
       button[aria-label="Grok"],
       button[aria-label="Chat"],
