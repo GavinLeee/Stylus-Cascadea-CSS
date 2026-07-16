@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         YouTube 自动跟随系统深浅色模式（完整刷新组件）
 // @namespace    youtube-follow-system-theme
-// @version      1.3.19
+// @version      1.3.16
 // @description  自动同步系统主题、刷新 YouTube 组件，并为浅色播放页补充实时环境光
 // @author       Codex
 // @updateURL    https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/youtube-follow-system-theme.user.js
@@ -30,7 +30,6 @@
   let lightAmbientContext = null;
   let lightAmbientHost = null;
   let observedChannelDockHost = null;
-  let hoveredChannelPreviewCard = null;
   const channelDockObserver = new IntersectionObserver((entries) => {
     const entry = entries[0];
     const channelPage = /^\/(?:@|channel\/|c\/|user\/)/.test(location.pathname);
@@ -99,72 +98,6 @@
     channelDockObserver.disconnect();
     channelDockObserver.observe(host);
     observedChannelDockHost = host;
-  }
-
-  function getChannelPreviewHoverState(target) {
-    if (
-      !(target instanceof Element) ||
-      !/^\/(?:@|channel\/|c\/|user\/)/.test(location.pathname)
-    ) {
-      return null;
-    }
-
-    const card = target.closest('yt-lockup-view-model');
-    if (
-      !card ||
-      card.closest(
-        'ytd-rich-item-renderer, ytd-grid-video-renderer, ytd-video-renderer'
-      )
-    ) {
-      return null;
-    }
-
-    const playlistLink = card.querySelector('a[href^="/playlist?list="]');
-    const watchLink = card.querySelector(
-      'a[href^="/watch"], a[href*="youtube.com/watch"]'
-    );
-    if (!playlistLink && !watchLink) return null;
-
-    return {
-      card,
-      type: card.closest('ytd-channel-featured-content-renderer')
-        ? 'featured'
-        : playlistLink
-          ? 'playlist'
-          : 'video'
-    };
-  }
-
-  function clearChannelPreviewHoverState() {
-    hoveredChannelPreviewCard = null;
-    root.removeAttribute('data-yt-channel-preview-hover');
-  }
-
-  function handleChannelPreviewPointerOver(event) {
-    const state = getChannelPreviewHoverState(event.target);
-    if (!state || state.card === hoveredChannelPreviewCard) return;
-
-    hoveredChannelPreviewCard = state.card;
-    root.setAttribute('data-yt-channel-preview-hover', state.type);
-  }
-
-  function handleChannelPreviewPointerOut(event) {
-    if (
-      !hoveredChannelPreviewCard ||
-      !(event.target instanceof Node) ||
-      !hoveredChannelPreviewCard.contains(event.target)
-    ) {
-      return;
-    }
-
-    if (
-      event.relatedTarget instanceof Node &&
-      hoveredChannelPreviewCard.contains(event.relatedTarget)
-    ) {
-      return;
-    }
-
-    clearChannelPreviewHoverState();
   }
 
   function applySystemTheme() {
@@ -529,18 +462,7 @@
     passive: true,
     capture: true
   });
-  document.addEventListener(
-    'pointerover',
-    handleChannelPreviewPointerOver,
-    { passive: true, capture: true }
-  );
-  document.addEventListener(
-    'pointerout',
-    handleChannelPreviewPointerOut,
-    { passive: true, capture: true }
-  );
   document.addEventListener('yt-navigate-finish', () => {
-    clearChannelPreviewHoverState();
     applySystemTheme();
     observeChannelDockState(true);
     scheduleMastheadScrollSync();
