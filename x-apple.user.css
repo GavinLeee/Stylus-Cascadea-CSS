@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           X Apple 克制卡片与悬浮动效
 @namespace      x-apple-restrained-cards
-@version        1.7.0
+@version        1.7.1
 @description    为 X 的右栏模块、推文信息流和左侧导航添加克制的 Apple 风格卡片与悬浮动画
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/x-apple.user.css
 ==/UserStyle== */
@@ -96,40 +96,44 @@
   }
 
   /* 2. 中间推文：平时保持原布局，仅在整张推文悬停时产生差异 */
-  main [data-testid="cellInnerDiv"]:has(article[data-testid="tweet"]) {
+  main article[data-testid="tweet"] {
     position: relative !important;
     z-index: 0 !important;
+    border-radius: 0 !important;
     background-color: transparent !important;
     box-shadow: none !important;
+    outline: 1px solid transparent;
+    outline-offset: -1px;
     transform: translateY(0);
     transform-origin: center center;
     transition:
       transform 240ms var(--x-apple-ease),
       background-color 190ms ease,
+      outline-color 190ms ease,
       box-shadow 240ms var(--x-apple-ease) !important;
   }
 
-  main [data-testid="cellInnerDiv"]:has(article[data-testid="tweet"]):hover {
+  main article[data-testid="tweet"]:hover {
     z-index: 4 !important;
+    border-radius: 0 !important;
     background-color: var(--x-apple-tweet-hover) !important;
+    outline-color: var(--x-apple-tweet-divider);
     box-shadow: var(--x-apple-shadow-hover) !important;
     transform: translateY(-2px);
   }
 
   /*
-   * 动画放在带原生分隔线的 cellInnerDiv 上，分隔线会随卡片一起移动。
-   * article 本身只负责保持透明，避免内容层再次位移。
+   * cellInnerDiv 是 X 虚拟列表的定位层，绝不能覆盖它的 transform。
+   * 卡片悬停时仅隐藏外层原生分隔线，并由 article 的 outline 绘制随动边框。
    */
-  main [data-testid="cellInnerDiv"]:has(article[data-testid="tweet"])
-  article[data-testid="tweet"] {
-    background-color: transparent !important;
-    box-shadow: none !important;
-    transform: none !important;
+  main [data-testid="cellInnerDiv"]:has(article[data-testid="tweet"]:hover),
+  main [data-testid="cellInnerDiv"]:has(article[data-testid="tweet"]:hover)
+  > div {
+    border-color: transparent !important;
   }
 
-  /* 防止 X 自带的悬停底色覆盖外层卡片背景 */
-  main [data-testid="cellInnerDiv"]:has(article[data-testid="tweet"]):hover
-  article[data-testid="tweet"] > div {
+  /* 防止 X 自带的悬停底色覆盖自定义卡片背景 */
+  main article[data-testid="tweet"]:hover > div {
     background-color: transparent !important;
   }
 
@@ -461,27 +465,38 @@
   }
 
   /* 10. 新推文提示条：例如 “Show 70 posts” */
-  main [data-testid="cellInnerDiv"]:has(
-    > div > div.r-16y2uox.r-1wbh5a2.r-1777fci
-  ) {
+  main [data-testid="cellInnerDiv"]
+  > div > div.r-16y2uox.r-1wbh5a2.r-1777fci {
     position: relative !important;
     z-index: 0 !important;
     background-color: transparent !important;
     box-shadow: none !important;
+    outline: 1px solid transparent;
+    outline-offset: -1px;
     transform: translateY(0);
     transition:
       transform 220ms var(--x-apple-ease),
       background-color 180ms ease,
+      outline-color 180ms ease,
       box-shadow 220ms var(--x-apple-ease) !important;
   }
 
-  main [data-testid="cellInnerDiv"]:has(
-    > div > div.r-16y2uox.r-1wbh5a2.r-1777fci
-  ):hover {
+  main [data-testid="cellInnerDiv"]
+  > div > div.r-16y2uox.r-1wbh5a2.r-1777fci:hover {
     z-index: 3 !important;
     background-color: var(--x-apple-nav-hover) !important;
+    outline-color: var(--x-apple-tweet-divider);
     box-shadow: var(--x-apple-shadow) !important;
     transform: translateY(-1px);
+  }
+
+  main [data-testid="cellInnerDiv"]:has(
+    > div > div.r-16y2uox.r-1wbh5a2.r-1777fci:hover
+  ),
+  main [data-testid="cellInnerDiv"]:has(
+    > div > div.r-16y2uox.r-1wbh5a2.r-1777fci:hover
+  ) > div {
+    border-color: transparent !important;
   }
 
   /*
@@ -529,37 +544,56 @@
    * 12. Trending / Explore / Who to follow 条目。
    * 同时覆盖右栏单条趋势、Explore 的 For You / Trending 内容与推荐用户。
    */
-  main [data-testid="cellInnerDiv"]:has(
-    :is(
-      [data-testid="trend"],
-      [data-testid="UserCell"],
-      a[role="link"][href*="/i/trending/"],
-      a[role="link"][href*="/i/topics/"]
-    )
+  main :is(
+    [data-testid="trend"],
+    [data-testid="UserCell"],
+    a[role="link"][href*="/i/trending/"]:not(:has([data-testid="trend"])),
+    a[role="link"][href*="/i/topics/"]
   ) {
     position: relative !important;
     z-index: 0 !important;
     background-color: transparent !important;
     box-shadow: none !important;
+    outline: 1px solid transparent;
+    outline-offset: -1px;
     transform: translateX(0);
     transition:
       transform 220ms var(--x-apple-ease),
       background-color 180ms ease,
+      outline-color 180ms ease,
       box-shadow 220ms var(--x-apple-ease) !important;
+  }
+
+  main :is(
+    [data-testid="trend"],
+    [data-testid="UserCell"],
+    a[role="link"][href*="/i/trending/"]:not(:has([data-testid="trend"])),
+    a[role="link"][href*="/i/topics/"]
+  ):hover {
+    z-index: 3 !important;
+    background-color: var(--x-apple-nav-hover) !important;
+    outline-color: var(--x-apple-tweet-divider);
+    box-shadow: var(--x-apple-shadow) !important;
+    transform: translateX(3px);
   }
 
   main [data-testid="cellInnerDiv"]:has(
     :is(
-      [data-testid="trend"],
-      [data-testid="UserCell"],
-      a[role="link"][href*="/i/trending/"],
-      a[role="link"][href*="/i/topics/"]
+      [data-testid="trend"]:hover,
+      [data-testid="UserCell"]:hover,
+      a[role="link"][href*="/i/trending/"]:hover,
+      a[role="link"][href*="/i/topics/"]:hover
     )
-  ):hover {
-    z-index: 3 !important;
-    background-color: var(--x-apple-nav-hover) !important;
-    box-shadow: var(--x-apple-shadow) !important;
-    transform: translateX(3px);
+  ),
+  main [data-testid="cellInnerDiv"]:has(
+    :is(
+      [data-testid="trend"]:hover,
+      [data-testid="UserCell"]:hover,
+      a[role="link"][href*="/i/trending/"]:hover,
+      a[role="link"][href*="/i/topics/"]:hover
+    )
+  ) > div {
+    border-color: transparent !important;
   }
 
   /*
@@ -605,7 +639,7 @@
       .r-1867qdf.r-1phboty.r-rs99b7,
       .jetfuel-style-root > div
     ),
-    main [data-testid="cellInnerDiv"]:has(article[data-testid="tweet"]),
+    main article[data-testid="tweet"],
     header nav[aria-label="Primary"] > :is(a, button) > div,
     header :is(
       [data-testid="SideNav_NewTweet_Button"],
@@ -620,22 +654,19 @@
     main [role="tablist"] [role="tab"],
     a[href="/home"][aria-label="X"],
     main div.r-1h8ys4a:has([data-testid^="UserAvatar-Container-"]):has([data-testid^="tweetTextarea_"]):has([data-testid="toolBar"]),
-    main [data-testid="cellInnerDiv"]:has(
-      > div > div.r-16y2uox.r-1wbh5a2.r-1777fci
-    ),
+    main [data-testid="cellInnerDiv"]
+    > div > div.r-16y2uox.r-1wbh5a2.r-1777fci,
     :is(
       button[data-testid$="-follow"],
       button[data-testid$="-unfollow"],
       button[aria-label^="Follow @"],
       button[aria-label^="Following @"]
     ),
-    main [data-testid="cellInnerDiv"]:has(
-      :is(
-        [data-testid="trend"],
-        [data-testid="UserCell"],
-        a[role="link"][href*="/i/trending/"],
-        a[role="link"][href*="/i/topics/"]
-      )
+    main :is(
+      [data-testid="trend"],
+      [data-testid="UserCell"],
+      a[role="link"][href*="/i/trending/"]:not(:has([data-testid="trend"])),
+      a[role="link"][href*="/i/topics/"]
     ),
     [data-testid="sidebarColumn"] :is(
       [data-testid="trend"],
