@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           Google Apple 克制卡片与动效
 @namespace      google-apple-card-motion
-@version        1.5.12
+@version        1.5.13
 @description    为 Google 搜索结果与顶部控件添加克制的 Apple 风格动效和磨砂玻璃
 @author         Codex
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/google-apple.user.css
@@ -33,6 +33,7 @@
       0 3px 10px rgba(15, 23, 42, 0.08);
     --g-apple-focus: rgba(120, 86, 255, 0.48);
     --g-apple-glass-topbar: rgba(255, 255, 255, 0.68);
+    --g-apple-searchform-bg: var(--g-apple-glass-topbar);
     --g-apple-glass-control: rgba(255, 255, 255, 0.78);
     --g-apple-glass-stroke: rgba(0, 0, 0, 0.08);
     --g-apple-glass-shadow: 0 8px 26px rgba(15, 23, 42, 0.10);
@@ -61,6 +62,7 @@
       0 3px 10px rgba(0, 0, 0, 0.24);
     --g-apple-focus: rgba(165, 141, 255, 0.58);
     --g-apple-glass-topbar: rgba(22, 22, 24, 0.62);
+    --g-apple-searchform-bg: #1a1c21;
     --g-apple-glass-control: rgba(42, 42, 45, 0.78);
     --g-apple-glass-stroke: rgba(255, 255, 255, 0.10);
     --g-apple-glass-shadow: 0 9px 28px rgba(0, 0, 0, 0.32);
@@ -82,6 +84,7 @@
         0 3px 10px rgba(0, 0, 0, 0.24);
       --g-apple-focus: rgba(165, 141, 255, 0.58);
       --g-apple-glass-topbar: rgba(22, 22, 24, 0.62);
+      --g-apple-searchform-bg: #1a1c21;
       --g-apple-glass-control: rgba(42, 42, 45, 0.78);
       --g-apple-glass-stroke: rgba(255, 255, 255, 0.10);
       --g-apple-glass-shadow: 0 9px 28px rgba(0, 0, 0, 0.32);
@@ -324,6 +327,17 @@
     transition-duration: 90ms !important;
   }
 
+  /* 搜索建议文字行：随当前建议项轻微向左移动。 */
+  body:has(#search) div.pcTkSc {
+    transform: translateX(0);
+    transition: transform var(--g-apple-motion-spring) !important;
+  }
+
+  body:has(#search) li.sbct:is(:hover, .sbhl) div.pcTkSc,
+  body:has(#search) div.pcTkSc:hover {
+    transform: translateX(-3px);
+  }
+
   /*
    * Google 首页：保留原生外观，只为框选按钮增加缩放反馈。
    * AI Mode、清除按钮、搜索框、建议面板和其他页面元素均不改样式。
@@ -422,6 +436,24 @@
   }
 
   button.UTNPFf:active {
+    transform: scale(0.94);
+    transition-duration: 90ms !important;
+  }
+
+  /* AI 工具栏的圆形伪元素按钮统一增加放大反馈。 */
+  div.niO4u::before {
+    transform: scale(1);
+    transform-origin: center;
+    transition: transform var(--g-apple-motion-spring) !important;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    div.niO4u:hover::before {
+      transform: scale(1.1);
+    }
+  }
+
+  div.niO4u:active::before {
     transform: scale(0.94);
     transition-duration: 90ms !important;
   }
@@ -550,19 +582,19 @@
    * 搜索栏用独立伪元素承载磨砂，避免把 backdrop-filter 放在搜索框祖先上，
    * 否则 Chromium 会让搜索框与建议层自己的模糊失效。
    */
-  #searchform {
+  body:has(#search) #searchform {
     position: relative !important;
     isolation: isolate;
-    background-color: transparent !important;
+    background-color: var(--g-apple-searchform-bg) !important;
   }
 
-  #searchform::before {
+  body:has(#search) #searchform::before {
     content: "";
     position: absolute;
     inset: 0;
     z-index: -1;
     pointer-events: none;
-    background-color: var(--g-apple-glass-topbar) !important;
+    background-color: var(--g-apple-searchform-bg) !important;
     border-bottom: 0 !important;
     backdrop-filter: saturate(165%) blur(18px) !important;
     -webkit-backdrop-filter: saturate(165%) blur(18px) !important;
@@ -764,8 +796,8 @@
   /* ---------- 7.5 分组站点面板（“N 件のサイト”）单条卡片 ---------- */
   /*
    * 内嵌面板结构为 ul.aajpme > li.Ndm2cf > div.MFrAxb(.BKnikc)；
-   * “Show all” 展开窗口使用 li.h7wxwc。两者都由列表项整体承担动画，
-   * 内部 MFrAxb 保持原位并继续接收 Google 自身的脚本点击事件。
+   * “Show all” 展开窗口使用 li.h7wxwc。两者都由列表项伪元素绘制动画，
+   * 真实内容和内部 MFrAxb 保持原位并继续接收点击。
    * 注意 ul.aajpme 与第 6 节的搜索建议容器 .aajZCb 是不同类名，互不影响。
    */
   ul.aajpme {
@@ -774,10 +806,27 @@
 
   :is(li.Ndm2cf, li.h7wxwc) {
     position: relative !important;
-    isolation: isolate;
-    z-index: 0;
+    isolation: auto !important;
+    z-index: auto;
     overflow: visible !important;
     border-radius: 14px !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+  }
+
+  /*
+   * 卡片动画由不接收点击的伪元素绘制。
+   * 真实内容与链接不发生位移，不会再出现视觉位置和命中区域分离。
+   */
+  :is(li.Ndm2cf, li.h7wxwc)::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    border-radius: inherit;
+    background-color: transparent;
+    box-shadow: none;
     transform: translateY(0) scale(1);
     transform-origin: center;
     transition:
@@ -786,6 +835,11 @@
       box-shadow var(--g-apple-motion),
       filter var(--g-apple-motion) !important;
     will-change: transform;
+  }
+
+  :is(li.Ndm2cf, li.h7wxwc) > * {
+    position: relative !important;
+    z-index: 1 !important;
   }
 
   /* 内层只负责内容，不能再单独形成会与链接命中区错位的动画层。 */
@@ -811,8 +865,7 @@
    * 导航仍会计入，因此能同时修掉误触发并保留键盘用户的浮起反馈。
    */
   @media (hover: hover) and (pointer: fine) {
-    :is(li.Ndm2cf, li.h7wxwc):is(:hover, :has(:focus-visible)) {
-      z-index: 10;
+    :is(li.Ndm2cf, li.h7wxwc):is(:hover, :has(:focus-visible))::before {
       transform: translateY(-3px) scale(1.008);
       background-color: var(--g-apple-card-bg-strong) !important;
       box-shadow: var(--g-apple-card-shadow-soft) !important;
@@ -825,7 +878,7 @@
     }
   }
 
-  :is(li.Ndm2cf, li.h7wxwc):active {
+  :is(li.Ndm2cf, li.h7wxwc):active::before {
     transform: translateY(-1px) scale(0.995);
     filter: none;
     box-shadow: var(--g-apple-card-shadow-pressed) !important;
@@ -849,6 +902,18 @@
     transform: none !important;
     filter: none !important;
     will-change: auto !important;
+    pointer-events: auto !important;
+  }
+
+  /*
+   * 有真实 a[href] 时让非交互视觉层穿透，由链接接收点击；
+   * 没有 a[href] 时保留 MFrAxb 自身的 Google 脚本点击事件。
+   */
+  :is(li.Ndm2cf, li.h7wxwc):has(a[href]) div.MFrAxb.BKnikc {
+    pointer-events: none !important;
+  }
+
+  :is(li.Ndm2cf, li.h7wxwc):not(:has(a[href])) div.MFrAxb.BKnikc {
     pointer-events: auto !important;
   }
 
@@ -905,7 +970,7 @@
     div.b3puKe,
     div.b2Rnsc,
     a.NDNGvf,
-    :is(li.Ndm2cf, li.h7wxwc),
+    :is(li.Ndm2cf, li.h7wxwc)::before,
     :is(li.Ndm2cf, li.h7wxwc) img,
     button.UTNPFf,
     :is(
