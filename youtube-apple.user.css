@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           YouTube Apple 克制卡片与动效
 @namespace      youtube-apple-card-motion
-@version        2.20.36
+@version        2.20.37
 @description    顶栏、分类栏、左侧导航和视频卡片的克制 Apple 风格悬浮动效
 @author         Codex
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/youtube-apple.user.css
@@ -46,6 +46,18 @@
     --yt-apple-card-shadow-pressed:
       0 3px 10px rgba(0, 0, 0, 0.24);
     --yt-apple-focus: rgba(165, 141, 255, 0.58);
+    /* 选中胶囊：Apple 深色界面用一层半透明白提亮来表示"选中"，而不是把
+       控件反色成白底黑字。
+       取值依据（在 #0f0f0f 背景上合成后实算）：
+         未选中（原生 0.1 白）  -> #272727
+         选中   0.22            -> #444444   与未选中相差 1.53:1，明显但不喧宾夺主
+         选中 hover 0.28        -> #525252
+         文字   0.96            -> #F5F5F5   在 #444444 上 8.93:1，远高于 AA 的 4.5:1
+       比原生纯白底（对未选中约 15:1）克制得多，同时保证可读性。 */
+    --yt-apple-chip-selected-bg: rgba(255, 255, 255, 0.22);
+    --yt-apple-chip-selected-bg-hover: rgba(255, 255, 255, 0.28);
+    --yt-apple-chip-selected-stroke: rgba(255, 255, 255, 0.22);
+    --yt-apple-chip-selected-fg: rgba(255, 255, 255, 0.96);
   }
 
   /* ---------- 1. 顶栏按钮、搜索按钮与头像 ---------- */
@@ -205,6 +217,42 @@
     box-shadow:
       0 0 0 1px var(--yt-apple-card-stroke),
       0 3px 9px rgba(0, 0, 0, 0.10) !important;
+  }
+
+  /* 深色模式下 YouTube 原生把选中胶囊反色成接近纯白的实色块，在暗背景上
+     过亮，也和周围克制的半透明胶囊割裂。改成半透明白提亮。
+     文字必须一并改回浅色：原生选中态是"白底 + 深色文字"，只改底色会让
+     深色文字落在深色底上看不清。文字色写在按钮的所有后代上，是因为胶囊
+     文案实际在嵌套的 span 里，只设按钮的 color 会被子元素自己的颜色压过。 */
+  html[dark] yt-chip-cloud-chip-renderer:is(.iron-selected, [selected])
+    :is(button, .ytChipShapeHost) {
+    background-color: var(--yt-apple-chip-selected-bg) !important;
+    border-color: var(--yt-apple-chip-selected-stroke) !important;
+  }
+
+  html[dark] yt-chip-cloud-chip-renderer:is(.iron-selected, [selected])
+    :is(button, .ytChipShapeHost),
+  html[dark] yt-chip-cloud-chip-renderer:is(.iron-selected, [selected])
+    :is(button, .ytChipShapeHost) * {
+    color: var(--yt-apple-chip-selected-fg) !important;
+    -webkit-text-fill-color: var(--yt-apple-chip-selected-fg) !important;
+  }
+
+  /* 图标（如"全部"左侧的箭头）跟随文字色。 */
+  html[dark] yt-chip-cloud-chip-renderer:is(.iron-selected, [selected])
+    :is(button, .ytChipShapeHost) :is(yt-icon, svg) {
+    fill: var(--yt-apple-chip-selected-fg) !important;
+    color: var(--yt-apple-chip-selected-fg) !important;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    /* 选中态的 hover 要压过上面 2A 段落里未选中胶囊的 hover 底色，
+       否则悬停时选中胶囊会掉回普通卡片色、看着像被取消选中。 */
+    html[dark] yt-chip-cloud-chip-renderer:is(.iron-selected, [selected]):hover
+      :is(button, .ytChipShapeHost) {
+      background-color: var(--yt-apple-chip-selected-bg-hover) !important;
+      border-color: var(--yt-apple-chip-selected-stroke) !important;
+    }
   }
 
   /* ---------- 2B. 左侧导航按钮 ---------- */
