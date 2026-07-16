@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           X Apple 克制卡片与悬浮动效
 @namespace      x-apple-restrained-cards
-@version        1.7.10
+@version        1.7.11
 @description    为 X 的右栏模块、推文信息流和左侧导航添加克制的 Apple 风格卡片与悬浮动画
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/x-apple.user.css
 ==/UserStyle== */
@@ -20,6 +20,7 @@
     --x-apple-border-hover: rgba(15, 23, 42, 0.13);
     --x-apple-outline-hover: rgba(15, 23, 42, 0.09);
     --x-apple-button-hover-text: rgb(15, 20, 25);
+    --x-apple-tweet-radius: 12px;
     --x-apple-sidebar-card-radius: 16px;
     --x-apple-shadow:
       0 1px 2px rgba(15, 23, 42, 0.035),
@@ -45,10 +46,10 @@
     html[style*="color-scheme:dark"] body
   ) {
     --x-apple-panel: rgba(22, 24, 28, 0.76);
-    --x-apple-panel-hover: #2F2F30;
+    --x-apple-panel-hover: #111215;
     --x-apple-panel-solid: rgba(28, 30, 35, 0.96);
-    --x-apple-tweet-hover: #2F2F30;
-    --x-apple-nav-hover: #2F2F30;
+    --x-apple-tweet-hover: #111215;
+    --x-apple-nav-hover: #111215;
     --x-apple-topbar: rgba(0, 0, 0, 0.65);         /* X 深色主题原生顶栏 */
     --x-apple-tweet-divider: rgb(56, 68, 77);      /* X 深色(Dim)主题官方分割线色，非本次实测 */
     --x-apple-border: rgba(255, 255, 255, 0.095);
@@ -101,18 +102,19 @@
     z-index: 0 !important;
     border-radius: 0 !important;
     background-color: transparent !important;
-    box-shadow: none !important;
+    box-shadow: inset 0 -1px 0 var(--x-apple-tweet-divider) !important;
     translate: 0 0;
     transform-origin: center center;
     transition:
       translate 240ms var(--x-apple-ease),
+      border-radius 200ms var(--x-apple-ease),
       background-color 190ms ease,
       box-shadow 240ms var(--x-apple-ease) !important;
   }
 
   main article[data-testid="tweet"]:hover {
     z-index: 4 !important;
-    border-radius: 0 !important;
+    border-radius: var(--x-apple-tweet-radius) !important;
     border-color: transparent !important;
     background-color: var(--x-apple-tweet-hover) !important;
     box-shadow: var(--x-apple-shadow-hover) !important;
@@ -121,7 +123,7 @@
 
   /*
    * X 的部分时间线会同时在 article 与外层包装器绘制分隔线。
-   * 统一清除推文本体与外层包装器的上下边框，不再额外绘制分隔线；
+   * 清除这些原生上下边框后，由 article 的 inset shadow 统一绘制一条分隔线；
    * cellInnerDiv 仍只处理边框，绝不覆盖虚拟列表自身的 transform。
    */
   main [data-testid="cellInnerDiv"]:has(article[data-testid="tweet"]),
