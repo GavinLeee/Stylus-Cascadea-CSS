@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           X Apple 克制卡片与悬浮动效
 @namespace      x-apple-restrained-cards
-@version        1.7.13
+@version        1.7.14
 @description    为 X 的右栏模块、推文信息流和左侧导航添加克制的 Apple 风格卡片与悬浮动画
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/x-apple.user.css
 ==/UserStyle== */
@@ -366,14 +366,64 @@
     transform: translateY(-1px) scale(1.006);
   }
 
-  /* 搜索历史 / 联想悬浮窗口：与搜索框 / For you / Following 完全相同的磨砂材质。
-     祖先已不再携带 backdrop-filter，这里的模糊得以真正生效。
-     用全页唯一样式类 r-1r851ge / r-1xfd6ze 定位，空态节点 typeaheadEmptySearch 兜底。 */
-  form[role="search"] :is(.r-1r851ge, .r-1xfd6ze),
+  /* 搜索历史 / 联想窗口：直接复用 For you 顶栏的半透明材质与模糊强度。 */
+  form[role="search"] :is(
+    [data-testid="typeaheadDropdown"],
+    .r-1r851ge,
+    .r-1xfd6ze
+  ),
   form[role="search"] div:has(> [data-testid="typeaheadEmptySearch"]) {
+    border-color: var(--x-apple-border) !important;
+    background-color: var(--x-apple-topbar) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    backdrop-filter: blur(12px) !important;
+  }
+
+  /*
+   * 下拉列表选项：仅处理 listbox 中最外层的候选项。
+   * 嵌套的删除、清除按钮不会被当成独立卡片触发动画。
+   */
+  form[role="search"] [role="listbox"] :is(
+    [role="option"],
+    [data-testid="typeaheadResult"],
+    div[role="button"],
+    a[role="link"]
+  ):not(:is(
+    [role="option"],
+    [data-testid="typeaheadResult"],
+    div[role="button"],
+    a[role="link"]
+  ) *) {
+    position: relative !important;
+    z-index: 0 !important;
+    border-color: transparent !important;
+    border-radius: 12px !important;
+    outline: none !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    transform: translateX(0);
+    transition:
+      transform 220ms var(--x-apple-ease),
+      background-color 180ms ease,
+      box-shadow 220ms var(--x-apple-ease) !important;
+  }
+
+  form[role="search"] [role="listbox"] :is(
+    [role="option"],
+    [data-testid="typeaheadResult"],
+    div[role="button"],
+    a[role="link"]
+  ):not(:is(
+    [role="option"],
+    [data-testid="typeaheadResult"],
+    div[role="button"],
+    a[role="link"]
+  ) *):hover {
+    z-index: 2 !important;
+    border-color: transparent !important;
     background-color: var(--x-apple-nav-hover) !important;
-    -webkit-backdrop-filter: blur(18px) saturate(135%) !important;
-    backdrop-filter: blur(18px) saturate(135%) !important;
+    box-shadow: var(--x-apple-shadow) !important;
+    transform: translateX(3px);
   }
 
   /* 6. 顶部标签栏（图2）For you / Following 等：卡片悬浮，沿用 X 自身直角 */
@@ -720,6 +770,12 @@
     ),
     div.r-6gpygo:has(input[data-testid="SearchBox_Search_Input"])
     form[role="search"],
+    form[role="search"] [role="listbox"] :is(
+      [role="option"],
+      [data-testid="typeaheadResult"],
+      div[role="button"],
+      a[role="link"]
+    ),
     main [role="tablist"] [role="tab"],
     a[href="/home"][aria-label="X"],
     main div.r-1h8ys4a:has([data-testid^="UserAvatar-Container-"]):has([data-testid^="tweetTextarea_"]):has([data-testid="toolBar"]),
