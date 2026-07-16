@@ -1,0 +1,11 @@
+# Claude Code 本机配置
+.claude/
+
+# 编辑器
+.vscode/
+.idea/
+
+# 操作系统
+.DS_Store
+Thumbs.db
+desktop.ini
