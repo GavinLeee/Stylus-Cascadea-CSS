@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           YouTube Apple 克制卡片与动效
 @namespace      youtube-apple-card-motion
-@version        2.20.44
+@version        2.20.36
 @description    顶栏、分类栏、左侧导航和视频卡片的克制 Apple 风格悬浮动效
 @author         Codex
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/youtube-apple.user.css
@@ -46,17 +46,6 @@
     --yt-apple-card-shadow-pressed:
       0 3px 10px rgba(0, 0, 0, 0.24);
     --yt-apple-focus: rgba(165, 141, 255, 0.58);
-    /* 选中胶囊：Apple 深色界面用一层半透明白提亮来表示"选中"，而不是把
-       控件反色成白底黑字。
-       取值依据（在 #0f0f0f 背景上合成后实算）：
-         未选中（原生 0.1 白）  -> #272727
-         选中   0.22            -> #444444   与未选中相差 1.53:1，明显但不喧宾夺主
-         选中 hover 0.28        -> #525252
-         文字   0.96            -> #F5F5F5   在 #444444 上 8.93:1，远高于 AA 的 4.5:1
-       比原生纯白底（对未选中约 15:1）克制得多，同时保证可读性。 */
-    --yt-apple-chip-selected-bg: rgba(255, 255, 255, 0.22);
-    --yt-apple-chip-selected-bg-hover: rgba(255, 255, 255, 0.28);
-    --yt-apple-chip-selected-fg: rgba(255, 255, 255, 0.96);
   }
 
   /* ---------- 1. 顶栏按钮、搜索按钮与头像 ---------- */
@@ -211,54 +200,11 @@
     transition-duration: 90ms !important;
   }
 
-  /* 只留柔和投影。原本第一段是 0 0 0 1px 的描边环，画在 button 这层透明壳
-     的边框盒上，看起来就是选中胶囊的一圈外边框 —— 选中态已经靠填充色区分，
-     不需要再描边。 */
   yt-chip-cloud-chip-renderer.iron-selected button,
   yt-chip-cloud-chip-renderer[selected] button {
-    box-shadow: 0 3px 9px rgba(0, 0, 0, 0.10) !important;
-  }
-
-  /* 深色模式下 YouTube 原生把选中胶囊反色成接近纯白的实色块（#F1F1F1 底
-     + #0F0F0F 字），在暗背景上过亮，也和周围克制的半透明胶囊割裂。改成
-     半透明白提亮。
-     实测结构（2026-07 搜索结果页 devtools 逐层核实）：
-       yt-chip-cloud-chip-renderer.iron-selected[selected]
-         chip-shape.ytChipShapeHost            ← 透明壳
-           button.ytChipShapeButtonReset       ← 透明 reset 按钮
-             div.ytChipShapeChip.ytChipShapeActive  ← 背景与文字色都画在这层
-     所以必须给 .ytChipShapeChip 上色；写在 button / host 上只是涂透明壳，
-     会被这个白 div 盖住。button 分支只为兜底旧版结构，:not(:has()) 排除
-     新结构下的 reset 按钮，避免半透明背景内外两层叠加变深。
-     文字必须一并改回浅色：原生选中态是"白底 + 深色文字"，只改底色会让
-     深色文字落在深色底上看不清。 */
-  html[dark] yt-chip-cloud-chip-renderer:is(.iron-selected, [selected])
-    :is(.ytChipShapeChip, button:not(:has(.ytChipShapeChip))) {
-    background-color: var(--yt-apple-chip-selected-bg) !important;
-  }
-
-  html[dark] yt-chip-cloud-chip-renderer:is(.iron-selected, [selected])
-    :is(.ytChipShapeChip, button:not(:has(.ytChipShapeChip))),
-  html[dark] yt-chip-cloud-chip-renderer:is(.iron-selected, [selected])
-    :is(.ytChipShapeChip, button:not(:has(.ytChipShapeChip))) * {
-    color: var(--yt-apple-chip-selected-fg) !important;
-    -webkit-text-fill-color: var(--yt-apple-chip-selected-fg) !important;
-  }
-
-  /* 图标（如"全部"左侧的箭头）跟随文字色。 */
-  html[dark] yt-chip-cloud-chip-renderer:is(.iron-selected, [selected])
-    :is(yt-icon, svg) {
-    fill: var(--yt-apple-chip-selected-fg) !important;
-    color: var(--yt-apple-chip-selected-fg) !important;
-  }
-
-  @media (hover: hover) and (pointer: fine) {
-    /* 选中态的 hover 要压过上面 2A 段落里未选中胶囊的 hover 底色，
-       否则悬停时选中胶囊会掉回普通卡片色、看着像被取消选中。 */
-    html[dark] yt-chip-cloud-chip-renderer:is(.iron-selected, [selected]):hover
-      :is(.ytChipShapeChip, button:not(:has(.ytChipShapeChip))) {
-      background-color: var(--yt-apple-chip-selected-bg-hover) !important;
-    }
+    box-shadow:
+      0 0 0 1px var(--yt-apple-card-stroke),
+      0 3px 9px rgba(0, 0, 0, 0.10) !important;
   }
 
   /* ---------- 2B. 左侧导航按钮 ---------- */
@@ -1985,15 +1931,13 @@
   }
 }
 
-/* Channel pages v2.20.44: preserve YouTube's native layout and animate only
+/* Channel pages v2.20.36: preserve YouTube's native layout and animate only
    composited visual properties. */
 @-moz-document regexp("^https://www\\.youtube\\.com/(?:@[^/?#]+|channel/[^/?#]+|c/[^/?#]+|user/[^/?#]+)(?:[/?#].*)?$") {
   :root {
     --yt-channel-dock-motion: 480ms cubic-bezier(0.16, 1, 0.30, 1);
     --yt-channel-dock-lift: -4px;
     --yt-channel-dock-scale: 1.028;
-    --yt-channel-featured-motion: 320ms cubic-bezier(0.20, 0.88, 0.24, 1);
-    --yt-channel-featured-lift: -3px;
   }
 
   /* Channel pages do not enable YouTube's Home-page frosted layer. Paint the
@@ -2024,14 +1968,11 @@
     transition: opacity 320ms cubic-bezier(0.16, 1, 0.30, 1) !important;
   }
 
-  /* Leave the banner and channel profile fully under YouTube's control:
-     stacking, surface, borders, actions and condensing motion remain native. */
-  ytd-tabbed-page-header tp-yt-app-header#header {
-    top: var(--ytd-masthead-height, 56px) !important;
-  }
-
-  /* Keep YouTube's native channel header model, but anchor its fixed top edge
-     below the separately fixed masthead instead of at the viewport's top edge. */
+  /* Banner, channel details and tabs already share YouTube's native condensing
+     header. Do not override that parent's fixed position or transform: YouTube
+     can then scroll the banner and profile sheet away while keeping only the
+     tabs docked below the masthead. The companion script performs no channel
+     header geometry tracking. */
 
   /* Paint the channel tabs on one isolated glass sheet inside the shared,
      normally scrolling channel-header module. */
@@ -2089,12 +2030,16 @@
      regular borders and late-rendered separator pseudo-elements so the line
      cannot reappear after an SPA update. The selected-tab indicator remains
      untouched. */
+  ytd-tabbed-page-header,
+  ytd-tabbed-page-header tp-yt-app-header#header,
   ytd-tabbed-page-header :is(#tabs-container, #tabs-inner-container) {
     border-bottom: 0 !important;
     outline: 0 !important;
     box-shadow: none !important;
   }
 
+  ytd-tabbed-page-header::after,
+  ytd-tabbed-page-header tp-yt-app-header#header::after,
   ytd-tabbed-page-header #tabs-container::after,
   ytd-tabbed-page-header #tabs-inner-container::after {
     content: none !important;
@@ -2110,6 +2055,13 @@
     display: none !important;
     border: 0 !important;
     height: 0 !important;
+  }
+
+  /* Keep the two content sheets transparent inside the shared header. */
+  ytd-tabbed-page-header :is(#page-header, #page-header-container) {
+    background-color: transparent !important;
+    background-image: none !important;
+    box-shadow: none !important;
   }
 
   /* The first horizontal card sits exactly on YouTube's clipping boundary.
@@ -2173,41 +2125,13 @@
     margin: 0 !important;
   }
 
-  /* The featured channel video is a large horizontal module. Do not let its
-     nested lockup also run the generic thumbnail/card motion: one promoted
-     transform on the outer module is enough and avoids duplicate animation. */
-  ytd-channel-featured-content-renderer {
-    position: relative !important;
-    isolation: isolate;
-    z-index: 0;
-    transform: translate3d(0, 0, 0);
-    transition: transform var(--yt-channel-featured-motion) !important;
-    will-change: transform;
-  }
-
-  @media (hover: hover) and (pointer: fine) {
-    ytd-channel-featured-content-renderer:is(:hover, :focus-within) {
-      z-index: 8;
-      transform: translate3d(
-        0,
-        var(--yt-channel-featured-lift),
-        0
-      );
-    }
-  }
-
 
   /* The modern lockup element is shared by videos, channels and other shelves.
      Requiring a watch link prevents channel headers and Shorts shelves from being
      mistaken for video cards. No display, size, position or spacing is changed. */
   yt-lockup-view-model:has(
     :is(a[href^="/watch"], a[href*="youtube.com/watch"])
-  ):not(:is(
-    ytd-rich-item-renderer,
-    ytd-grid-video-renderer,
-    ytd-video-renderer,
-    ytd-channel-featured-content-renderer
-  ) *) {
+  ):not(:is(ytd-rich-item-renderer, ytd-grid-video-renderer, ytd-video-renderer) *) {
     position: relative !important;
     z-index: 0;
     translate: 0 0 !important;
@@ -2220,12 +2144,7 @@
      body together; the thumbnail alone owns magnification. */
   yt-lockup-view-model:has(
     :is(a[href^="/watch"], a[href*="youtube.com/watch"])
-  ):not(:is(
-    ytd-rich-item-renderer,
-    ytd-grid-video-renderer,
-    ytd-video-renderer,
-    ytd-channel-featured-content-renderer
-  ) *)
+  ):not(:is(ytd-rich-item-renderer, ytd-grid-video-renderer, ytd-video-renderer) *)
   :is(yt-thumbnail-view-model, ytd-thumbnail) {
     position: relative;
     z-index: 0;
@@ -2238,12 +2157,7 @@
 
   yt-lockup-view-model:has(
     :is(a[href^="/watch"], a[href*="youtube.com/watch"])
-  ):not(:is(
-    ytd-rich-item-renderer,
-    ytd-grid-video-renderer,
-    ytd-video-renderer,
-    ytd-channel-featured-content-renderer
-  ) *)
+  ):not(:is(ytd-rich-item-renderer, ytd-grid-video-renderer, ytd-video-renderer) *)
   :is(yt-thumbnail-view-model, ytd-thumbnail) img {
     transform: none !important;
     filter: none !important;
@@ -2253,12 +2167,7 @@
   @media (hover: hover) and (pointer: fine) {
     yt-lockup-view-model:has(
       :is(a[href^="/watch"], a[href*="youtube.com/watch"])
-    ):not(:is(
-      ytd-rich-item-renderer,
-      ytd-grid-video-renderer,
-      ytd-video-renderer,
-      ytd-channel-featured-content-renderer
-    ) *):is(
+    ):not(:is(ytd-rich-item-renderer, ytd-grid-video-renderer, ytd-video-renderer) *):is(
       :hover,
       :focus-within
     ) {
@@ -2268,12 +2177,7 @@
 
     yt-lockup-view-model:has(
       :is(a[href^="/watch"], a[href*="youtube.com/watch"])
-    ):not(:is(
-      ytd-rich-item-renderer,
-      ytd-grid-video-renderer,
-      ytd-video-renderer,
-      ytd-channel-featured-content-renderer
-    ) *):is(
+    ):not(:is(ytd-rich-item-renderer, ytd-grid-video-renderer, ytd-video-renderer) *):is(
       :hover,
       :focus-within
     ) :is(yt-thumbnail-view-model, ytd-thumbnail) {
@@ -2283,12 +2187,11 @@
       filter: none !important;
     }
 
-    /* The helper script exposes the hovered preview type on <html>. This avoids
-       four page-wide ytd-app:has(...) selectors being reevaluated whenever the
-       pointer crosses a large channel card. */
-    html:is(
-      [data-yt-channel-preview-hover="video"],
-      [data-yt-channel-preview-hover="playlist"]
+    /* Keep YouTube's detached preview aligned when any part of the source card
+       is hovered, including its title and metadata. */
+    ytd-app:has(
+      yt-lockup-view-model:is(:hover, :focus-within)
+      :is(a[href^="/watch"], a[href*="youtube.com/watch"])
     ) ytd-video-preview {
       z-index: 900 !important;
       translate: 0 var(--yt-channel-dock-lift) !important;
@@ -2296,8 +2199,10 @@
       transition: translate var(--yt-channel-dock-motion) !important;
     }
 
-    html[data-yt-channel-preview-hover="video"]
-    ytd-video-preview #media-container {
+    ytd-app:has(
+      yt-lockup-view-model:is(:hover, :focus-within)
+      :is(a[href^="/watch"], a[href*="youtube.com/watch"])
+    ) ytd-video-preview #media-container {
       scale: var(--yt-channel-dock-scale) !important;
       transform-origin: center !important;
       transition: scale var(--yt-channel-dock-motion) !important;
@@ -2307,25 +2212,13 @@
        Compensate for that native oversize so the final 1.0105 preview scale
        exactly matches the thumbnail's 1.028 Dock scale instead of jumping wider
        when playback replaces the static cover. */
-    html[data-yt-channel-preview-hover="playlist"]
-    ytd-video-preview #media-container {
+    ytd-app:has(
+      yt-lockup-view-model:is(:hover, :focus-within)
+      a[href^="/playlist?list="]
+    ) ytd-video-preview #media-container {
       scale: 1.0105 !important;
       transform-origin: center !important;
       transition: scale var(--yt-channel-dock-motion) !important;
-    }
-
-    html[data-yt-channel-preview-hover="featured"] ytd-video-preview {
-      z-index: 900 !important;
-      translate: 0 var(--yt-channel-featured-lift) !important;
-      scale: 1 !important;
-      transition: translate var(--yt-channel-featured-motion) !important;
-    }
-
-    html[data-yt-channel-preview-hover="featured"]
-    ytd-video-preview #media-container {
-      scale: 1 !important;
-      transform-origin: center !important;
-      transition: none !important;
     }
   }
 
@@ -2346,17 +2239,21 @@
 
   /* The global 1.012 player overscan is useful for ordinary cards, but on a
      playlist it creates a second zoom exactly when playback begins. */
-  html:is(
-    [data-yt-channel-preview-hover="playlist"],
-    [data-yt-channel-preview-hover="featured"]
+  ytd-app:has(
+    yt-lockup-view-model:is(:hover, :focus-within)
+    a[href^="/playlist?list="]
   ) ytd-video-preview[playing] ytd-player {
     scale: 1 !important;
   }
 
-  /* Carousel arrows and per-video menus keep their native surface/outline;
-     their feedback is transform plus a shape-following shadow. Channel profile
-     actions are intentionally omitted so YouTube owns that complete region. */
+  /* Header actions, carousel arrows and per-video menus keep their native
+     surface/outline; their feedback is transform plus a shape-following shadow. */
   :is(
+      ytd-page-header-renderer button,
+      yt-page-header-renderer button,
+      #channel-header-container button,
+      ytd-c4-tabbed-header-renderer #subscribe-button button,
+      ytd-channel-header-renderer #subscribe-button button,
       :is(
         ytd-horizontal-list-renderer,
         yt-horizontal-list-renderer,
@@ -2388,6 +2285,11 @@
 
   @media (hover: hover) and (pointer: fine) {
     :is(
+        ytd-page-header-renderer button,
+        yt-page-header-renderer button,
+        #channel-header-container button,
+        ytd-c4-tabbed-header-renderer #subscribe-button button,
+        ytd-channel-header-renderer #subscribe-button button,
         :is(
           ytd-horizontal-list-renderer,
           yt-horizontal-list-renderer,
@@ -2875,6 +2777,9 @@
   @media (prefers-reduced-motion: reduce) {
     :is(
         yt-lockup-view-model,
+        ytd-page-header-renderer button,
+        yt-page-header-renderer button,
+        #channel-header-container button,
         ytd-c4-tabbed-header-renderer tp-yt-paper-tab,
         #tabsContent tp-yt-paper-tab,
         yt-tab-shape,
