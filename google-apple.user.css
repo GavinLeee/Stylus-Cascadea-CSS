@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           Google Apple 克制卡片与动效
 @namespace      google-apple-card-motion
-@version        1.5.7
+@version        1.5.8
 @description    为 Google 搜索结果与顶部控件添加克制的 Apple 风格动效和磨砂玻璃
 @author         Codex
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/google-apple.user.css
@@ -258,6 +258,20 @@
     transition-duration: 90ms !important;
   }
 
+  /* 特殊搜索建议行保持 Google 原生静态布局，不应用按钮/卡片动画。 */
+  li.sbct.PZPZlf,
+  li.sbct.PZPZlf:is(:hover, :active, :focus-within) {
+    translate: none !important;
+    transform: none !important;
+    filter: none !important;
+    border-color: transparent !important;
+    border-radius: 0 !important;
+    outline: none !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    transition: none !important;
+  }
+
   /* ---------- 3. 顶部搜索类型与工具标签：只做位移 ---------- */
   #hdtb :is(a, button, [role="button"]),
   div[role="navigation"] :is(a, button)[href*="/search"],
@@ -435,7 +449,7 @@
   .aajZCb:not(.UUbT9 .aajZCb),
   form[role="search"] [role="listbox"]:not(.UUbT9 *, .aajZCb *) {
     background-color: var(--g-apple-glass-control) !important;
-    border: 1px solid var(--g-apple-glass-stroke) !important;
+    border: 0 !important;
     box-shadow: var(--g-apple-glass-shadow) !important;
     backdrop-filter: saturate(180%) blur(28px) !important;
     -webkit-backdrop-filter: saturate(180%) blur(28px) !important;
@@ -538,10 +552,9 @@
   /* ---------- 7.5 分组站点面板（“N 件のサイト”）单条卡片 ---------- */
   /*
    * 内嵌面板结构为 ul.aajpme > li.Ndm2cf > div.MFrAxb(.BKnikc)；
-   * 点击“すべて表示/Show all”后的弹出层复用同一套卡片节点
-   * (div.MFrAxb.BKnikc)，但外层容器不是 ul.aajpme，因此选择器
-   * 不锚定外层容器，只锚定卡片本身。该布局有自己的合成层，
-   * 沿用第 7 节的做法：用传统 transform 而非独立 translate 属性。
+   * 这里只处理明确位于 li.Ndm2cf 内的条目。独立的 div.MFrAxb.BKnikc
+   * 由 Google 使用额外点击层承载跳转，强制提升 z-index 或 transform
+   * 会遮挡或错位该点击层，因此保持其原生布局。
    * 注意 ul.aajpme 与第 6 节的搜索建议容器 .aajZCb 是不同类名，互不影响。
    */
   ul.aajpme,
@@ -549,8 +562,7 @@
     overflow: visible !important;
   }
 
-  li.Ndm2cf > div.MFrAxb,
-  div.MFrAxb.BKnikc {
+  li.Ndm2cf > div.MFrAxb {
     position: relative !important;
     isolation: isolate;
     z-index: 0;
@@ -577,8 +589,7 @@
    * 导航仍会计入，因此能同时修掉误触发并保留键盘用户的浮起反馈。
    */
   @media (hover: hover) and (pointer: fine) {
-    li.Ndm2cf > div.MFrAxb:is(:hover, :has(:focus-visible)),
-    div.MFrAxb.BKnikc:is(:hover, :has(:focus-visible)) {
+    li.Ndm2cf > div.MFrAxb:is(:hover, :has(:focus-visible)) {
       z-index: 10;
       transform: translateY(-3px) scale(1.008);
       background-color: var(--g-apple-card-bg-strong) !important;
@@ -587,8 +598,7 @@
     }
   }
 
-  li.Ndm2cf > div.MFrAxb:active,
-  div.MFrAxb.BKnikc:active {
+  li.Ndm2cf > div.MFrAxb:active {
     transform: translateY(-1px) scale(0.995);
     filter: none;
     box-shadow: var(--g-apple-card-shadow-pressed) !important;
@@ -596,15 +606,13 @@
   }
 
   /* 卡片内缩略图轻微放大，与自然结果保持一致的节奏。 */
-  li.Ndm2cf > div.MFrAxb img,
-  div.MFrAxb.BKnikc img {
+  li.Ndm2cf > div.MFrAxb img {
     transform: scale(1);
     transition: transform 500ms cubic-bezier(0.2, 0.8, 0.2, 1) !important;
   }
 
   @media (hover: hover) and (pointer: fine) {
-    li.Ndm2cf > div.MFrAxb:is(:hover, :has(:focus-visible)) img,
-    div.MFrAxb.BKnikc:is(:hover, :has(:focus-visible)) img {
+    li.Ndm2cf > div.MFrAxb:is(:hover, :has(:focus-visible)) img {
       transform: scale(1.03);
     }
   }
@@ -634,9 +642,7 @@
     div.b2Rnsc,
     a.NDNGvf,
     li.Ndm2cf > div.MFrAxb,
-    div.MFrAxb.BKnikc,
-    li.Ndm2cf > div.MFrAxb img,
-    div.MFrAxb.BKnikc img {
+    li.Ndm2cf > div.MFrAxb img {
       translate: none !important;
       transform: none !important;
       transition: none !important;
