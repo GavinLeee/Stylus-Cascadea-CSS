@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           X Apple 克制卡片与悬浮动效
 @namespace      x-apple-restrained-cards
-@version        1.6.6
+@version        1.6.7
 @description    为 X 的右栏模块、推文信息流和左侧导航添加克制的 Apple 风格卡片与悬浮动画
 @match          https://x.com/*
 @match          https://twitter.com/*
@@ -13,10 +13,10 @@
 
   :root {
     --x-apple-panel: rgba(255, 255, 255, 0.82);
-    --x-apple-panel-hover: rgba(255, 255, 255, 0.94);
+    --x-apple-panel-hover: rgba(245, 245, 247, 0.97);
     --x-apple-panel-solid: rgba(255, 255, 255, 0.97);   /* 用于嵌套面板：模糊被祖先抵消，靠不透明度补偿 */
-    --x-apple-tweet-hover: rgba(245, 247, 250, 0.82);
-    --x-apple-nav-hover: rgba(245, 247, 250, 0.88);
+    --x-apple-tweet-hover: rgba(245, 245, 247, 0.97);
+    --x-apple-nav-hover: rgba(245, 245, 247, 0.97);
     --x-apple-topbar: rgba(255, 255, 255, 0.85);   /* 实测自 X 原生 For you/Following 栏 */
     --x-apple-tweet-divider: rgb(239, 243, 244);   /* 实测自推文区域原生分割线颜色 */
     --x-apple-border: rgba(15, 23, 42, 0.085);
@@ -32,10 +32,10 @@
 
   body[data-theme="dark"] {
     --x-apple-panel: rgba(22, 24, 28, 0.76);
-    --x-apple-panel-hover: rgba(29, 31, 36, 0.92);
+    --x-apple-panel-hover: rgba(44, 44, 46, 0.97);
     --x-apple-panel-solid: rgba(28, 30, 35, 0.96);
-    --x-apple-tweet-hover: rgba(28, 30, 35, 0.86);
-    --x-apple-nav-hover: rgba(30, 32, 37, 0.90);
+    --x-apple-tweet-hover: rgba(44, 44, 46, 0.97);
+    --x-apple-nav-hover: rgba(44, 44, 46, 0.97);
     --x-apple-topbar: rgba(0, 0, 0, 0.65);         /* X 深色主题原生顶栏 */
     --x-apple-tweet-divider: rgb(56, 68, 77);      /* X 深色(Dim)主题官方分割线色，非本次实测 */
     --x-apple-border: rgba(255, 255, 255, 0.095);
@@ -58,9 +58,7 @@
     background-color: var(--x-apple-panel) !important;
     border-color: var(--x-apple-border) !important;
     box-shadow: var(--x-apple-shadow) !important;
-    -webkit-backdrop-filter: blur(18px) saturate(135%) !important;
-    backdrop-filter: blur(18px) saturate(135%) !important;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
     transform-origin: center center;
     transition:
       transform 260ms var(--x-apple-ease),
@@ -77,7 +75,7 @@
     background-color: var(--x-apple-panel-hover) !important;
     border-color: var(--x-apple-border-hover) !important;
     box-shadow: var(--x-apple-shadow-hover) !important;
-    transform: translateY(-3px) scale(1.012);
+    transform: translateY(-3px);
   }
 
   /* 2. 中间推文：平时保持原布局，仅在整张推文悬停时产生差异 */
@@ -87,7 +85,7 @@
     border-radius: 0 !important;
     background-color: transparent !important;
     box-shadow: none !important;
-    transform: translateZ(0) scale(1);
+    transform: translateY(0);
     transform-origin: center center;
     transition:
       transform 240ms var(--x-apple-ease),
@@ -100,7 +98,7 @@
     border-radius: 0 !important;
     background-color: var(--x-apple-tweet-hover) !important;
     box-shadow: var(--x-apple-shadow-hover) !important;
-    transform: translateZ(0) scale(1.012);
+    transform: translateY(-2px);
   }
 
   /* 防止 X 自带的悬停底色覆盖自定义的整卡背景 */
@@ -115,7 +113,7 @@
     border: 1px solid transparent !important;
     background-color: transparent !important;
     box-shadow: none !important;
-    transform: translateX(0) scale(1);
+    transform: translateX(0);
     transform-origin: left center;
     transition:
       transform 220ms var(--x-apple-ease),
@@ -130,7 +128,7 @@
     background-color: var(--x-apple-nav-hover) !important;
     border-color: var(--x-apple-border) !important;
     box-shadow: var(--x-apple-shadow) !important;
-    transform: translateX(4px) scale(1.018);
+    transform: translateX(4px);
   }
 
   header nav[aria-label="Primary"]
@@ -158,7 +156,7 @@
   ):hover {
     filter: brightness(1.035) saturate(0.96);
     box-shadow: var(--x-apple-shadow) !important;
-    transform: translateY(-2px) scale(1.012);
+    transform: translateY(-2px);
   }
 
   /* 4. 用户头像：类似 macOS Dock 的轻微放大与上浮 */
@@ -168,7 +166,7 @@
   ) {
     position: relative !important;
     z-index: 0 !important;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
     transform-origin: center center;
     filter: brightness(1) saturate(1);
     transition:
@@ -267,7 +265,7 @@
     border-radius: 9999px !important;
     background-color: transparent !important;
     box-shadow: 0 1px 2px rgba(15, 23, 42, 0.035) !important;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
     transform-origin: center center;
     transition:
       transform 230ms var(--x-apple-ease),
@@ -330,7 +328,7 @@
     z-index: 3 !important;
     background-color: var(--x-apple-nav-hover) !important;
     box-shadow: var(--x-apple-shadow) !important;
-    transform: translateY(-1px) scale(1.02);
+    transform: translateY(-1px);
   }
 
   /* 7. 顶部/侧栏 X 标志（图3）：Dock 式轻微放大与上浮。
@@ -361,7 +359,7 @@
     border-radius: 0 !important;
     background-color: transparent !important;
     box-shadow: none !important;
-    transform: translateZ(0) scale(1);
+    transform: translateY(0);
     transform-origin: center center;
     transition:
       transform 240ms var(--x-apple-ease),
@@ -373,7 +371,7 @@
     z-index: 4 !important;
     background-color: var(--x-apple-tweet-hover) !important;
     box-shadow: var(--x-apple-shadow-hover) !important;
-    transform: translateZ(0) scale(1.012);
+    transform: translateY(-2px);
   }
 
   /* 内层编辑区：不含头像，始终无阴影、无动效。 */
@@ -428,25 +426,6 @@
   }
 
   /* 尊重系统的"减少动态效果"设置 */
-  /* 所有带卡片动画的区域：悬浮时统一采用 For you 风格磨砂玻璃材质 */
-  :is(
-    [data-testid="sidebarColumn"] .r-1867qdf.r-1phboty.r-rs99b7,
-    [data-testid="sidebarColumn"] .jetfuel-style-root > div,
-    main article[data-testid="tweet"],
-    header nav[aria-label="Primary"] > :is(a, button) > div,
-    main [role="tablist"] [role="tab"],
-    main div.r-1h8ys4a:has([data-testid^="UserAvatar-Container-"]):has([data-testid^="tweetTextarea_"]):has([data-testid="toolBar"])
-  ):hover {
-    background-color: var(--x-apple-nav-hover) !important;
-    -webkit-backdrop-filter: blur(18px) saturate(135%) !important;
-    backdrop-filter: blur(18px) saturate(135%) !important;
-  }
-
-  /* Article 卡片稍微收敛放大幅度，减少覆盖下方 Post your reply */
-  main article[data-testid="tweet"]:hover {
-    transform: translateZ(0) scale(1.006);
-  }
-
   @media (prefers-reduced-motion: reduce) {
     [data-testid="sidebarColumn"] :is(
       .r-1867qdf.r-1phboty.r-rs99b7,
