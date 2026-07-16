@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           YouTube Apple 克制卡片与动效
 @namespace      youtube-apple-card-motion
-@version        2.20.42
+@version        2.20.43
 @description    顶栏、分类栏、左侧导航和视频卡片的克制 Apple 风格悬浮动效
 @author         Codex
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/youtube-apple.user.css
@@ -1985,7 +1985,7 @@
   }
 }
 
-/* Channel pages v2.20.42: preserve YouTube's native layout and animate only
+/* Channel pages v2.20.43: preserve YouTube's native layout and animate only
    composited visual properties. */
 @-moz-document regexp("^https://www\\.youtube\\.com/(?:@[^/?#]+|channel/[^/?#]+|c/[^/?#]+|user/[^/?#]+)(?:[/?#].*)?$") {
   :root {
@@ -2024,17 +2024,8 @@
     transition: opacity 320ms cubic-bezier(0.16, 1, 0.30, 1) !important;
   }
 
-  /* Leave the banner, channel profile and their native condensing motion fully
-     under YouTube's control. In particular, do not replace the shared header's
-     transform with a custom scroll timeline. */
-  ytd-tabbed-page-header,
-  ytd-tabbed-page-header tp-yt-app-header#header {
-    z-index: 99000 !important;
-  }
-
-  /* The masthead owns the higher layer (100000). Keeping the complete native
-     channel header immediately below it prevents SPA updates from painting the
-     profile sheet over the top bar without changing YouTube's scroll geometry. */
+  /* Leave the banner and channel profile fully under YouTube's control:
+     stacking, surface, borders, actions and condensing motion remain native. */
 
   /* Paint the channel tabs on one isolated glass sheet inside the shared,
      normally scrolling channel-header module. */
@@ -2092,16 +2083,12 @@
      regular borders and late-rendered separator pseudo-elements so the line
      cannot reappear after an SPA update. The selected-tab indicator remains
      untouched. */
-  ytd-tabbed-page-header,
-  ytd-tabbed-page-header tp-yt-app-header#header,
   ytd-tabbed-page-header :is(#tabs-container, #tabs-inner-container) {
     border-bottom: 0 !important;
     outline: 0 !important;
     box-shadow: none !important;
   }
 
-  ytd-tabbed-page-header::after,
-  ytd-tabbed-page-header tp-yt-app-header#header::after,
   ytd-tabbed-page-header #tabs-container::after,
   ytd-tabbed-page-header #tabs-inner-container::after {
     content: none !important;
@@ -2360,14 +2347,10 @@
     scale: 1 !important;
   }
 
-  /* Header actions, carousel arrows and per-video menus keep their native
-     surface/outline; their feedback is transform plus a shape-following shadow. */
+  /* Carousel arrows and per-video menus keep their native surface/outline;
+     their feedback is transform plus a shape-following shadow. Channel profile
+     actions are intentionally omitted so YouTube owns that complete region. */
   :is(
-      ytd-page-header-renderer button,
-      yt-page-header-renderer button,
-      #channel-header-container button,
-      ytd-c4-tabbed-header-renderer #subscribe-button button,
-      ytd-channel-header-renderer #subscribe-button button,
       :is(
         ytd-horizontal-list-renderer,
         yt-horizontal-list-renderer,
@@ -2399,11 +2382,6 @@
 
   @media (hover: hover) and (pointer: fine) {
     :is(
-        ytd-page-header-renderer button,
-        yt-page-header-renderer button,
-        #channel-header-container button,
-        ytd-c4-tabbed-header-renderer #subscribe-button button,
-        ytd-channel-header-renderer #subscribe-button button,
         :is(
           ytd-horizontal-list-renderer,
           yt-horizontal-list-renderer,
@@ -2891,9 +2869,6 @@
   @media (prefers-reduced-motion: reduce) {
     :is(
         yt-lockup-view-model,
-        ytd-page-header-renderer button,
-        yt-page-header-renderer button,
-        #channel-header-container button,
         ytd-c4-tabbed-header-renderer tp-yt-paper-tab,
         #tabsContent tp-yt-paper-tab,
         yt-tab-shape,
