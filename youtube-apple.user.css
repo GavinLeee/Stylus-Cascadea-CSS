@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           YouTube Apple 克制卡片与动效
 @namespace      youtube-apple-card-motion
-@version        2.20.39
+@version        2.20.40
 @description    顶栏、分类栏、左侧导航和视频卡片的克制 Apple 风格悬浮动效
 @author         Codex
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/youtube-apple.user.css
@@ -1985,7 +1985,7 @@
   }
 }
 
-/* Channel pages v2.20.36: preserve YouTube's native layout and animate only
+/* Channel pages v2.20.40: preserve YouTube's native layout and animate only
    composited visual properties. */
 @-moz-document regexp("^https://www\\.youtube\\.com/(?:@[^/?#]+|channel/[^/?#]+|c/[^/?#]+|user/[^/?#]+)(?:[/?#].*)?$") {
   :root {
@@ -2022,11 +2022,45 @@
     transition: opacity 320ms cubic-bezier(0.16, 1, 0.30, 1) !important;
   }
 
-  /* Banner, channel details and tabs already share YouTube's native condensing
-     header. Do not override that parent's fixed position or transform: YouTube
-     can then scroll the banner and profile sheet away while keeping only the
-     tabs docked below the masthead. The companion script performs no channel
-     header geometry tracking. */
+  /* Banner, channel details and tabs already share one fixed YouTube header.
+     YouTube sometimes caches an incomplete collapse height after SPA
+     navigation, leaving the profile sheet stranded over the video feed.
+     Measure the profile sheet only when its size changes, then let a declarative
+     root scroll timeline move the whole shared header. The profile and tabs
+     travel together; once the measured distance is exhausted, only the tabs
+     remain docked below the masthead. */
+  @keyframes yt-apple-channel-collapse {
+    from {
+      transform: translate3d(0, 0, 0);
+    }
+
+    to {
+      transform: translate3d(
+        0,
+        calc(-1 * var(--yt-apple-channel-collapse-distance, 0px)),
+        0
+      );
+    }
+  }
+
+  @supports (animation-timeline: scroll(root block)) {
+    html[data-yt-channel-scroll-model]
+    ytd-tabbed-page-header tp-yt-app-header#header {
+      animation-name: yt-apple-channel-collapse !important;
+      animation-duration: auto !important;
+      animation-timing-function: linear !important;
+      animation-delay: 0s !important;
+      animation-iteration-count: 1 !important;
+      animation-direction: normal !important;
+      animation-fill-mode: both !important;
+      animation-play-state: running !important;
+      animation-timeline: scroll(root block) !important;
+      animation-range-start: 0px !important;
+      animation-range-end:
+        var(--yt-apple-channel-collapse-distance, 0px) !important;
+      will-change: transform;
+    }
+  }
 
   /* Paint the channel tabs on one isolated glass sheet inside the shared,
      normally scrolling channel-header module. */

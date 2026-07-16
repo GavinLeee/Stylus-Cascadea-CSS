@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         YouTube 自动跟随系统深浅色模式（完整刷新组件）
 // @namespace    youtube-follow-system-theme
-// @version      1.3.16
+// @version      1.3.17
 // @description  自动同步系统主题、刷新 YouTube 组件，并为浅色播放页补充实时环境光
 // @author       Codex
 // @updateURL    https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/youtube-follow-system-theme.user.js
@@ -30,6 +30,7 @@
   let lightAmbientContext = null;
   let lightAmbientHost = null;
   let observedChannelDockHost = null;
+  let observedChannelProfileSheet = null;
   const channelDockObserver = new IntersectionObserver((entries) => {
     const entry = entries[0];
     const channelPage = /^\/(?:@|channel\/|c\/|user\/)/.test(location.pathname);
@@ -42,6 +43,9 @@
     rootMargin: '-56px 0px 0px 0px',
     threshold: 0
   });
+  const channelGeometryObserver = new ResizeObserver(() => {
+    syncChannelScrollModel(observedChannelDockHost);
+  });
   const channelShelfObserver = new MutationObserver((records) => {
     if (!/^\/(?:@|channel\/|c\/|user\/)/.test(location.pathname)) {
       observeChannelDockState();
@@ -51,8 +55,10 @@
     const channelHeaderChanged = records.some((record) =>
       Array.from(record.addedNodes).some((node) =>
         node instanceof Element &&
-        (node.matches('ytd-tabbed-page-header') ||
-          node.querySelector('ytd-tabbed-page-header'))
+        (node.matches('ytd-tabbed-page-header, #page-header-container') ||
+          node.querySelector(
+            'ytd-tabbed-page-header, #page-header-container'
+          ))
       )
     );
 
@@ -88,16 +94,65 @@
 
     if (!host) {
       channelDockObserver.disconnect();
+      channelGeometryObserver.disconnect();
       observedChannelDockHost = null;
+      observedChannelProfileSheet = null;
       root.removeAttribute('data-yt-channel-tabs-stuck');
+      root.removeAttribute('data-yt-channel-scroll-model');
+      root.style.removeProperty('--yt-apple-channel-collapse-distance');
       return;
     }
+
+    syncChannelScrollModel(host);
 
     if (!force && observedChannelDockHost === host) return;
 
     channelDockObserver.disconnect();
     channelDockObserver.observe(host);
     observedChannelDockHost = host;
+  }
+
+  function syncChannelScrollModel(host) {
+    if (!host || !CSS.supports('animation-timeline: scroll(root block)')) {
+      channelGeometryObserver.disconnect();
+      observedChannelProfileSheet = null;
+      root.removeAttribute('data-yt-channel-scroll-model');
+      root.style.removeProperty('--yt-apple-channel-collapse-distance');
+      return;
+    }
+
+    const profileSheet = host.querySelector('#page-header-container');
+    if (!profileSheet) {
+      channelGeometryObserver.disconnect();
+      observedChannelProfileSheet = null;
+      root.removeAttribute('data-yt-channel-scroll-model');
+      root.style.removeProperty('--yt-apple-channel-collapse-distance');
+      return;
+    }
+
+    if (observedChannelProfileSheet !== profileSheet) {
+      channelGeometryObserver.disconnect();
+      channelGeometryObserver.observe(profileSheet);
+      observedChannelProfileSheet = profileSheet;
+    }
+
+    const collapseDistance = Math.ceil(
+      profileSheet.getBoundingClientRect().height
+    );
+    if (!Number.isFinite(collapseDistance) || collapseDistance <= 0) return;
+
+    const distance = `${collapseDistance}px`;
+    if (
+      root.style.getPropertyValue(
+        '--yt-apple-channel-collapse-distance'
+      ) !== distance
+    ) {
+      root.style.setProperty(
+        '--yt-apple-channel-collapse-distance',
+        distance
+      );
+    }
+    root.setAttribute('data-yt-channel-scroll-model', '');
   }
 
   function applySystemTheme() {
