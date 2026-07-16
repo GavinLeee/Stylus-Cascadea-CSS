@@ -11,7 +11,7 @@
 | [`global.user.css`](global.user.css) | 1.1.1 | 所有网站 | 统一字体栈为 Anthropic Sans + Noto Sans，代码元素保留等宽字体 |
 | [`bilibili-apple.user.css`](bilibili-apple.user.css) | 8.13.0 | `bilibili.com` 主站 / 动态 / 搜索 / 空间 / 消息 | 首页网格、播放页推荐与播放器圆角、动态视频、动态页 Apple 背景、个人空间卡片及全站紫色强调色 |
 | [`youtube-apple.user.css`](youtube-apple.user.css) | 2.20.39 | `youtube.com` | 顶栏、分类栏、左侧导航和视频卡片的悬浮动效 |
-| [`x-apple.user.css`](x-apple.user.css) | 1.7.5 | `x.com`、`twitter.com` | 右栏模块、推文信息流和左侧导航的卡片与悬浮动画 |
+| [`x-apple.user.css`](x-apple.user.css) | 1.7.6 | `x.com`、`twitter.com` | 右栏模块、推文信息流和左侧导航的卡片与悬浮动画 |
 | [`google-apple.user.css`](google-apple.user.css) | 1.5.7 | `google.com` 及 8 个地区域名 | 搜索结果与顶部控件的动效和磨砂玻璃 |
 | [`xiaohongshu-apple.user.css`](xiaohongshu-apple.user.css) | 1.0.0 | `xiaohongshu.com` | 左侧导航按钮和图文卡片的悬浮动效，视觉语言对齐 X 的方案 |
 | [`instagram-apple.user.css`](instagram-apple.user.css) | 1.0.0 | `instagram.com` | 左侧导航、快拍 Dock 单点放大、信息流卡片与 Messages 浮钮；材质与位移分层渲染 |

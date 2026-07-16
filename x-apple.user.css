@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           X Apple 克制卡片与悬浮动效
 @namespace      x-apple-restrained-cards
-@version        1.7.5
+@version        1.7.6
 @description    为 X 的右栏模块、推文信息流和左侧导航添加克制的 Apple 风格卡片与悬浮动画
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/x-apple.user.css
 ==/UserStyle== */
@@ -20,6 +20,7 @@
     --x-apple-border-hover: rgba(15, 23, 42, 0.13);
     --x-apple-outline-hover: rgba(15, 23, 42, 0.09);
     --x-apple-button-hover-text: rgb(15, 20, 25);
+    --x-apple-sidebar-card-radius: 16px;
     --x-apple-shadow:
       0 1px 2px rgba(15, 23, 42, 0.035),
       0 10px 28px rgba(38, 51, 77, 0.09);
@@ -77,6 +78,7 @@
     transition:
       transform 260ms var(--x-apple-ease),
       background-color 220ms ease,
+      border-radius 220ms var(--x-apple-ease),
       border-color 220ms ease,
       box-shadow 260ms var(--x-apple-ease) !important;
   }
@@ -86,6 +88,7 @@
     .jetfuel-style-root > div
   ):hover {
     z-index: 3 !important;
+    border-radius: var(--x-apple-sidebar-card-radius) !important;
     background-color: var(--x-apple-panel-hover) !important;
     border-color: transparent !important;
     box-shadow: var(--x-apple-shadow-hover) !important;
@@ -124,6 +127,17 @@
   main [data-testid="cellInnerDiv"]:has(article[data-testid="tweet"]:hover)
   > div {
     border-color: transparent !important;
+  }
+
+  /*
+   * 部分时间线分隔线属于下一条虚拟列表单元的顶边框。
+   * 当前推文悬停时临时隐藏紧邻下一单元的顶边框，避免细线留在原位。
+   */
+  main [data-testid="cellInnerDiv"]:has(article[data-testid="tweet"]:hover)
+  + [data-testid="cellInnerDiv"],
+  main [data-testid="cellInnerDiv"]:has(article[data-testid="tweet"]:hover)
+  + [data-testid="cellInnerDiv"] > div {
+    border-top-color: transparent !important;
   }
 
   /* 防止 X 自带的悬停底色覆盖自定义卡片背景 */
@@ -626,6 +640,7 @@
     transition:
       transform 220ms var(--x-apple-ease),
       background-color 180ms ease,
+      border-radius 180ms ease,
       box-shadow 220ms var(--x-apple-ease) !important;
   }
 
@@ -637,6 +652,7 @@
     a[role="link"][href*="/i/topics/"]:not([data-testid="trend"] *)
   ):hover {
     z-index: 3 !important;
+    border-radius: var(--x-apple-sidebar-card-radius) !important;
     border-color: transparent !important;
     background-color: var(--x-apple-nav-hover) !important;
     box-shadow: var(--x-apple-shadow) !important;
