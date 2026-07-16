@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           Google Apple 克制卡片与动效
 @namespace      google-apple-card-motion
-@version        1.5.11
+@version        1.5.12
 @description    为 Google 搜索结果与顶部控件添加克制的 Apple 风格动效和磨砂玻璃
 @author         Codex
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/google-apple.user.css
@@ -660,10 +660,10 @@
     -webkit-backdrop-filter: saturate(180%) blur(28px) !important;
   }
 
-  /* AI Mode 搜索历史面板本体保持透明，只保留内部内容与原生圆角裁切。 */
+  /* 搜索建议面板恢复高不透明底色，避免透明层把页面颜色模糊进来。 */
   body:has(#search) .UUbT9.EyBRub {
-    background: transparent !important;
-    background-color: transparent !important;
+    background: var(--g-apple-card-bg-strong) !important;
+    background-color: var(--g-apple-card-bg-strong) !important;
     background-image: none !important;
   }
 
@@ -764,16 +764,15 @@
   /* ---------- 7.5 分组站点面板（“N 件のサイト”）单条卡片 ---------- */
   /*
    * 内嵌面板结构为 ul.aajpme > li.Ndm2cf > div.MFrAxb(.BKnikc)；
-   * 这里只处理明确位于 li.Ndm2cf 内的条目。独立的 div.MFrAxb.BKnikc
-   * 由 Google 使用额外点击层承载跳转，强制提升 z-index 或 transform
-   * 会遮挡或错位该点击层，因此保持其原生布局。
+   * “Show all” 展开窗口使用 li.h7wxwc。两者都由列表项整体承担动画，
+   * 内部 MFrAxb 保持原位并继续接收 Google 自身的脚本点击事件。
    * 注意 ul.aajpme 与第 6 节的搜索建议容器 .aajZCb 是不同类名，互不影响。
    */
   ul.aajpme {
     overflow: visible !important;
   }
 
-  li.Ndm2cf {
+  :is(li.Ndm2cf, li.h7wxwc) {
     position: relative !important;
     isolation: isolate;
     z-index: 0;
@@ -790,7 +789,7 @@
   }
 
   /* 内层只负责内容，不能再单独形成会与链接命中区错位的动画层。 */
-  li.Ndm2cf > div.MFrAxb {
+  :is(li.Ndm2cf, li.h7wxwc) > div.MFrAxb {
     isolation: auto !important;
     z-index: auto !important;
     border-radius: inherit !important;
@@ -812,7 +811,7 @@
    * 导航仍会计入，因此能同时修掉误触发并保留键盘用户的浮起反馈。
    */
   @media (hover: hover) and (pointer: fine) {
-    li.Ndm2cf:is(:hover, :has(:focus-visible)) {
+    :is(li.Ndm2cf, li.h7wxwc):is(:hover, :has(:focus-visible)) {
       z-index: 10;
       transform: translateY(-3px) scale(1.008);
       background-color: var(--g-apple-card-bg-strong) !important;
@@ -820,13 +819,13 @@
       filter: brightness(1.02);
     }
 
-    li.Ndm2cf:is(:hover, :has(:focus-visible)) > div.MFrAxb {
+    :is(li.Ndm2cf, li.h7wxwc):is(:hover, :has(:focus-visible)) > div.MFrAxb {
       background-color: transparent !important;
       box-shadow: none !important;
     }
   }
 
-  li.Ndm2cf:active {
+  :is(li.Ndm2cf, li.h7wxwc):active {
     transform: translateY(-1px) scale(0.995);
     filter: none;
     box-shadow: var(--g-apple-card-shadow-pressed) !important;
@@ -834,14 +833,14 @@
   }
 
   /* 卡片内缩略图轻微放大，与自然结果保持一致的节奏。 */
-  li.Ndm2cf img {
+  :is(li.Ndm2cf, li.h7wxwc) img {
     transform: scale(1);
     transition: transform 500ms cubic-bezier(0.2, 0.8, 0.2, 1) !important;
   }
 
   /*
-   * 独立站点结果的视觉层会覆盖 Google 的真实链接命中层。
-   * 容器自身允许事件穿透；内部真实链接和菜单按钮继续正常接收点击。
+   * MFrAxb 本身可能就是 Google 绑定脚本跳转的真实点击目标，
+   * 因此必须接收指针事件；只清除会造成命中区错位的合成层属性。
    */
   div.MFrAxb.BKnikc {
     isolation: auto !important;
@@ -850,7 +849,7 @@
     transform: none !important;
     filter: none !important;
     will-change: auto !important;
-    pointer-events: none !important;
+    pointer-events: auto !important;
   }
 
   div.MFrAxb.BKnikc :is(
@@ -865,7 +864,7 @@
   }
 
   /* 分组卡片内的真实链接和按钮始终保持可点击。 */
-  li.Ndm2cf :is(
+  :is(li.Ndm2cf, li.h7wxwc) :is(
     a[href],
     button,
     [role="link"],
@@ -877,7 +876,7 @@
   }
 
   @media (hover: hover) and (pointer: fine) {
-    li.Ndm2cf:is(:hover, :has(:focus-visible)) img {
+    :is(li.Ndm2cf, li.h7wxwc):is(:hover, :has(:focus-visible)) img {
       transform: scale(1.03);
     }
   }
@@ -906,8 +905,8 @@
     div.b3puKe,
     div.b2Rnsc,
     a.NDNGvf,
-    li.Ndm2cf,
-    li.Ndm2cf img,
+    :is(li.Ndm2cf, li.h7wxwc),
+    :is(li.Ndm2cf, li.h7wxwc) img,
     button.UTNPFf,
     :is(
       a.gb_C.gb_6a,
