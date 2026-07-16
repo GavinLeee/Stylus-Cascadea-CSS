@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           X Apple 克制卡片与悬浮动效
 @namespace      x-apple-restrained-cards
-@version        1.7.3
+@version        1.7.4
 @description    为 X 的右栏模块、推文信息流和左侧导航添加克制的 Apple 风格卡片与悬浮动画
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/x-apple.user.css
 ==/UserStyle== */
@@ -618,6 +618,7 @@
   [data-testid="sidebarColumn"] :is(
     [data-testid="trend"],
     .jetfuel-style-root div[role="link"],
+    div.r-6koalj.r-3pj75a.r-o7ynqc.r-6416eg.r-1ny4l3l.r-1loqt21,
     a[role="link"][href*="/i/trending/"]:not([data-testid="trend"] *),
     a[role="link"][href*="/i/topics/"]:not([data-testid="trend"] *)
   ) {
@@ -638,6 +639,7 @@
   [data-testid="sidebarColumn"] :is(
     [data-testid="trend"],
     .jetfuel-style-root div[role="link"],
+    div.r-6koalj.r-3pj75a.r-o7ynqc.r-6416eg.r-1ny4l3l.r-1loqt21,
     a[role="link"][href*="/i/trending/"]:not([data-testid="trend"] *),
     a[role="link"][href*="/i/topics/"]:not([data-testid="trend"] *)
   ):hover {
@@ -652,6 +654,7 @@
   [data-testid="sidebarColumn"] :is(
     [data-testid="trend"],
     .jetfuel-style-root div[role="link"],
+    div.r-6koalj.r-3pj75a.r-o7ynqc.r-6416eg.r-1ny4l3l.r-1loqt21,
     a[role="link"][href*="/i/trending/"]:not([data-testid="trend"] *),
     a[role="link"][href*="/i/topics/"]:not([data-testid="trend"] *)
   ):hover > div {
@@ -696,6 +699,7 @@
     [data-testid="sidebarColumn"] :is(
       [data-testid="trend"],
       .jetfuel-style-root div[role="link"],
+      div.r-6koalj.r-3pj75a.r-o7ynqc.r-6416eg.r-1ny4l3l.r-1loqt21,
       a[role="link"][href*="/i/trending/"]:not([data-testid="trend"] *),
       a[role="link"][href*="/i/topics/"]:not([data-testid="trend"] *)
     ),
