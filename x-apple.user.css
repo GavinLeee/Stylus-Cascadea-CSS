@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           X Apple 克制卡片与悬浮动效
 @namespace      x-apple-restrained-cards
-@version        1.7.2
+@version        1.7.3
 @description    为 X 的右栏模块、推文信息流和左侧导航添加克制的 Apple 风格卡片与悬浮动画
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/x-apple.user.css
 ==/UserStyle== */
@@ -19,7 +19,6 @@
     --x-apple-border: rgba(15, 23, 42, 0.085);
     --x-apple-border-hover: rgba(15, 23, 42, 0.13);
     --x-apple-outline-hover: rgba(15, 23, 42, 0.09);
-    --x-apple-nested-hover: rgba(235, 235, 238, 0.98);
     --x-apple-button-hover-text: rgb(15, 20, 25);
     --x-apple-shadow:
       0 1px 2px rgba(15, 23, 42, 0.035),
@@ -54,7 +53,6 @@
     --x-apple-border: rgba(255, 255, 255, 0.095);
     --x-apple-border-hover: rgba(255, 255, 255, 0.16);
     --x-apple-outline-hover: rgba(255, 255, 255, 0.09);
-    --x-apple-nested-hover: #3A3A3C;
     --x-apple-button-hover-text: rgb(242, 242, 247);
     --x-apple-shadow:
       0 1px 2px rgba(0, 0, 0, 0.20),
@@ -103,10 +101,10 @@
     box-shadow: none !important;
     outline: 1px solid transparent;
     outline-offset: -1px;
-    transform: translateY(0);
+    translate: 0 0;
     transform-origin: center center;
     transition:
-      transform 240ms var(--x-apple-ease),
+      translate 240ms var(--x-apple-ease),
       background-color 190ms ease,
       outline-color 190ms ease,
       box-shadow 240ms var(--x-apple-ease) !important;
@@ -119,7 +117,7 @@
     background-color: var(--x-apple-tweet-hover) !important;
     outline-color: var(--x-apple-outline-hover);
     box-shadow: var(--x-apple-shadow-hover) !important;
-    transform: translateY(-2px);
+    translate: 0 -3px;
   }
 
   /*
@@ -643,9 +641,9 @@
     a[role="link"][href*="/i/trending/"]:not([data-testid="trend"] *),
     a[role="link"][href*="/i/topics/"]:not([data-testid="trend"] *)
   ):hover {
-    z-index: 4 !important;
+    z-index: 3 !important;
     border-color: transparent !important;
-    background-color: var(--x-apple-nested-hover) !important;
+    background-color: var(--x-apple-nav-hover) !important;
     outline-color: var(--x-apple-outline-hover);
     box-shadow: var(--x-apple-shadow) !important;
     transform: translateX(3px);
@@ -708,6 +706,7 @@
     ) {
       transition: none !important;
       transform: none !important;
+      translate: none !important;
     }
   }
 }
