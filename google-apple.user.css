@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           Google Apple 克制卡片与动效
 @namespace      google-apple-card-motion
-@version        1.5.9
+@version        1.5.10
 @description    为 Google 搜索结果与顶部控件添加克制的 Apple 风格动效和磨砂玻璃
 @author         Codex
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/google-apple.user.css
@@ -188,7 +188,7 @@
   }
 
   /* ---------- 2. 搜索框 ---------- */
-  form[role="search"] :is(.RNNXgb, textarea, input[type="text"]) {
+  body:has(#search) form[role="search"] :is(.RNNXgb, textarea, input[type="text"]) {
     transition:
       translate var(--g-apple-motion-spring),
       border-color var(--g-apple-motion),
@@ -196,20 +196,20 @@
       background-color var(--g-apple-motion) !important;
   }
 
-  form[role="search"] .RNNXgb {
+  body:has(#search) form[role="search"] .RNNXgb {
     translate: 0 0;
     border: 1px solid transparent !important;
   }
 
   @media (hover: hover) and (pointer: fine) {
-    form[role="search"] .RNNXgb:is(:hover, :focus-within) {
+    body:has(#search) form[role="search"] .RNNXgb:is(:hover, :focus-within) {
       translate: 0 -2px;
       border-color: var(--g-apple-card-stroke) !important;
       box-shadow: var(--g-apple-card-shadow-soft) !important;
     }
   }
 
-  form[role="search"] .RNNXgb:focus-within {
+  body:has(#search) form[role="search"] .RNNXgb:focus-within {
     outline: 3px solid var(--g-apple-focus);
     outline-offset: 2px;
   }
@@ -218,7 +218,7 @@
    * 搜索框右侧清除、语音、图片搜索和提交按钮：只让图标轻微上移，
    * 不绘制额外背景、描边或阴影。
    */
-  form[role="search"] :is(
+  body:has(#search) form[role="search"] :is(
     button,
     [role="button"],
     .BKRPef,
@@ -233,7 +233,7 @@
   }
 
   @media (hover: hover) and (pointer: fine) {
-    form[role="search"] :is(
+    body:has(#search) form[role="search"] :is(
       button,
       [role="button"],
       .BKRPef,
@@ -248,7 +248,7 @@
     }
   }
 
-  form[role="search"] :is(
+  body:has(#search) form[role="search"] :is(
     button,
     [role="button"],
     .BKRPef,
@@ -265,33 +265,33 @@
    * AI Mode 胶囊由 byUkz 的伪元素覆盖彩虹底层。
    * 动画只移动完整外壳，避免内部按钮与伪元素分离后露出彩虹条。
    */
-  form[role="search"] div.byUkz {
+  body:has(#search) form[role="search"] div.byUkz {
     transform: translateY(0) scale(1);
     transform-origin: center;
     transition: transform var(--g-apple-motion-spring) !important;
   }
 
-  form[role="search"] div.byUkz::after,
-  form[role="search"] div.byUkz:is(:hover, :active, :focus-within)::after {
+  body:has(#search) form[role="search"] div.byUkz::after,
+  body:has(#search) form[role="search"] div.byUkz:is(:hover, :active, :focus-within)::after {
     opacity: 1 !important;
     background: var(--g-apple-ai-button-bg) !important;
     background-image: none !important;
   }
 
   @media (hover: hover) and (pointer: fine) {
-    form[role="search"] div.byUkz:hover {
+    body:has(#search) form[role="search"] div.byUkz:hover {
       transform: translateY(-2px) scale(1.025);
     }
   }
 
-  form[role="search"] div.byUkz:active {
+  body:has(#search) form[role="search"] div.byUkz:active {
     transform: translateY(0) scale(0.975);
     transition-duration: 90ms !important;
   }
 
   /* 特殊搜索建议行保持 Google 原生静态布局，不应用按钮/卡片动画。 */
-  li.sbct.PZPZlf,
-  li.sbct.PZPZlf:is(:hover, :active, :focus-within) {
+  body:has(#search) li.sbct.PZPZlf,
+  body:has(#search) li.sbct.PZPZlf:is(:hover, :active, :focus-within) {
     translate: none !important;
     transform: none !important;
     filter: none !important;
@@ -304,7 +304,7 @@
   }
 
   /* 普通建议行取消阴影，仅以轻微左移提供反馈。 */
-  li.sbct:not(.PZPZlf) {
+  body:has(#search) li.sbct:not(.PZPZlf) {
     translate: none !important;
     transform: translateX(0) !important;
     box-shadow: none !important;
@@ -312,16 +312,89 @@
   }
 
   @media (hover: hover) and (pointer: fine) {
-    li.sbct:not(.PZPZlf):hover {
+    body:has(#search) li.sbct:not(.PZPZlf):hover {
       transform: translateX(-3px) !important;
       box-shadow: none !important;
     }
   }
 
-  li.sbct:not(.PZPZlf):active {
+  body:has(#search) li.sbct:not(.PZPZlf):active {
     transform: translateX(-1px) !important;
     box-shadow: none !important;
     transition-duration: 90ms !important;
+  }
+
+  /*
+   * Google 首页：保留原生外观，只为框选按钮增加缩放反馈。
+   * AI Mode、清除按钮、搜索框、建议面板和其他页面元素均不改样式。
+   */
+  body:not(:has(#search)) form[role="search"] .RNNXgb :is(
+    button,
+    [role="button"]
+  ):not(.BKRPef):not(.byUkz):not(.byUkz *):not(:has(.byUkz)) {
+    transform: scale(1);
+    transform-origin: center;
+    transition: transform var(--g-apple-motion-spring) !important;
+  }
+
+  body:not(:has(#search)) form[role="search"] :is(
+    input.gNO89b,
+    input.RNmpXc
+  ) {
+    transform: scale(1);
+    transform-origin: center;
+    transition: transform var(--g-apple-motion-spring) !important;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    body:not(:has(#search)) form[role="search"] .RNNXgb :is(
+      button,
+      [role="button"]
+    ):not(.BKRPef):not(.byUkz):not(.byUkz *):not(:has(.byUkz)):hover {
+      transform: scale(1.08);
+    }
+
+    body:not(:has(#search)) form[role="search"] :is(
+      input.gNO89b,
+      input.RNmpXc
+    ):hover {
+      transform: scale(1.045);
+    }
+  }
+
+  body:not(:has(#search)) form[role="search"] .RNNXgb :is(
+    button,
+    [role="button"]
+  ):not(.BKRPef):not(.byUkz):not(.byUkz *):not(:has(.byUkz)):active {
+    transform: scale(0.95);
+    transition-duration: 90ms !important;
+  }
+
+  body:not(:has(#search)) form[role="search"] :is(
+    input.gNO89b,
+    input.RNmpXc
+  ):active {
+    transform: scale(0.98);
+    transition-duration: 90ms !important;
+  }
+
+  /* 首页若复用了结果页节点名，也明确撤销额外的背景与 Logo 卡片样式。 */
+  body:not(:has(#search)) #searchform::before {
+    content: none !important;
+  }
+
+  body:not(:has(#search)) :is(
+    #logo,
+    .jfN4p,
+    a[aria-label="Google"],
+    svg[width="92"][height="30"]
+  ) {
+    translate: none !important;
+    transform: none !important;
+    filter: none !important;
+    background-color: revert !important;
+    box-shadow: revert !important;
+    transition: none !important;
   }
 
   /* ---------- 3. 顶部搜索类型与工具标签：只做位移 ---------- */
@@ -488,7 +561,7 @@
   }
 
   /* ---------- 6. 搜索框与搜索建议展开层磨砂玻璃 ---------- */
-  form[role="search"] .RNNXgb {
+  body:has(#search) form[role="search"] .RNNXgb {
     background-color: var(--g-apple-glass-control) !important;
     border-color: var(--g-apple-glass-stroke) !important;
     box-shadow: var(--g-apple-glass-shadow) !important;
@@ -497,9 +570,9 @@
   }
 
   /* Google 搜索建议在不同版本中使用以下几组容器类名。 */
-  .UUbT9,
-  .aajZCb:not(.UUbT9 .aajZCb),
-  form[role="search"] [role="listbox"]:not(.UUbT9 *, .aajZCb *) {
+  body:has(#search) .UUbT9,
+  body:has(#search) .aajZCb:not(.UUbT9 .aajZCb),
+  body:has(#search) form[role="search"] [role="listbox"]:not(.UUbT9 *, .aajZCb *) {
     background-color: var(--g-apple-glass-control) !important;
     border: 0 !important;
     box-shadow: var(--g-apple-glass-shadow) !important;
@@ -508,15 +581,15 @@
   }
 
   /* AI Mode 搜索历史面板本体保持透明，只保留内部内容与原生圆角裁切。 */
-  .UUbT9.EyBRub {
+  body:has(#search) .UUbT9.EyBRub {
     background: transparent !important;
     background-color: transparent !important;
     background-image: none !important;
   }
 
   /* 展开层内部保持透明，让磨砂材质能够透出；悬停行仍由 Google 自己高亮。 */
-  :is(.aajZCb, .UUbT9, .erkvQe) > div:not(:hover),
-  form[role="search"] [role="listbox"] > div:not(:hover) {
+  body:has(#search) :is(.aajZCb, .UUbT9, .erkvQe) > div:not(:hover),
+  body:has(#search) form[role="search"] [role="listbox"] > div:not(:hover) {
     background-color: transparent !important;
   }
 
@@ -704,7 +777,7 @@
   /* ---------- 8. 键盘焦点 ---------- */
   #rso a:focus-visible,
   #hdtb :is(a, button, [role="button"]):focus-visible,
-  form[role="search"] :is(button, [role="button"]):focus-visible {
+  body:has(#search) form[role="search"] :is(button, [role="button"]):focus-visible {
     outline: 3px solid var(--g-apple-focus) !important;
     outline-offset: 2px !important;
   }
