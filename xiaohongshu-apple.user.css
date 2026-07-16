@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           小红书 Apple 风格左栏与卡片悬浮动效
 @namespace      rednote-apple-card-motion
-@version        1.1.1
+@version        1.1.2
 @description    为小红书网页版左侧导航按钮和图文卡片添加克制的 Apple 风格卡片悬浮动效，视觉语言对齐 X（Twitter）的克制卡片方案
 @match          https://www.xiaohongshu.com/*
 @match          https://xiaohongshu.com/*
@@ -61,7 +61,8 @@
 
   :root {
     --rn-ease: cubic-bezier(0.22, 0.8, 0.24, 1);
-    --rn-header-z: 1000;
+    /* Above raised feed cards (z-index: 20), below the note-detail overlay. */
+    --rn-header-z: 30;
 
     /* 悬浮时的玻璃质感背景 / 边框，浅色模式 */
     --rn-panel-hover: rgba(246, 247, 248, 0.92);
@@ -106,7 +107,7 @@
 
   .ai-header-container .search-area-in-header .input-box {
     box-sizing: border-box !important;
-    border: 1px solid var(--rn-border) !important;
+    border: none !important;
     border-radius: 999px !important;
     background: var(--rn-panel-hover) !important;
     box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05),
@@ -127,7 +128,7 @@
     box-sizing: border-box !important;
     position: relative;
     z-index: 1;
-    border: 1px solid var(--rn-border) !important;
+    border: none !important;
     border-radius: 999px !important;
     background: var(--rn-panel-hover) !important;
     box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06),
@@ -178,7 +179,7 @@
        就会先闪一下直角矩形再变圆角。这里直接强制统一定死成 999px，三类按钮
        任何状态下都不会再依赖原生样式、也就不会再出现先方后圆的闪烁 */
     border-radius: 999px !important;
-    border: 1px solid transparent !important;
+    border: none !important;
     box-shadow: none !important;
     transform: translateY(0) scale(1);
     transform-origin: center center;
@@ -274,7 +275,7 @@
   .comments-container .comment-item {
     position: relative;
     z-index: 0;
-    border: 1px solid transparent;
+    border: none;
     border-radius: 16px;
     transform: translateY(0) scale(1);
     transform-origin: center center;
