@@ -1,0 +1,745 @@
+/* ==UserStyle==
+@name           Apple Podcasts Web 卡片悬浮动画（新版）
+@namespace      apple-podcasts-card-motion
+@version        3.9.1
+@description    为新版 Apple Podcasts Web 添加节目卡片、左侧导航和播放器按钮的克制悬浮动效
+@match          https://podcasts.apple.com/*
+@updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/apple-podcasts-cards-effect.user.css
+@downloadURL    https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/apple-podcasts-cards-effect.user.css
+==/UserStyle== */
+
+@-moz-document domain("podcasts.apple.com") {
+  :root {
+    --ap-motion-duration: 260ms;
+    --ap-motion-ease: cubic-bezier(.2, .8, .2, 1);
+    --ap-card-lift: -6px;
+    --ap-card-scale: 1.025;
+  }
+
+  /* 让横向货架留出卡片上浮空间，但不改变网站原有横向裁切。 */
+  .shelf-grid__body,
+  .shelf-grid__list {
+    overflow-y: visible !important;
+  }
+
+  .shelf-grid__list {
+    /* 20px 顶部缓冲可容纳上浮与缩放，修复 Up Next 首行卡片被标题区域裁切。 */
+    padding-block: 20px 16px !important;
+  }
+
+  /*
+   * 取消横向货架的强制吸附与平滑归位。
+   * 鼠标滚轮、触控板手势越过横栏边界后，可以立即继续滚动整页。
+   */
+  :is(
+    .shelf-grid__body,
+    .shelf-grid__list,
+    .shelf-content
+  ) {
+    scroll-snap-type: none !important;
+    scroll-behavior: auto !important;
+    overscroll-behavior-inline: auto !important;
+    touch-action: auto !important;
+  }
+
+  .shelf-grid__list-item,
+  .shelf-grid__list-item > * {
+    scroll-snap-align: none !important;
+    scroll-snap-stop: normal !important;
+  }
+
+  /*
+   * 大型节目卡片：Hero、编辑推荐和 Brick。
+   * 动画放在货架格子上，避免网站内部图片、按钮各自缩放而错位。
+   */
+  .shelf-grid__list-item:has(:is(
+    .episode-hero,
+    .show-hero,
+    .editorial-card,
+    .brick
+  )) {
+    position: relative;
+    z-index: 0;
+    transform: translate3d(0, 0, 0) scale(1);
+    transform-origin: 50% 70%;
+    transition:
+      transform var(--ap-motion-duration) var(--ap-motion-ease),
+      filter var(--ap-motion-duration) ease !important;
+    will-change: transform;
+  }
+
+  /*
+   * Search 分类页：这里的彩色 Brick 使用普通纵向网格，并不在 shelf-grid 内。
+   * 动画直接落在可见卡片层，网格格子只负责解除上浮区域的裁切与提升层级。
+   */
+  .grid-item:has(.category-brick) {
+    position: relative;
+    z-index: 0;
+    overflow: visible !important;
+  }
+
+  .grid-item:has(.category-brick):hover {
+    z-index: 20;
+  }
+
+  .grid-item .category-brick {
+    position: relative;
+    transform: translate3d(0, 0, 0) scale(1);
+    transform-origin: 50% 60%;
+    transition:
+      transform var(--ap-motion-duration) var(--ap-motion-ease),
+      filter var(--ap-motion-duration) ease !important;
+    will-change: transform;
+  }
+
+  .grid-item:has(.category-brick):hover .category-brick {
+    transform: translate3d(0, var(--ap-card-lift), 0) scale(1.035);
+    filter:
+      brightness(1.025)
+      saturate(1.025)
+      drop-shadow(0 3px 7px rgb(0 0 0 / 10%))
+      drop-shadow(0 14px 24px rgb(0 0 0 / 14%));
+  }
+
+  .grid-item:has(.category-brick):active .category-brick {
+    transform: translate3d(0, -2px, 0) scale(.985);
+    transition-duration: 110ms !important;
+  }
+
+  /* Search 结果页：Top Results 横向结果卡片。 */
+  .top-search-lockup-wrapper {
+    position: relative;
+    z-index: 0;
+    overflow: visible !important;
+  }
+
+  .top-search-lockup-wrapper:hover {
+    z-index: 20;
+  }
+
+  .top-search-lockup {
+    transform: translate3d(0, 0, 0) scale(1);
+    transform-origin: 50% 60%;
+    transition:
+      transform var(--ap-motion-duration) var(--ap-motion-ease),
+      filter var(--ap-motion-duration) ease !important;
+    will-change: transform;
+  }
+
+  .top-search-lockup-wrapper:hover .top-search-lockup {
+    transform: translate3d(0, var(--ap-card-lift), 0) scale(1.025);
+    filter:
+      brightness(1.018)
+      drop-shadow(0 3px 7px rgb(0 0 0 / 9%))
+      drop-shadow(0 13px 23px rgb(0 0 0 / 13%));
+  }
+
+  .top-search-lockup-wrapper:active .top-search-lockup {
+    transform: translate3d(0, -2px, 0) scale(.988);
+    transition-duration: 110ms !important;
+  }
+
+  /* Search 结果页：Channels 圆形卡片与 Categories 横向卡片。 */
+  .grid-item:has(:is(.ellipse-lockup, .category-lockup)) {
+    position: relative;
+    z-index: 0;
+    overflow: visible !important;
+  }
+
+  .grid-item:has(:is(.ellipse-lockup, .category-lockup)):hover {
+    z-index: 20;
+  }
+
+  :is(.ellipse-lockup, .category-lockup) {
+    transform: translate3d(0, 0, 0) scale(1);
+    transform-origin: 50% 55%;
+    transition:
+      transform var(--ap-motion-duration) var(--ap-motion-ease),
+      filter var(--ap-motion-duration) ease !important;
+    will-change: transform;
+  }
+
+  .grid-item:hover :is(.ellipse-lockup, .category-lockup),
+  :is(.ellipse-lockup, .category-lockup):hover {
+    transform: translate3d(0, var(--ap-card-lift), 0) scale(1.035);
+    filter:
+      brightness(1.02)
+      drop-shadow(0 3px 7px rgb(0 0 0 / 9%))
+      drop-shadow(0 13px 23px rgb(0 0 0 / 13%));
+  }
+
+  .grid-item:active :is(.ellipse-lockup, .category-lockup),
+  :is(.ellipse-lockup, .category-lockup):active {
+    transform: translate3d(0, -2px, 0) scale(.985);
+    transition-duration: 110ms !important;
+  }
+
+  /* Channels 圆形频道卡片只保留中心放大，不上移、不改变材质、不添加阴影。 */
+  .grid-item:hover .ellipse-lockup,
+  .ellipse-lockup:hover {
+    transform: translate3d(0, 0, 0) scale(1.045);
+    filter: none !important;
+  }
+
+  .grid-item:active .ellipse-lockup,
+  .ellipse-lockup:active {
+    transform: translate3d(0, 0, 0) scale(.985);
+    filter: none !important;
+  }
+
+  .shelf-grid__list-item:has(:is(
+    .episode-hero,
+    .show-hero,
+    .editorial-card,
+    .brick
+  )):hover {
+    z-index: 20;
+    transform: translate3d(0, var(--ap-card-lift), 0) scale(1.035);
+    filter:
+      drop-shadow(0 3px 7px rgb(0 0 0 / 10%))
+      drop-shadow(0 14px 24px rgb(0 0 0 / 13%));
+  }
+
+  /*
+   * 常规节目/单集卡片。只提升现有卡片，不重画背景、圆角或封面材质。
+   * 兼容新版 product-lockup、episode、show 三种内容组件。
+   */
+  .shelf-grid__list-item:has(:is(.episode, .show)) {
+    position: relative;
+    z-index: 0;
+    transform: translate3d(0, 0, 0) scale(1);
+    transform-origin: 50% 55%;
+    transition:
+      transform var(--ap-motion-duration) var(--ap-motion-ease),
+      filter var(--ap-motion-duration) ease !important;
+    will-change: transform;
+  }
+
+  .shelf-grid__list-item:has(:is(.episode, .show)):hover {
+    z-index: 20;
+    transform: translate3d(0, var(--ap-card-lift), 0) scale(var(--ap-card-scale));
+    filter:
+      drop-shadow(0 2px 6px rgb(0 0 0 / 9%))
+      drop-shadow(0 12px 22px rgb(0 0 0 / 12%));
+  }
+
+  /* 某些页面没有 shelf-grid 外壳，直接以卡片组件作为交互元素。 */
+  .episode:not(.shelf-grid__list-item *) {
+    position: relative;
+    z-index: 0;
+    transform: translate3d(0, 0, 0) scale(1);
+    transition:
+      transform var(--ap-motion-duration) var(--ap-motion-ease),
+      filter var(--ap-motion-duration) ease !important;
+    will-change: transform;
+  }
+
+  .episode:not(.shelf-grid__list-item *):hover {
+    z-index: 20;
+    transform: translate3d(0, var(--ap-card-lift), 0) scale(var(--ap-card-scale));
+    filter:
+      drop-shadow(0 2px 6px rgb(0 0 0 / 9%))
+      drop-shadow(0 12px 22px rgb(0 0 0 / 12%));
+  }
+
+  /*
+   * Recently Updated / Shows：完全不修改 Apple 内部图片、遮罩或按钮层级。
+   * 只移动网站已经完成圆角裁切的 artwork 外壳，原生 UI 会作为一个整体随动。
+   */
+  /* 实测裁切源：li.grid-item.svelte-lwyn2k 的原生 overflow:hidden。 */
+  .grid-item:has(.product-lockup) {
+    position: relative;
+    z-index: 0;
+    overflow: visible !important;
+  }
+
+  .grid-item:has(.product-lockup):hover {
+    z-index: 20;
+  }
+
+  .product-lockup .product-lockup__artwork {
+    translate: 0 0;
+    scale: 1;
+    transform-origin: center;
+    transition:
+      translate var(--ap-motion-duration) var(--ap-motion-ease),
+      scale var(--ap-motion-duration) var(--ap-motion-ease),
+      box-shadow var(--ap-motion-duration) ease !important;
+    will-change: translate, scale;
+  }
+
+  .product-lockup:hover .product-lockup__artwork {
+    translate: 0 var(--ap-card-lift);
+    scale: var(--ap-card-scale);
+    box-shadow:
+      0 2px 6px rgb(0 0 0 / 9%),
+      0 12px 22px rgb(0 0 0 / 12%) !important;
+  }
+
+  .product-lockup .product-lockup__content {
+    translate: 0 0;
+    transition: translate var(--ap-motion-duration) var(--ap-motion-ease) !important;
+  }
+
+  .product-lockup:hover .product-lockup__content {
+    translate: 0 -3px;
+  }
+
+  /* 单集悬浮时隐藏随卡片一起移动的原生分隔线。 */
+  .episode:hover .episode-details.has-divider-line::after {
+    opacity: 0 !important;
+  }
+
+  /*
+   * 左侧导航：保留新版网站已有的卡片背景、边框与选中态，
+   * 仅让实际可点击的卡片轻微向左位移。
+   */
+  .navigation .navigation-item__link {
+    position: relative;
+    z-index: 0;
+    transform: translate3d(0, 0, 0);
+    transform-origin: left center;
+    border-radius: 10px;
+    transition:
+      transform 210ms var(--ap-motion-ease),
+      filter 210ms ease,
+      background-color 180ms ease,
+      box-shadow 210ms ease !important;
+    will-change: transform;
+  }
+
+  .navigation .navigation-item__link:hover,
+  .navigation .navigation-item:focus-within > .navigation-item__link {
+    z-index: 5;
+    transform: translate3d(-3px, 0, 0);
+    filter: drop-shadow(0 5px 10px rgb(0 0 0 / 8%));
+  }
+
+  /* 未选中按钮的悬浮遮罩比网站原生选中态更浅。 */
+  .navigation .navigation-item:not(.navigation-item--selected):not(:has(.navigation-item__link[aria-current="page"]))
+    > .navigation-item__link:hover {
+    background-color: rgb(0 0 0 / 3.5%) !important;
+    box-shadow:
+      0 1px 2px rgb(0 0 0 / 3%),
+      0 6px 16px rgb(0 0 0 / 6%) !important;
+  }
+
+  .navigation .navigation-item__link:active {
+    transform: translate3d(-1px, 0, 0) scale(.99);
+    transition-duration: 90ms !important;
+  }
+
+  /* 更多按钮：动画放在真正的 button 触发器上，避免图标与点击区域错位。 */
+  button.contextual-menu__trigger:has(.more-button) {
+    position: relative;
+    z-index: 0;
+    transform: translate3d(0, 0, 0) scale(1);
+    transform-origin: center;
+    transition:
+      transform 190ms cubic-bezier(.2, .8, .2, 1),
+      filter 180ms ease !important;
+    will-change: transform;
+  }
+
+  button.contextual-menu__trigger:has(.more-button):hover {
+    z-index: 10;
+    transform: translate3d(0, -1px, 0) scale(1.10);
+    filter: brightness(1.025) drop-shadow(0 4px 8px rgb(0 0 0 / 12%));
+  }
+
+  button.contextual-menu__trigger:has(.more-button):active {
+    transform: translate3d(0, 0, 0) scale(.96);
+    transition-duration: 80ms !important;
+  }
+
+  /* 节目页和单集列表中的播放/暂停胶囊按钮。 */
+  button.content-play-button {
+    position: relative;
+    z-index: 0;
+    transform: translate3d(0, 0, 0) scale(1);
+    transform-origin: center;
+    transition:
+      transform 200ms cubic-bezier(.2, .8, .2, 1),
+      filter 180ms ease,
+      box-shadow 200ms ease !important;
+    will-change: transform;
+  }
+
+  button.content-play-button:hover {
+    z-index: 10;
+    transform: translate3d(0, -2px, 0) scale(1.055);
+    filter: brightness(1.025) saturate(1.02);
+    box-shadow:
+      0 2px 5px rgb(15 23 42 / 7%),
+      0 8px 18px rgb(15 23 42 / 12%) !important;
+  }
+
+  button.content-play-button:active {
+    transform: translate3d(0, 0, 0) scale(.97);
+    transition-duration: 80ms !important;
+  }
+
+  /* 顶部关注/已关注等玻璃圆形按钮；更多按钮由单独规则控制，避免重复缩放。 */
+  :is(button, [role="button"]):has(> .glass-button-platter):not(:has(.more-button)) {
+    position: relative;
+    z-index: 0;
+    transform: translate3d(0, 0, 0) scale(1);
+    transform-origin: center;
+    transition:
+      transform 200ms cubic-bezier(.2, .8, .2, 1),
+      filter 180ms ease !important;
+    will-change: transform;
+  }
+
+  :is(button, [role="button"]):has(> .glass-button-platter):not(:has(.more-button)):hover {
+    z-index: 10;
+    transform: translate3d(0, -2px, 0) scale(1.09);
+    filter:
+      brightness(1.025)
+      saturate(1.02)
+      drop-shadow(0 6px 10px rgb(15 23 42 / 14%));
+  }
+
+  :is(button, [role="button"]):has(> .glass-button-platter):not(:has(.more-button)):active {
+    transform: translate3d(0, 0, 0) scale(.96);
+    transition-duration: 80ms !important;
+  }
+
+  /*
+   * 新版节目页把 glass-button-platter 放在额外包装层中，父级 :has(>) 无法命中。
+   * 直接动画可见托盘，兼容 Follow 与更多按钮的当前结构。
+   */
+  .glass-button-platter {
+    position: relative;
+    z-index: 0;
+    transform: translate3d(0, 0, 0) scale(1);
+    transform-origin: center;
+    transition:
+      transform 200ms cubic-bezier(.2, .8, .2, 1),
+      filter 180ms ease !important;
+    will-change: transform;
+  }
+
+  .glass-button-platter:hover {
+    z-index: 10;
+    transform: translate3d(0, -2px, 0) scale(1.09);
+    filter:
+      brightness(1.025)
+      saturate(1.02)
+      drop-shadow(0 6px 10px rgb(15 23 42 / 14%));
+  }
+
+  .glass-button-platter:active {
+    transform: translate3d(0, 0, 0) scale(.96);
+    transition-duration: 80ms !important;
+  }
+
+  /* 更多图标与玻璃托盘同步缩放，适配 span.more-button 直接作为交互层的页面。 */
+  .more-button {
+    transform: translate3d(0, 0, 0) scale(1);
+    transform-origin: center;
+    transition: transform 200ms cubic-bezier(.2, .8, .2, 1) !important;
+    will-change: transform;
+  }
+
+  :is(button, amp-contextual-menu-button, .contextual-menu__trigger):hover .more-button,
+  .more-button:hover {
+    transform: translate3d(0, -1px, 0) scale(1.10);
+  }
+
+  :is(button, amp-contextual-menu-button, .contextual-menu__trigger):active .more-button,
+  .more-button:active {
+    transform: translate3d(0, 0, 0) scale(.96);
+    transition-duration: 80ms !important;
+  }
+
+  /*
+   * 更多菜单：使用与左侧导航栏一致的半透明浅色材质。
+   * 菜单通过 amp-contextual-menu 挂载在 body 下方，不依赖页面卡片层级。
+   */
+  /* 原生 overlay 会先把整个页面压成不透明灰色，导致磨砂材质看不出来。 */
+  amp-contextual-menu .contextual-menu__overlay,
+  amp-contextual-menu .contextual-menu__overlay::before,
+  amp-contextual-menu .contextual-menu__overlay::after {
+    background: transparent !important;
+    background-color: transparent !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+
+  amp-contextual-menu .contextual-menu {
+    --contextual-menu-background: transparent;
+    --context-menu-background-color: transparent;
+    --contextual-menu-item-background: transparent;
+    padding: 6px !important;
+    border: 1px solid rgb(15 23 42 / 7%) !important;
+    border-radius: 14px !important;
+    background: rgb(255 255 255 / 68%) !important;
+    background-color: rgb(255 255 255 / 68%) !important;
+    -webkit-backdrop-filter: saturate(145%) blur(22px) !important;
+    backdrop-filter: saturate(145%) blur(22px) !important;
+    box-shadow:
+      0 1px 3px rgb(15 23 42 / 6%),
+      0 14px 36px rgb(15 23 42 / 15%) !important;
+  }
+
+  amp-contextual-menu .contextual-menu__list {
+    padding: 0 !important;
+    border-radius: 10px !important;
+    background: transparent !important;
+    background-color: transparent !important;
+  }
+
+  /* 清除 Apple 分散在内部层和伪元素上的实色背景，只保留外层磨砂材质。 */
+  amp-contextual-menu :is(
+    .contextual-menu__list,
+    amp-contextual-menu-item,
+    .contextual-menu-item
+  ),
+  amp-contextual-menu :is(
+    .contextual-menu,
+    .contextual-menu__list,
+    amp-contextual-menu-item,
+    .contextual-menu-item
+  )::before,
+  amp-contextual-menu :is(
+    .contextual-menu,
+    .contextual-menu__list,
+    amp-contextual-menu-item,
+    .contextual-menu-item
+  )::after {
+    background: transparent !important;
+    background-color: transparent !important;
+  }
+
+  amp-contextual-menu :is(
+    amp-contextual-menu-item,
+    .contextual-menu-item
+  ) {
+    border-radius: 10px !important;
+    overflow: visible !important;
+  }
+
+  amp-contextual-menu .contextual-menu-item > button {
+    position: relative;
+    z-index: 0;
+    border-radius: 10px !important;
+    background-color: transparent !important;
+    transform: translate3d(0, 0, 0);
+    transform-origin: left center;
+    transition:
+      transform 210ms var(--ap-motion-ease),
+      background-color 180ms ease,
+      box-shadow 210ms ease !important;
+    will-change: transform;
+  }
+
+  amp-contextual-menu .contextual-menu-item > button:hover {
+    z-index: 5;
+    background-color: rgb(0 0 0 / 3.5%) !important;
+    box-shadow:
+      0 1px 2px rgb(0 0 0 / 3%),
+      0 6px 16px rgb(0 0 0 / 6%) !important;
+    transform: translate3d(-3px, 0, 0);
+  }
+
+  /* 菜单打开时首项会自动获得焦点：保留焦点环，但不提前触发鼠标阴影。 */
+  amp-contextual-menu .contextual-menu-item > button:focus-visible:not(:hover) {
+    background-color: transparent !important;
+    box-shadow: none !important;
+    transform: translate3d(0, 0, 0);
+  }
+
+  amp-contextual-menu .contextual-menu-item > button:active {
+    transform: translate3d(-1px, 0, 0) scale(.99);
+    transition-duration: 80ms !important;
+  }
+
+  /* 左侧导航底部用户头像：仅放大交互元素，不更改头像或按钮材质。 */
+  .navigation :is(
+    button[aria-label="My Account" i],
+    button[aria-label*="account" i],
+    button[aria-label*="账户" i],
+    button[aria-label*="帐户" i],
+    button:has(img),
+    button.auth-button,
+    .account-menu > button,
+    amp-contextual-menu-button
+  ) {
+    position: relative;
+    z-index: 0;
+    transform: translate3d(0, 0, 0) scale(1);
+    transform-origin: center;
+    transition:
+      transform 210ms cubic-bezier(.2, .8, .2, 1),
+      filter 180ms ease !important;
+    will-change: transform;
+  }
+
+  .navigation :is(
+    button[aria-label="My Account" i],
+    button[aria-label*="account" i],
+    button[aria-label*="账户" i],
+    button[aria-label*="帐户" i],
+    button:has(img),
+    button.auth-button,
+    .account-menu > button,
+    amp-contextual-menu-button
+  ):hover {
+    z-index: 10;
+    transform: translate3d(0, -1px, 0) scale(1.075);
+    filter: brightness(1.025) drop-shadow(0 4px 8px rgb(0 0 0 / 12%));
+  }
+
+  .navigation :is(
+    button[aria-label="My Account" i],
+    button[aria-label*="account" i],
+    button[aria-label*="账户" i],
+    button[aria-label*="帐户" i],
+    button:has(img),
+    button.auth-button,
+    .account-menu > button,
+    amp-contextual-menu-button
+  ):active {
+    transform: translate3d(0, 0, 0) scale(.98);
+    transition-duration: 80ms !important;
+  }
+
+  /*
+   * 底部播放器：不设置 background、backdrop-filter、border 或 box-shadow，
+   * 完整保留 Apple 自带效果与 glass-button-platter 材质，只缩放按钮交互层。
+   */
+  .player-bar :is(
+    button,
+    [role="button"],
+    amp-contextual-menu-button
+  ),
+  .player-bar .glass-button-platter:not(button *, [role="button"] *) {
+    transform: translate3d(0, 0, 0) scale(1);
+    transform-origin: center;
+    transition:
+      transform 190ms cubic-bezier(.2, .8, .2, 1),
+      filter 190ms ease !important;
+    will-change: transform;
+  }
+
+  .player-bar :is(
+    button,
+    [role="button"],
+    amp-contextual-menu-button
+  ):hover,
+  .player-bar .glass-button-platter:not(button *, [role="button"] *):hover {
+    z-index: 10;
+    transform: translate3d(0, -1px, 0) scale(1.055);
+    filter: brightness(1.025);
+  }
+
+  .player-bar :is(
+    button,
+    [role="button"],
+    amp-contextual-menu-button
+  ):active,
+  .player-bar .glass-button-platter:not(button *, [role="button"] *):active {
+    transform: translate3d(0, 0, 0) scale(.97);
+    transition-duration: 80ms !important;
+  }
+
+  /* 键盘操作也有清晰、克制的反馈。 */
+  .navigation .navigation-item__link:focus-visible,
+  .player-bar :is(button, [role="button"]):focus-visible {
+    outline-offset: 3px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .shelf-grid__list-item:has(:is(
+      .episode-hero,
+      .show-hero,
+      .editorial-card,
+      .brick,
+      .episode,
+      .show
+    )):hover,
+    .grid-item:has(.category-brick):hover .category-brick,
+    .top-search-lockup-wrapper:hover .top-search-lockup,
+    .grid-item:hover :is(.ellipse-lockup, .category-lockup),
+    :is(.ellipse-lockup, .category-lockup):hover,
+    .episode:not(.shelf-grid__list-item *):hover {
+      filter:
+        drop-shadow(0 3px 8px rgb(0 0 0 / 25%))
+        drop-shadow(0 14px 26px rgb(0 0 0 / 32%));
+    }
+
+    .product-lockup:hover .product-lockup__artwork {
+      box-shadow:
+        0 3px 8px rgb(0 0 0 / 25%),
+        0 14px 26px rgb(0 0 0 / 32%) !important;
+    }
+
+    .navigation .navigation-item__link:hover,
+    .navigation .navigation-item:focus-within > .navigation-item__link {
+      filter: drop-shadow(0 6px 12px rgb(0 0 0 / 24%));
+    }
+
+    .navigation .navigation-item:not(.navigation-item--selected):not(:has(.navigation-item__link[aria-current="page"]))
+      > .navigation-item__link:hover {
+      background-color: rgb(255 255 255 / 5.5%) !important;
+      box-shadow:
+        0 1px 2px rgb(0 0 0 / 12%),
+        0 7px 18px rgb(0 0 0 / 18%) !important;
+    }
+
+    amp-contextual-menu .contextual-menu {
+      border-color: rgb(255 255 255 / 9%) !important;
+      background: rgb(44 44 46 / 68%) !important;
+      background-color: rgb(44 44 46 / 68%) !important;
+      box-shadow:
+        0 1px 3px rgb(0 0 0 / 22%),
+        0 16px 38px rgb(0 0 0 / 34%) !important;
+    }
+
+    amp-contextual-menu .contextual-menu-item > button:hover {
+      background-color: rgb(255 255 255 / 5.5%) !important;
+      box-shadow:
+        0 1px 2px rgb(0 0 0 / 12%),
+        0 7px 18px rgb(0 0 0 / 18%) !important;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .shelf-grid__list-item,
+    .grid-item .category-brick,
+    .top-search-lockup,
+    :is(.ellipse-lockup, .category-lockup),
+    :is(.product-lockup, .episode),
+    .product-lockup .product-lockup__artwork,
+    .product-lockup .product-lockup__content,
+    .navigation .navigation-item__link,
+    button.contextual-menu__trigger:has(.more-button),
+    button.content-play-button,
+    :is(button, [role="button"]):has(> .glass-button-platter):not(:has(.more-button)),
+    .glass-button-platter,
+    .more-button,
+    amp-contextual-menu .contextual-menu-item > button,
+    .navigation :is(
+      button[aria-label="My Account" i],
+      button[aria-label*="account" i],
+      button[aria-label*="账户" i],
+      button[aria-label*="帐户" i],
+      button:has(img),
+      button.auth-button,
+      .account-menu > button,
+      amp-contextual-menu-button
+    ),
+    .player-bar :is(
+      button,
+      [role="button"],
+      amp-contextual-menu-button
+    ),
+    .player-bar .glass-button-platter:not(button *, [role="button"] *) {
+      transition: none !important;
+      transform: none !important;
+      translate: none !important;
+      scale: none !important;
+    }
+  }
+}
