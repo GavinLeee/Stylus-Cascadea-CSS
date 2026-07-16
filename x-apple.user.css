@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           X Apple 克制卡片与悬浮动效
 @namespace      x-apple-restrained-cards
-@version        1.7.6
+@version        1.7.7
 @description    为 X 的右栏模块、推文信息流和左侧导航添加克制的 Apple 风格卡片与悬浮动画
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/x-apple.user.css
 ==/UserStyle== */
@@ -124,8 +124,11 @@
    * 卡片悬停时仅隐藏外层原生分隔线，不再额外绘制推文外框。
    */
   main [data-testid="cellInnerDiv"]:has(article[data-testid="tweet"]:hover),
+  main [data-testid="cellInnerDiv"]:has(article[data-testid="tweet"]:hover) > div,
   main [data-testid="cellInnerDiv"]:has(article[data-testid="tweet"]:hover)
-  > div {
+  > div > div,
+  main [data-testid="cellInnerDiv"]:has(article[data-testid="tweet"]:hover)
+  > div > div > div {
     border-color: transparent !important;
   }
 
@@ -133,10 +136,12 @@
    * 部分时间线分隔线属于下一条虚拟列表单元的顶边框。
    * 当前推文悬停时临时隐藏紧邻下一单元的顶边框，避免细线留在原位。
    */
+  main [data-testid="cellInnerDiv"]:has(article[data-testid="tweet"]:hover) + *,
+  main [data-testid="cellInnerDiv"]:has(article[data-testid="tweet"]:hover) + * > div,
   main [data-testid="cellInnerDiv"]:has(article[data-testid="tweet"]:hover)
-  + [data-testid="cellInnerDiv"],
+  + * > div > div,
   main [data-testid="cellInnerDiv"]:has(article[data-testid="tweet"]:hover)
-  + [data-testid="cellInnerDiv"] > div {
+  + * > div > div > div {
     border-top-color: transparent !important;
   }
 
@@ -144,6 +149,10 @@
   main article[data-testid="tweet"]:hover > div {
     background-color: transparent !important;
     border-color: transparent !important;
+  }
+
+  main article[data-testid="tweet"]:hover > div > div {
+    border-bottom-color: transparent !important;
   }
 
   /* 3. 左侧导航：只处理每个选项自身的胶囊容器，不改变栏宽和排版 */
@@ -557,9 +566,9 @@
 
   /*
    * 12. Trending / Explore / Who to follow 条目。
-   * 同时覆盖右栏单条趋势、Explore 的 For You / Trending 内容与推荐用户。
+   * 仅覆盖中间主栏的 Explore For You / Trending 内容与推荐用户。
    */
-  main :is(
+  [data-testid="primaryColumn"] :is(
     [data-testid="trend"],
     [data-testid="UserCell"],
     a[role="link"][href*="/i/trending/"]:not(:has([data-testid="trend"])),
@@ -579,7 +588,7 @@
       box-shadow 220ms var(--x-apple-ease) !important;
   }
 
-  main :is(
+  [data-testid="primaryColumn"] :is(
     [data-testid="trend"],
     [data-testid="UserCell"],
     a[role="link"][href*="/i/trending/"]:not(:has([data-testid="trend"])),
@@ -593,7 +602,7 @@
     transform: translateX(3px);
   }
 
-  main [data-testid="cellInnerDiv"]:has(
+  [data-testid="primaryColumn"] [data-testid="cellInnerDiv"]:has(
     :is(
       [data-testid="trend"]:hover,
       [data-testid="UserCell"]:hover,
@@ -601,7 +610,7 @@
       a[role="link"][href*="/i/topics/"]:hover
     )
   ),
-  main [data-testid="cellInnerDiv"]:has(
+  [data-testid="primaryColumn"] [data-testid="cellInnerDiv"]:has(
     :is(
       [data-testid="trend"]:hover,
       [data-testid="UserCell"]:hover,
@@ -612,7 +621,7 @@
     border-color: transparent !important;
   }
 
-  main :is(
+  [data-testid="primaryColumn"] :is(
     [data-testid="trend"],
     [data-testid="UserCell"],
     a[role="link"][href*="/i/trending/"]:not(:has([data-testid="trend"])),
@@ -623,19 +632,22 @@
 
   /*
    * 13. 右栏 Today’s News / Trending 的每一条内容。
-   * 使用条目自身原有矩形外形，悬停时用原卡片边框色绘制随动轮廓。
+   * 悬停时统一使用无外框的圆角卡片，避免与右栏模块外框叠加。
    */
   [data-testid="sidebarColumn"] :is(
     [data-testid="trend"],
     .jetfuel-style-root div[role="link"],
     div.r-6koalj.r-3pj75a.r-o7ynqc.r-6416eg.r-1ny4l3l.r-1loqt21,
+    li.r-1mmae3n.r-3pj75a.r-1loqt21.r-o7ynqc.r-6416eg.r-1ny4l3l,
     a[role="link"][href*="/i/trending/"]:not([data-testid="trend"] *),
     a[role="link"][href*="/i/topics/"]:not([data-testid="trend"] *)
   ) {
     position: relative !important;
     z-index: 0 !important;
+    border-color: transparent !important;
     background-color: transparent !important;
     box-shadow: none !important;
+    outline: none !important;
     transform: translateX(0);
     transition:
       transform 220ms var(--x-apple-ease),
@@ -648,6 +660,7 @@
     [data-testid="trend"],
     .jetfuel-style-root div[role="link"],
     div.r-6koalj.r-3pj75a.r-o7ynqc.r-6416eg.r-1ny4l3l.r-1loqt21,
+    li.r-1mmae3n.r-3pj75a.r-1loqt21.r-o7ynqc.r-6416eg.r-1ny4l3l,
     a[role="link"][href*="/i/trending/"]:not([data-testid="trend"] *),
     a[role="link"][href*="/i/topics/"]:not([data-testid="trend"] *)
   ):hover {
@@ -663,10 +676,12 @@
     [data-testid="trend"],
     .jetfuel-style-root div[role="link"],
     div.r-6koalj.r-3pj75a.r-o7ynqc.r-6416eg.r-1ny4l3l.r-1loqt21,
+    li.r-1mmae3n.r-3pj75a.r-1loqt21.r-o7ynqc.r-6416eg.r-1ny4l3l,
     a[role="link"][href*="/i/trending/"]:not([data-testid="trend"] *),
     a[role="link"][href*="/i/topics/"]:not([data-testid="trend"] *)
   ):hover > div {
     border-color: transparent !important;
+    background-color: transparent !important;
   }
 
   /* 尊重系统的“减少动态效果”设置 */
@@ -698,7 +713,7 @@
       button[aria-label^="Follow @"],
       button[aria-label^="Following @"]
     ),
-    main :is(
+    [data-testid="primaryColumn"] :is(
       [data-testid="trend"],
       [data-testid="UserCell"],
       a[role="link"][href*="/i/trending/"]:not(:has([data-testid="trend"])),
@@ -708,6 +723,7 @@
       [data-testid="trend"],
       .jetfuel-style-root div[role="link"],
       div.r-6koalj.r-3pj75a.r-o7ynqc.r-6416eg.r-1ny4l3l.r-1loqt21,
+      li.r-1mmae3n.r-3pj75a.r-1loqt21.r-o7ynqc.r-6416eg.r-1ny4l3l,
       a[role="link"][href*="/i/trending/"]:not([data-testid="trend"] *),
       a[role="link"][href*="/i/topics/"]:not([data-testid="trend"] *)
     ),
