@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           小红书 Apple 风格左栏与卡片悬浮动效
 @namespace      rednote-apple-card-motion
-@version        1.1.3
+@version        1.2.0
 @description    为小红书网页版左侧导航按钮和图文卡片添加克制的 Apple 风格卡片悬浮动效，视觉语言对齐 X（Twitter）的克制卡片方案
 @match          https://www.xiaohongshu.com/*
 @match          https://xiaohongshu.com/*
@@ -157,6 +157,62 @@
     border-color: var(--rn-border-hover) !important;
     box-shadow: var(--rn-card-shadow-hover) !important;
     transform: translateY(-2px) scale(1.08);
+  }
+
+  /* Expanded AI search card and its internal action buttons. */
+  .ai-header-container .textarea-container {
+    border: none !important;
+    border-radius: 24px !important;
+    transform: translateY(0) scale(1);
+    transform-origin: center center;
+    transition: transform 240ms var(--rn-ease),
+      background-color 180ms ease, box-shadow 240ms var(--rn-ease) !important;
+    will-change: transform;
+  }
+
+  .ai-header-container .textarea-container:hover,
+  .ai-header-container .textarea-container:focus-within {
+    background: var(--rn-panel-hover) !important;
+    box-shadow: var(--rn-card-shadow-hover) !important;
+    transform: translateY(-3px) scale(1.012);
+  }
+
+  .ai-header-container .textarea-container :is(
+    .ai-input-action-btn,
+    .submit-button-wrapper
+  ) {
+    border: none !important;
+    border-radius: 999px !important;
+    transform: translateY(0) scale(1);
+    transform-origin: center center;
+    transition: transform 220ms var(--rn-ease),
+      background-color 180ms ease, box-shadow 220ms var(--rn-ease) !important;
+    will-change: transform;
+  }
+
+  .ai-header-container .textarea-container :is(
+    .ai-input-action-btn,
+    .submit-button-wrapper
+  ):not(:disabled):hover {
+    background: var(--rn-panel-hover) !important;
+    box-shadow: var(--rn-nav-shadow-hover) !important;
+    transform: translateY(-2px) scale(1.10);
+  }
+
+  /* Horizontal feed channels: scale the individual tab, not the strip. */
+  .channel-container .channel {
+    position: relative;
+    z-index: 0;
+    transform: scale(1);
+    transform-origin: center center;
+    transition: transform 220ms var(--rn-ease),
+      background-color 180ms ease !important;
+    will-change: transform;
+  }
+
+  .channel-container .channel:hover {
+    z-index: 5;
+    transform: scale(1.08);
   }
 
 
@@ -326,6 +382,36 @@
     transform: scale(1.12);
   }
 
+  /* Note-detail follow button card and author avatar zoom. */
+  .note-detail-mask .author-wrapper .follow-button {
+    border: none !important;
+    border-radius: 999px !important;
+    transform: translateY(0) scale(1);
+    transform-origin: center center;
+    transition: transform 220ms var(--rn-ease),
+      box-shadow 220ms var(--rn-ease),
+      filter 180ms ease !important;
+    will-change: transform;
+  }
+
+  .note-detail-mask .author-wrapper .follow-button:hover {
+    box-shadow: var(--rn-card-shadow-hover) !important;
+    filter: brightness(1.04);
+    transform: translateY(-2px) scale(1.06);
+  }
+
+  .note-detail-mask .author-wrapper .avatar-click {
+    border-radius: 50%;
+    transform: scale(1);
+    transform-origin: center center;
+    transition: transform 280ms var(--rn-ease) !important;
+    will-change: transform;
+  }
+
+  .note-detail-mask .author-wrapper .avatar-click:hover {
+    transform: scale(1.14);
+  }
+
 
   /* ========================================
      4. 减少动态效果
@@ -343,8 +429,16 @@
     .ai-header-container .search-area-in-header .input-box,
     .ai-header-container .search-area-in-header .input-button .search-icon,
     .ai-header-container .min-width-search-icon,
+    .ai-header-container .textarea-container,
+    .ai-header-container .textarea-container :is(
+      .ai-input-action-btn,
+      .submit-button-wrapper
+    ),
+    .channel-container .channel,
     .comments-container .comment-item,
-    .comments-container :is(.avatar, .user-avatar, [class*="avatar"]) {
+    .comments-container :is(.avatar, .user-avatar, [class*="avatar"]),
+    .note-detail-mask .author-wrapper .follow-button,
+    .note-detail-mask .author-wrapper .avatar-click {
       transition: none !important;
       transform: none !important;
     }
