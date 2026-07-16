@@ -99,20 +99,13 @@
 
   /* Keep the search header above raised feed cards. */
   .ai-header-container {
-    position: sticky !important;
-    top: 0 !important;
     z-index: var(--rn-header-z) !important;
     isolation: isolate;
     overflow: visible !important;
   }
 
-  .ai-header-container :is(
-    .search-bar,
-    .search-box,
-    .search-input,
-    [class*="search-input"],
-    [class*="search-wrapper"]
-  ) {
+  .ai-header-container .search-area-in-header .input-box {
+    box-sizing: border-box !important;
     border: 1px solid var(--rn-border) !important;
     border-radius: 999px !important;
     background: var(--rn-panel-hover) !important;
@@ -122,45 +115,32 @@
       border-color 180ms ease, box-shadow 220ms var(--rn-ease) !important;
   }
 
-  .ai-header-container :is(
-    .search-bar,
-    .search-box,
-    .search-input,
-    [class*="search-input"],
-    [class*="search-wrapper"]
-  ):focus-within {
+  .ai-header-container .search-area-in-header .input-box:hover,
+  .ai-header-container .search-area-in-header .input-box:focus-within {
     border-color: var(--rn-border-hover) !important;
     box-shadow: var(--rn-card-shadow-hover) !important;
-    transform: translateY(-1px);
+    transform: translateY(-2px) scale(1.01) !important;
   }
 
-  .ai-header-container :is(
-    button,
-    .search-icon,
-    [class*="search-icon"],
-    [class*="search-btn"],
-    [class*="search-button"]
-  ) {
+  .ai-header-container .search-area-in-header .input-button .search-icon,
+  .ai-header-container .min-width-search-icon {
+    box-sizing: border-box !important;
     position: relative;
     z-index: 1;
     border: 1px solid var(--rn-border) !important;
     border-radius: 999px !important;
+    background: var(--rn-panel-hover) !important;
     box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06),
       0 6px 16px rgba(38, 51, 77, 0.10) !important;
     transition: transform 220ms var(--rn-ease),
       border-color 180ms ease, box-shadow 220ms var(--rn-ease) !important;
   }
 
-  .ai-header-container :is(
-    button,
-    .search-icon,
-    [class*="search-icon"],
-    [class*="search-btn"],
-    [class*="search-button"]
-  ):hover {
+  .ai-header-container .search-area-in-header .input-button .search-icon:hover,
+  .ai-header-container .min-width-search-icon:hover {
     border-color: var(--rn-border-hover) !important;
     box-shadow: var(--rn-card-shadow-hover) !important;
-    transform: translateY(-2px) scale(1.05);
+    transform: translateY(-2px) scale(1.08);
   }
 
 
@@ -353,18 +333,9 @@
     .feeds-container section.note-item,
     .feeds-container section.note-item::before,
     .feeds-container section.note-item a.cover img,
-    .ai-header-container :is(
-      .search-bar,
-      .search-box,
-      .search-input,
-      [class*="search-input"],
-      [class*="search-wrapper"],
-      button,
-      .search-icon,
-      [class*="search-icon"],
-      [class*="search-btn"],
-      [class*="search-button"]
-    ),
+    .ai-header-container .search-area-in-header .input-box,
+    .ai-header-container .search-area-in-header .input-button .search-icon,
+    .ai-header-container .min-width-search-icon,
     .comments-container :is(
       .comment-item,
       .parent-comment,
