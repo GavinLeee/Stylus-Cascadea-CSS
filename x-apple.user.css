@@ -1,0 +1,479 @@
+/* ==UserStyle==
+@name           X Apple 克制卡片与悬浮动效
+@namespace      x-apple-restrained-cards
+@version        1.6.6
+@description    为 X 的右栏模块、推文信息流和左侧导航添加克制的 Apple 风格卡片与悬浮动画
+@match          https://x.com/*
+@match          https://twitter.com/*
+@updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/x-apple.user.css
+@downloadURL    https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/x-apple.user.css
+==/UserStyle== */
+
+@-moz-document domain("x.com"), domain("twitter.com") {
+
+  :root {
+    --x-apple-panel: rgba(255, 255, 255, 0.82);
+    --x-apple-panel-hover: rgba(255, 255, 255, 0.94);
+    --x-apple-panel-solid: rgba(255, 255, 255, 0.97);   /* 用于嵌套面板：模糊被祖先抵消，靠不透明度补偿 */
+    --x-apple-tweet-hover: rgba(245, 247, 250, 0.82);
+    --x-apple-nav-hover: rgba(245, 247, 250, 0.88);
+    --x-apple-topbar: rgba(255, 255, 255, 0.85);   /* 实测自 X 原生 For you/Following 栏 */
+    --x-apple-tweet-divider: rgb(239, 243, 244);   /* 实测自推文区域原生分割线颜色 */
+    --x-apple-border: rgba(15, 23, 42, 0.085);
+    --x-apple-border-hover: rgba(15, 23, 42, 0.13);
+    --x-apple-shadow:
+      0 1px 2px rgba(15, 23, 42, 0.035),
+      0 10px 28px rgba(38, 51, 77, 0.09);
+    --x-apple-shadow-hover:
+      0 2px 5px rgba(15, 23, 42, 0.055),
+      0 16px 40px rgba(38, 51, 77, 0.14);
+    --x-apple-ease: cubic-bezier(0.22, 0.8, 0.24, 1);
+  }
+
+  body[data-theme="dark"] {
+    --x-apple-panel: rgba(22, 24, 28, 0.76);
+    --x-apple-panel-hover: rgba(29, 31, 36, 0.92);
+    --x-apple-panel-solid: rgba(28, 30, 35, 0.96);
+    --x-apple-tweet-hover: rgba(28, 30, 35, 0.86);
+    --x-apple-nav-hover: rgba(30, 32, 37, 0.90);
+    --x-apple-topbar: rgba(0, 0, 0, 0.65);         /* X 深色主题原生顶栏 */
+    --x-apple-tweet-divider: rgb(56, 68, 77);      /* X 深色(Dim)主题官方分割线色，非本次实测 */
+    --x-apple-border: rgba(255, 255, 255, 0.095);
+    --x-apple-border-hover: rgba(255, 255, 255, 0.16);
+    --x-apple-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.20),
+      0 12px 30px rgba(0, 0, 0, 0.28);
+    --x-apple-shadow-hover:
+      0 2px 5px rgba(0, 0, 0, 0.28),
+      0 18px 44px rgba(0, 0, 0, 0.40);
+  }
+
+  /* 1. 右侧信息模块：原有圆角不变，增加玻璃感、层次与轻微上浮 */
+  [data-testid="sidebarColumn"] :is(
+    .r-1867qdf.r-1phboty.r-rs99b7,
+    .jetfuel-style-root > div
+  ) {
+    position: relative !important;
+    z-index: 0 !important;
+    background-color: var(--x-apple-panel) !important;
+    border-color: var(--x-apple-border) !important;
+    box-shadow: var(--x-apple-shadow) !important;
+    -webkit-backdrop-filter: blur(18px) saturate(135%) !important;
+    backdrop-filter: blur(18px) saturate(135%) !important;
+    transform: translateY(0) scale(1);
+    transform-origin: center center;
+    transition:
+      transform 260ms var(--x-apple-ease),
+      background-color 220ms ease,
+      border-color 220ms ease,
+      box-shadow 260ms var(--x-apple-ease) !important;
+  }
+
+  [data-testid="sidebarColumn"] :is(
+    .r-1867qdf.r-1phboty.r-rs99b7,
+    .jetfuel-style-root > div
+  ):hover {
+    z-index: 3 !important;
+    background-color: var(--x-apple-panel-hover) !important;
+    border-color: var(--x-apple-border-hover) !important;
+    box-shadow: var(--x-apple-shadow-hover) !important;
+    transform: translateY(-3px) scale(1.012);
+  }
+
+  /* 2. 中间推文：平时保持原布局，仅在整张推文悬停时产生差异 */
+  main article[data-testid="tweet"] {
+    position: relative !important;
+    z-index: 0 !important;
+    border-radius: 0 !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    transform: translateZ(0) scale(1);
+    transform-origin: center center;
+    transition:
+      transform 240ms var(--x-apple-ease),
+      background-color 190ms ease,
+      box-shadow 240ms var(--x-apple-ease) !important;
+  }
+
+  main article[data-testid="tweet"]:hover {
+    z-index: 4 !important;
+    border-radius: 0 !important;
+    background-color: var(--x-apple-tweet-hover) !important;
+    box-shadow: var(--x-apple-shadow-hover) !important;
+    transform: translateZ(0) scale(1.012);
+  }
+
+  /* 防止 X 自带的悬停底色覆盖自定义的整卡背景 */
+  main article[data-testid="tweet"]:hover > div {
+    background-color: transparent !important;
+  }
+
+  /* 3. 左侧导航：只处理每个选项自身的胶囊容器，不改变栏宽和排版 */
+  header nav[aria-label="Primary"]
+  > :is(a, button)
+  > div {
+    border: 1px solid transparent !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    transform: translateX(0) scale(1);
+    transform-origin: left center;
+    transition:
+      transform 220ms var(--x-apple-ease),
+      background-color 180ms ease,
+      border-color 180ms ease,
+      box-shadow 220ms var(--x-apple-ease) !important;
+  }
+
+  header nav[aria-label="Primary"]
+  > :is(a, button):hover
+  > div {
+    background-color: var(--x-apple-nav-hover) !important;
+    border-color: var(--x-apple-border) !important;
+    box-shadow: var(--x-apple-shadow) !important;
+    transform: translateX(4px) scale(1.018);
+  }
+
+  header nav[aria-label="Primary"]
+  > a[aria-current="page"]
+  > div {
+    background-color: var(--x-apple-nav-hover) !important;
+    border-color: var(--x-apple-border) !important;
+    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.055) !important;
+  }
+
+  /* 发帖按钮与账户按钮保持同一套克制的反馈 */
+  header :is(
+    [data-testid="SideNav_NewTweet_Button"],
+    [data-testid="SideNav_AccountSwitcher_Button"]
+  ) {
+    transition:
+      transform 220ms var(--x-apple-ease),
+      filter 180ms ease,
+      box-shadow 220ms var(--x-apple-ease) !important;
+  }
+
+  header :is(
+    [data-testid="SideNav_NewTweet_Button"],
+    [data-testid="SideNav_AccountSwitcher_Button"]
+  ):hover {
+    filter: brightness(1.035) saturate(0.96);
+    box-shadow: var(--x-apple-shadow) !important;
+    transform: translateY(-2px) scale(1.012);
+  }
+
+  /* 4. 用户头像：类似 macOS Dock 的轻微放大与上浮 */
+  :is(
+    [data-testid^="UserAvatar-Container-"],
+    [data-testid="Tweet-User-Avatar"]:not(:has([data-testid^="UserAvatar-Container-"]))
+  ) {
+    position: relative !important;
+    z-index: 0 !important;
+    transform: translateY(0) scale(1);
+    transform-origin: center center;
+    filter: brightness(1) saturate(1);
+    transition:
+      transform 240ms cubic-bezier(0.20, 0.88, 0.24, 1.16),
+      filter 180ms ease,
+      z-index 0s linear 240ms !important;
+    will-change: transform;
+  }
+
+  :is(
+    [data-testid^="UserAvatar-Container-"],
+    [data-testid="Tweet-User-Avatar"]:not(:has([data-testid^="UserAvatar-Container-"]))
+  ):hover {
+    z-index: 20 !important;
+    transform: translateY(-2px) scale(1.10);
+    filter:
+      brightness(1.035)
+      saturate(1.045)
+      drop-shadow(0 5px 9px rgba(30, 42, 62, 0.18));
+    transition-delay: 0s !important;
+  }
+
+  body[data-theme="dark"] :is(
+    [data-testid^="UserAvatar-Container-"],
+    [data-testid="Tweet-User-Avatar"]:not(:has([data-testid^="UserAvatar-Container-"]))
+  ):hover {
+    filter:
+      brightness(1.06)
+      saturate(1.04)
+      drop-shadow(0 6px 10px rgba(0, 0, 0, 0.42));
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* 以下为本次新增：图1~图5                                              */
+  /* ------------------------------------------------------------------ */
+
+  /* 5. 搜索框（图1）：完全沿用 X 原生的位置、尺寸与滚动处理。
+        自定义样式只作用于搜索框本体的材质、交互动效和层叠顺序。 */
+
+  /* 外层只管层级，绝不能带 backdrop-filter / isolation：
+     搜索历史面板是它的后代，祖先一旦形成 backdrop root，
+     面板自己的 backdrop-filter 就只能采样组内内容（等于失效），
+     这正是历史面板“看不出磨砂、只剩半透明”的根因。
+     胶囊区域的磨砂由下方的 ::before 顶栏（伪元素，非祖先）提供，
+     材质与 For you / Following 一致。 */
+  div.r-6gpygo:has(input[data-testid="SearchBox_Search_Input"]) {
+    z-index: 50 !important;
+    overflow: visible !important;
+    border-radius: 9999px !important;
+    background-color: transparent !important;
+    /* 原生 top:4px 时胶囊中心在 y=30.5，比顶栏中心(27)低 3.5px；
+       提到 0.5px 后实测胶囊中心 = 27，与顶栏严格上下居中。 */
+    top: 0.5px !important;
+  }
+
+  /* 右栏顶栏：与左侧 For you/Following 栏严格对齐并使用相同材质（均为实测值）。
+     搜索外层已被上面的规则提到 top:0.5px（为了胶囊居中），
+     故 top:-0.5px 把顶栏顶边拉回视口 y=0；
+     总高 54px（含 1px 底边线）与原生标签栏一致；
+     材质照抄原生：rgba(255,255,255,0.85) + blur(12px)（深色对应 --x-apple-topbar）。
+     底部分隔线颜色与推文区域原生分割线一致（--x-apple-tweet-divider，实测取自 DOM）；
+     粗细用标准 1px 发丝线——X 原生分割线计算宽度为 0.98px，
+     是浏览器按当前屏幕 DPR 做像素对齐后的渲染产物，直接照抄该小数值
+     在不同 DPR 屏幕下会跑偏（实测曾被四舍五入到 0.49px，细了一半），
+     故改用与原生视觉等价、跨屏幕一致的 1px。
+     伪元素不参与点击，也不改变原生布局。 */
+  div.r-6gpygo:has(input[data-testid="SearchBox_Search_Input"])::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    box-sizing: border-box;
+    top: -0.5px;
+    height: 54px;
+    left: -3rem;
+    width: 100vw;
+    border-bottom: 1px solid var(--x-apple-tweet-divider);
+    background-color: var(--x-apple-topbar);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    pointer-events: none;
+  }
+
+  /* 清空搜索框内部多余底色，但保留联想面板自己的材质。 */
+  div.r-6gpygo:has(input[data-testid="SearchBox_Search_Input"])
+  *:not(.r-1r851ge):not(.r-1xfd6ze) {
+    background-color: transparent !important;
+  }
+
+  /* 搜索框卡片动效：常态材质与 For you / Following 按钮一致。
+     :focus-within 同时兼容点击输入和键盘 Tab，幅度刻意小于右栏内容卡片。 */
+  div.r-6gpygo:has(input[data-testid="SearchBox_Search_Input"])
+  form[role="search"] {
+    position: relative !important;
+    z-index: 1 !important;
+    border: 1px solid var(--x-apple-border) !important;
+    border-radius: 9999px !important;
+    background-color: transparent !important;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.035) !important;
+    transform: translateY(0) scale(1);
+    transform-origin: center center;
+    transition:
+      transform 230ms var(--x-apple-ease),
+      background-color 190ms ease,
+      border-color 190ms ease,
+      box-shadow 230ms var(--x-apple-ease) !important;
+  }
+
+  /* 内部可视胶囊保持透明，让外层实际采样到后方内容。 */
+  div.r-6gpygo:has(input[data-testid="SearchBox_Search_Input"])
+  form[role="search"] > div:first-child {
+    border-radius: inherit !important;
+    background-color: transparent !important;
+  }
+
+  div.r-6gpygo:has(input[data-testid="SearchBox_Search_Input"])
+  form[role="search"]:hover {
+    background-color: transparent !important;
+    border-color: var(--x-apple-border-hover) !important;
+    box-shadow: var(--x-apple-shadow) !important;
+    transform: translateY(-1px) scale(1.006);
+  }
+
+  div.r-6gpygo:has(input[data-testid="SearchBox_Search_Input"])
+  form[role="search"]:focus-within {
+    background-color: transparent !important;
+    border-color: rgba(29, 155, 240, 0.42) !important;
+    box-shadow:
+      0 0 0 3px rgba(29, 155, 240, 0.10),
+      var(--x-apple-shadow) !important;
+    transform: translateY(-1px) scale(1.006);
+  }
+
+  /* 搜索历史 / 联想悬浮窗口：与搜索框 / For you / Following 完全相同的磨砂材质。
+     祖先已不再携带 backdrop-filter，这里的模糊得以真正生效。
+     用全页唯一样式类 r-1r851ge / r-1xfd6ze 定位，空态节点 typeaheadEmptySearch 兜底。 */
+  form[role="search"] :is(.r-1r851ge, .r-1xfd6ze),
+  form[role="search"] div:has(> [data-testid="typeaheadEmptySearch"]) {
+    background-color: var(--x-apple-nav-hover) !important;
+    -webkit-backdrop-filter: blur(18px) saturate(135%) !important;
+    backdrop-filter: blur(18px) saturate(135%) !important;
+  }
+
+  /* 6. 顶部标签栏（图2）For you / Following 等：卡片悬浮，沿用 X 自身直角 */
+  main [role="tablist"] [role="tab"] {
+    position: relative !important;
+    z-index: 0 !important;
+    border-radius: 0 !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    transform: translateY(0) scale(1);
+    transform-origin: center center;
+    transition:
+      transform 220ms var(--x-apple-ease),
+      background-color 180ms ease,
+      box-shadow 220ms var(--x-apple-ease) !important;
+  }
+
+  main [role="tablist"] [role="tab"]:hover {
+    z-index: 3 !important;
+    background-color: var(--x-apple-nav-hover) !important;
+    box-shadow: var(--x-apple-shadow) !important;
+    transform: translateY(-1px) scale(1.02);
+  }
+
+  /* 7. 顶部/侧栏 X 标志（图3）：Dock 式轻微放大与上浮。
+        用真实 DOM 校准：X 标志就是指向首页、aria-label 为 "X" 的链接，
+        稳定且唯一（旧的类名组合会误伤 15 个元素）。 */
+  a[href="/home"][aria-label="X"] {
+    position: relative !important;
+    z-index: 0 !important;
+    transform: translateY(0) scale(1);
+    transform-origin: center center;
+    transition:
+      transform 240ms cubic-bezier(0.20, 0.88, 0.24, 1.16),
+      filter 180ms ease !important;
+  }
+
+  a[href="/home"][aria-label="X"]:hover {
+    z-index: 20 !important;
+    transform: translateY(-2px) scale(1.08);
+    filter: drop-shadow(0 5px 9px rgba(30, 42, 62, 0.18));
+  }
+
+  /* 8. 顶部发帖框（图4/图2）"What's happening?"：保留卡片反馈但取消上浮。
+        用工具栏 toolBar 作为稳定锚点，确保命中的是内联发帖框。 */
+  /* 外部整卡：同时包含头像、输入区和工具栏，恢复卡片动效。 */
+  main div.r-1h8ys4a:has([data-testid^="UserAvatar-Container-"]):has([data-testid^="tweetTextarea_"]):has([data-testid="toolBar"]) {
+    position: relative !important;
+    z-index: 0 !important;
+    border-radius: 0 !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    transform: translateZ(0) scale(1);
+    transform-origin: center center;
+    transition:
+      transform 240ms var(--x-apple-ease),
+      background-color 190ms ease,
+      box-shadow 240ms var(--x-apple-ease) !important;
+  }
+
+  main div.r-1h8ys4a:has([data-testid^="UserAvatar-Container-"]):has([data-testid^="tweetTextarea_"]):has([data-testid="toolBar"]):hover {
+    z-index: 4 !important;
+    background-color: var(--x-apple-tweet-hover) !important;
+    box-shadow: var(--x-apple-shadow-hover) !important;
+    transform: translateZ(0) scale(1.012);
+  }
+
+  /* 内层编辑区：不含头像，始终无阴影、无动效。 */
+  main div.r-1h8ys4a:not(:has([data-testid^="UserAvatar-Container-"])):has([data-testid^="tweetTextarea_"]):has([data-testid="toolBar"]) {
+    z-index: 0 !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    transform: none !important;
+    transition: none !important;
+  }
+
+  main div.r-1h8ys4a:not(:has([data-testid^="UserAvatar-Container-"])):has([data-testid^="tweetTextarea_"]):has([data-testid="toolBar"]):hover {
+    background-color: transparent !important;
+    box-shadow: none !important;
+    transform: none !important;
+  }
+
+  /* 发帖框内部有多层白色分层（如你框选的 r-jumn1c 块）会盖住卡片底色，
+     悬停时统一透明，让整卡背景透出；按钮为 <button>，不受此 div 规则影响。 */
+  main div.r-1h8ys4a:has([data-testid^="UserAvatar-Container-"]):has([data-testid^="tweetTextarea_"]):has([data-testid="toolBar"]):hover :is(
+    > div,
+    > div > div,
+    > div > div > div,
+    .r-jumn1c,
+    [data-testid="toolBar"]
+  ) {
+    background-color: transparent !important;
+  }
+
+  /* 9. 右下角悬浮圆钮（图5，两个）：Grok 与 Chat，卡片式悬浮反馈。
+        真实 DOM 校准：它们是右下角固定容器里的按钮（不在 main 内），
+        以 aria-label 为主锚点，共享类名组合作为兜底。 */
+  :is(
+    button[aria-label="Grok"],
+    button[aria-label="Chat"],
+    button.r-105ug2t.r-1e5uvyk.r-6026j.r-1xsrhxi
+  ) {
+    transition:
+      transform 220ms var(--x-apple-ease),
+      filter 180ms ease,
+      box-shadow 220ms var(--x-apple-ease) !important;
+  }
+
+  :is(
+    button[aria-label="Grok"],
+    button[aria-label="Chat"],
+    button.r-105ug2t.r-1e5uvyk.r-6026j.r-1xsrhxi
+  ):hover {
+    filter: brightness(1.035) saturate(0.98);
+    box-shadow: var(--x-apple-shadow) !important;
+    transform: translateY(-2px) scale(1.06);
+  }
+
+  /* 尊重系统的"减少动态效果"设置 */
+  /* 所有带卡片动画的区域：悬浮时统一采用 For you 风格磨砂玻璃材质 */
+  :is(
+    [data-testid="sidebarColumn"] .r-1867qdf.r-1phboty.r-rs99b7,
+    [data-testid="sidebarColumn"] .jetfuel-style-root > div,
+    main article[data-testid="tweet"],
+    header nav[aria-label="Primary"] > :is(a, button) > div,
+    main [role="tablist"] [role="tab"],
+    main div.r-1h8ys4a:has([data-testid^="UserAvatar-Container-"]):has([data-testid^="tweetTextarea_"]):has([data-testid="toolBar"])
+  ):hover {
+    background-color: var(--x-apple-nav-hover) !important;
+    -webkit-backdrop-filter: blur(18px) saturate(135%) !important;
+    backdrop-filter: blur(18px) saturate(135%) !important;
+  }
+
+  /* Article 卡片稍微收敛放大幅度，减少覆盖下方 Post your reply */
+  main article[data-testid="tweet"]:hover {
+    transform: translateZ(0) scale(1.006);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-testid="sidebarColumn"] :is(
+      .r-1867qdf.r-1phboty.r-rs99b7,
+      .jetfuel-style-root > div
+    ),
+    main article[data-testid="tweet"],
+    header nav[aria-label="Primary"] > :is(a, button) > div,
+    header :is(
+      [data-testid="SideNav_NewTweet_Button"],
+      [data-testid="SideNav_AccountSwitcher_Button"]
+    ),
+    :is(
+      [data-testid^="UserAvatar-Container-"],
+      [data-testid="Tweet-User-Avatar"]:not(:has([data-testid^="UserAvatar-Container-"]))
+    ),
+    div.r-6gpygo:has(input[data-testid="SearchBox_Search_Input"])
+    form[role="search"],
+    main [role="tablist"] [role="tab"],
+    a[href="/home"][aria-label="X"],
+    main div.r-1h8ys4a:has([data-testid^="UserAvatar-Container-"]):has([data-testid^="tweetTextarea_"]):has([data-testid="toolBar"]),
+    :is(
+      button[aria-label="Grok"],
+      button[aria-label="Chat"],
+      button.r-105ug2t.r-1e5uvyk.r-6026j.r-1xsrhxi
+    ) {
+      transition: none !important;
+      transform: none !important;
+    }
+  }
+}

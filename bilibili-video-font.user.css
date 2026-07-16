@@ -1,0 +1,60 @@
+/* ==UserStyle==
+@name           www.bilibili.com/video/BV1dwj46CEhb
+@namespace      GavinLeee-Stylus-Cascadea-bilibili-video-font
+@version        1.0.0
+@description    Converted from the local Stylus style “www.bilibili.com/video/BV1dwj46CEhb”.
+@updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/bilibili-video-font.user.css
+@downloadURL    https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/bilibili-video-font.user.css
+==/UserStyle== */
+
+@-moz-document domain("bilibili.com") {
+  html,
+  body {
+    font-family:
+      "Anthropic Sans Text",
+      "Anthropic Sans",
+      "Noto Sans SC",
+      "Noto Sans CJK SC",
+      "Noto Sans JP",
+      "Noto Sans CJK JP",
+      "Segoe UI Emoji",
+      sans-serif !important;
+  }
+
+  body :where(
+    p,
+    span,
+    div,
+    a,
+    li,
+    td,
+    th,
+    button,
+    input,
+    textarea,
+    select,
+    option,
+    label,
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6,
+    section,
+    article,
+    header,
+    footer,
+    nav
+  ):not(svg):not(path):not(i):not(code):not(pre):not(kbd):not(samp):not([class*="icon" i]):not([class*="sprite" i]):not([class*="bili-icon" i]):not([class*="iconfont" i]):not([class*="van-icon" i]) {
+    font-family:
+      "Anthropic Sans Text",
+      "Anthropic Sans",
+      "Noto Sans SC",
+      "Noto Sans CJK SC",
+      "Noto Sans JP",
+      "Noto Sans CJK JP",
+      "Segoe UI Emoji",
+      sans-serif !important;
+  }
+}

@@ -1,0 +1,229 @@
+/* ==UserStyle==
+@name           小红书 Apple 风格左栏与卡片悬浮动效
+@namespace      rednote-apple-card-motion
+@version        1.0.0
+@description    为小红书网页版左侧导航按钮和图文卡片添加克制的 Apple 风格卡片悬浮动效，视觉语言对齐 X（Twitter）的克制卡片方案
+@match          https://www.xiaohongshu.com/*
+@match          https://xiaohongshu.com/*
+@updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/xiaohongshu-apple.user.css
+@downloadURL    https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/xiaohongshu-apple.user.css
+==/UserStyle== */
+
+/*
+ * 说明：以下结构是在小红书网页版 explore 首页实测确认的（右键元素点"检查"逐层核实）。
+ *
+ * 左侧导航（.side-bar）：
+ * - ul.channel-list > div.channel-list-content 里是主导航列表，每个 li 就是一颗完整的
+ *   胶囊按钮（首页/世界杯/点点ai/RED/直播/发布），自带 999px 圆角和一层极浅的原生
+ *   hover 背景（Vue scoped 样式里的 --color-active-background，约 3% 黑，没加
+ *   !important），本文件用 !important 直接顶掉换成自己的玻璃卡片背景。"通知"是同一个
+ *   ul 里的 li，只是多套了 link-wrapper/bottom-channel 两个类，选择器天然覆盖到。
+ * - 登录后头像所在的"我"那一行，是 .side-bar 直属的
+ *   div.bottom-channel.bottom-menu-component（未登录时它是 display:none，登录后的
+ *   .login-btn 反过来隐藏，两者是同一个坑位的 v-show 切换，本文件按登录态选中
+ *   .bottom-menu-component 即可，未登录时规则不生效但也不会出错）。
+ * - 分隔线下面的"更多"/"关于我们"是 .information-container 里的两个
+ *   div.information-wrapper；"点点ai"一类的入口实测在样式表里还留了一个
+ *   .information-wrapper-ai 变体类名，所以这里统一用属性选择器
+ *   [class*="information-wrapper"] 一并覆盖，不用逐个对齐类名。
+ *
+ * 这颗胶囊按钮有个实测确认的关键限制：li 本身宽度和它的滚动容器 ul.channel-list
+ * 完全相等（都是 239px，中间没有任何左右留白），而 ul.channel-list 自己是
+ * overflow:auto/scroll 的滚动容器——scroll/auto 和 hidden 一样会裁剪超出容器边界的
+ * 绘制内容（区别只是要不要显示滚动条），意味着投影只要带模糊半径就会在胶囊左右两侧被
+ * 生硬裁平。所以左侧导航这组按钮的投影特意调得比中间卡片更收敛（模糊半径更小），
+ * 避免悬浮时两侧露出一截被切平的阴影。.information-wrapper 和 .bottom-menu-component
+ * 其实不在这个滚动容器里、不受此限制，但为了整条侧栏观感统一，仍复用同一套收敛投影。
+ * X 原版 CSS 里左侧导航靠 translateX 让胶囊往右挪出空隙来体现"抬起"，但那是因为 X
+ * 的导航项本身比列宽窄很多、右边留白充足；小红书这颗胶囊左右都是零留白顶满容器，
+ * 横向平移马上会顶到边缘，所以这里改成和 X 右栏卡片一样的"上浮+放大"（translateY +
+ * scale），几何上更贴合小红书这种通栏胶囊的实际留白情况。
+ *
+ * 中间图文卡片（.feeds-container，首页/搜索页/个人主页笔记网格通用）：
+ * - 是零留白的瀑布流：section.note-item 以 position:absolute 直接摆在
+ *   .feeds-container 里，top/left 由站点自己的 JS 布局算好写成内联样式。本文件悬浮
+ *   动效只用 transform（合成层属性，不参与布局测量），不会打乱瀑布流坐标计算，这一点
+ *   和 B 站首页卡片的处理方式一致。
+ * - note-item 自己没有圆角、overflow:visible，真正带圆角裁切的是里面的
+ *   a.cover.mask.ld（12px 圆角、overflow:hidden，包着封面 img）。卡片悬浮时用一个
+ *   ::before 伪元素在 note-item 整体范围外扩一圈画出"卡片"背景+投影（伪元素圆角不受
+ *   父元素 overflow 链路影响，B 站文件里验证过这个写法最稳妥），同时封面图在自己被
+ *   裁切的圆角画框里再单独放大一次，两层叠加就是苹果/流媒体那种"卡片抬起、照片在画框
+ *   里继续放大"的效果。
+ * - .feeds-container 到页面滚动容器之间都是 overflow:visible，投影不会被裁切，可以
+ *   放心用和 X 原版一致的柔和大投影。
+ *
+ * 如果小红书改版后类名对不上、动效没生效，右键对应按钮或卡片点"检查"，把最外层元素的
+ * class 发回来，再对着新结构调整选择器。
+ */
+
+@-moz-document domain("xiaohongshu.com") {
+
+  :root {
+    --rn-ease: cubic-bezier(0.22, 0.8, 0.24, 1);
+
+    /* 悬浮时的玻璃质感背景 / 边框，浅色模式 */
+    --rn-panel-hover: rgba(246, 247, 248, 0.92);
+    --rn-border: rgba(15, 23, 42, 0.08);
+    --rn-border-hover: rgba(15, 23, 42, 0.12);
+
+    /* 左侧导航胶囊：投影收敛（滚动容器会裁掉过大的模糊半径，见文件头说明） */
+    --rn-nav-shadow-hover:
+      0 1px 2px rgba(15, 23, 42, 0.05),
+      0 4px 12px rgba(38, 51, 77, 0.10);
+
+    /* 中间图文卡片：不受裁切限制，直接沿用 X 原版右栏卡片的柔和大投影 */
+    --rn-card-shadow-hover:
+      0 2px 5px rgba(15, 23, 42, 0.055),
+      0 16px 40px rgba(38, 51, 77, 0.14);
+
+    --rn-card-radius: 16px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --rn-panel-hover: rgba(40, 40, 44, 0.92);
+      --rn-border: rgba(255, 255, 255, 0.10);
+      --rn-border-hover: rgba(255, 255, 255, 0.16);
+
+      --rn-nav-shadow-hover:
+        0 1px 2px rgba(0, 0, 0, 0.22),
+        0 4px 14px rgba(0, 0, 0, 0.30);
+
+      --rn-card-shadow-hover:
+        0 2px 5px rgba(0, 0, 0, 0.28),
+        0 18px 44px rgba(0, 0, 0, 0.40);
+    }
+  }
+
+
+  /* ========================================
+     1. 左侧导航：所有按钮统一的克制卡片悬浮
+        （主导航胶囊 / 通知 / 头像行 / 更多 / 关于我们）
+     ======================================== */
+
+  .side-bar :is(
+    .channel-list-content li,
+    .bottom-menu-component,
+    [class*="information-wrapper"]
+  ) {
+    position: relative !important;
+    z-index: 0 !important;
+    /* 三类按钮里只有 li 和 information-wrapper 实测确认原生自带 999px 圆角，
+       登录后头像所在的 .bottom-menu-component 没法登录验证、圆角来源存疑；
+       而且下面 transition 没托管 border-radius，一旦原生圆角在悬浮时才生效，
+       就会先闪一下直角矩形再变圆角。这里直接强制统一定死成 999px，三类按钮
+       任何状态下都不会再依赖原生样式、也就不会再出现先方后圆的闪烁 */
+    border-radius: 999px !important;
+    border: 1px solid transparent !important;
+    box-shadow: none !important;
+    transform: translateY(0) scale(1);
+    transform-origin: center center;
+    transition:
+      transform 220ms var(--rn-ease),
+      background-color 180ms ease,
+      border-color 180ms ease,
+      box-shadow 220ms var(--rn-ease) !important;
+  }
+
+  /* 当前选中的主导航项常驻一层很淡的卡片感，不用悬浮也能看出选中态；
+     放在 :hover 规则之前，这样悬浮到它自己身上时 :hover 的更强效果能覆盖过来 */
+  .side-bar .channel-list-content li.active-channel {
+    background-color: var(--rn-panel-hover) !important;
+    border-color: var(--rn-border) !important;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05) !important;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .side-bar .channel-list-content li.active-channel {
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.22) !important;
+    }
+  }
+
+  .side-bar :is(
+    .channel-list-content li,
+    .bottom-menu-component,
+    [class*="information-wrapper"]
+  ):hover {
+    z-index: 5 !important;
+    background-color: var(--rn-panel-hover) !important;
+    border-color: var(--rn-border-hover) !important;
+    box-shadow: var(--rn-nav-shadow-hover) !important;
+    transform: translateY(-2px) scale(1.02);
+  }
+
+
+  /* ========================================
+     2. 中间图文卡片：整卡上浮放大 + 投影
+     ======================================== */
+
+  .feeds-container section.note-item {
+    isolation: isolate;
+    transform: translateY(0) scale(1);
+    transform-origin: center center;
+    transition: transform 260ms var(--rn-ease) !important;
+    will-change: transform;
+  }
+
+  .feeds-container section.note-item::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: -8px;
+    border-radius: var(--rn-card-radius);
+    background: transparent;
+    box-shadow: none;
+    opacity: 0;
+    pointer-events: none;
+    transition:
+      opacity 200ms ease,
+      background-color 220ms ease,
+      box-shadow 260ms var(--rn-ease);
+  }
+
+  .feeds-container section.note-item:hover {
+    z-index: 20 !important;
+    transform: translateY(-4px) scale(1.03);
+  }
+
+  .feeds-container section.note-item:hover::before {
+    opacity: 1;
+    background: var(--rn-panel-hover);
+    box-shadow: var(--rn-card-shadow-hover);
+  }
+
+
+  /* ========================================
+     3. 封面图：卡片放大的同时，照片在圆角画框里再做一次缩放
+     ======================================== */
+
+  .feeds-container section.note-item a.cover img {
+    transform: scale(1);
+    transition: transform 420ms var(--rn-ease) !important;
+    will-change: transform;
+  }
+
+  .feeds-container section.note-item:hover a.cover img {
+    transform: scale(1.06);
+  }
+
+
+  /* ========================================
+     4. 减少动态效果
+     ======================================== */
+
+  @media (prefers-reduced-motion: reduce) {
+    .side-bar :is(
+      .channel-list-content li,
+      .bottom-menu-component,
+      [class*="information-wrapper"]
+    ),
+    .feeds-container section.note-item,
+    .feeds-container section.note-item::before,
+    .feeds-container section.note-item a.cover img {
+      transition: none !important;
+      transform: none !important;
+    }
+  }
+
+}

@@ -1,0 +1,37 @@
+/* ==UserStyle==
+@name           onlinelibrary-wiley-com.kyoto-u.idm.oclc.org
+@namespace      GavinLeee-Stylus-Cascadea-academic-sites-font
+@version        1.0.0
+@description    Converted from the local Stylus style “onlinelibrary-wiley-com.kyoto-u.idm.oclc.org”.
+@updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/academic-sites-font.user.css
+@downloadURL    https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/academic-sites-font.user.css
+==/UserStyle== */
+
+@-moz-document regexp("^https?://(?:(?:[^/?#]+\\.)?(?:wiley\\.com|wiley-onlinelibrary\\.com|wiley-vch\\.de|sciencedirect\\.com|elsevier\\.com|cell\\.com|springer\\.com|springernature\\.com|nature\\.com|acs\\.org|rsc\\.org|tandfonline\\.com|sagepub\\.com|oup\\.com|cambridge\\.org|pnas\\.org|science\\.org|scitation\\.org|aip\\.org|aps\\.org|iop\\.org|ieee\\.org|mdpi\\.com|frontiersin\\.org|jstor\\.org|annualreviews\\.org|degruyter\\.com|brill\\.com|emerald\\.com|arxiv\\.org|biorxiv\\.org|medrxiv\\.org|chemrxiv\\.org|researchsquare\\.com|ssrn\\.com)|[^/?#]+\\.idm\\.oclc\\.org)(?:[/?#]|$)") {
+  body,
+  p,
+  span,
+  div,
+  a,
+  li,
+  td,
+  th,
+  button,
+  input,
+  textarea,
+  section,
+  article,
+  header,
+  footer,
+  nav {
+    font-family:
+      "Anthropic Sans Text",
+      "Anthropic Sans",
+      "Noto Sans SC",
+      "Noto Sans CJK SC",
+      "Noto Sans JP",
+      "Noto Sans CJK JP",
+      "Segoe UI Emoji",
+      sans-serif !important;
+  }
+}

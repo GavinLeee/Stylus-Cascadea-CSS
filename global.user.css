@@ -1,0 +1,56 @@
+/* ==UserStyle==
+@name           Global
+@namespace      GavinLeee-Stylus-Cascadea-global
+@version        1.0.0
+@description    Converted from the local Stylus style “Global”.
+@updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/global.user.css
+@downloadURL    https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/global.user.css
+==/UserStyle== */
+
+html,
+body {
+  font-family:
+    "Anthropic Sans Text",
+    "Anthropic Sans",
+    "Noto Sans SC",
+    "Noto Sans CJK SC",
+    "Noto Sans JP",
+    "Noto Sans CJK JP",
+    "Segoe UI Emoji",
+    sans-serif !important;
+}
+
+body :where(
+  p,
+  a,
+  li,
+  td,
+  th,
+  button,
+  input,
+  textarea,
+  select,
+  option,
+  label,
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  article,
+  section,
+  header,
+  footer,
+  nav
+):not(code):not(pre):not(kbd):not(samp):not(svg):not(math) {
+  font-family:
+    "Anthropic Sans Text",
+    "Anthropic Sans",
+    "Noto Sans SC",
+    "Noto Sans CJK SC",
+    "Noto Sans JP",
+    "Noto Sans CJK JP",
+    "Segoe UI Emoji",
+    sans-serif !important;
+}

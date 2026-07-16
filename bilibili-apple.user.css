@@ -1,0 +1,4054 @@
+/* ==UserStyle==
+@name           Bilibili Apple 风格统一视频卡片
+@namespace      bilibili-apple-native-theme
+@version        8.13.0
+@description    首页网格、播放页推荐与播放器圆角、动态视频、动态页 Apple 背景、个人空间卡片及全站紫色强调色
+@match          https://www.bilibili.com/*
+@match          https://t.bilibili.com/*
+@match          https://search.bilibili.com/*
+@match          https://space.bilibili.com/*
+@match          https://message.bilibili.com/*
+@updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/bilibili-apple.user.css
+@downloadURL    https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/bilibili-apple.user.css
+==/UserStyle== */
+
+@-moz-document domain("bilibili.com") {
+
+  /* ========================================
+     1. 全局变量
+     ======================================== */
+
+  :root {
+    /* 全站强调色：替换哔哩哔哩原生粉色 */
+    --apple-accent-color: rgb(120, 86, 255);
+    --apple-accent-thin: rgba(120, 86, 255, 0.14);
+
+    /* 评论卡片使用更克制的中性悬浮表面。 */
+    --apple-comment-card-hover: #F1F2F3;
+    --apple-comment-editor-surface: #F1F2F3;
+    --apple-comment-card-border: rgba(60, 60, 67, 0.055);
+    --apple-comment-card-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.018),
+      0 6px 16px rgba(0, 0, 0, 0.045);
+
+    --brand_pink: rgb(120, 86, 255) !important;
+    --brand_pink_hover: rgb(120, 86, 255) !important;
+    --brand_pink_active: rgb(120, 86, 255) !important;
+    --brand_pink_disabled: rgb(120, 86, 255) !important;
+    --brand_pink_thin: rgba(120, 86, 255, 0.14) !important;
+
+    --Pi5: rgb(120, 86, 255) !important;
+    --Pi4: rgb(120, 86, 255) !important;
+    --Pi3: rgb(120, 86, 255) !important;
+    --Pi2: rgb(120, 86, 255) !important;
+    --Pi1: rgba(120, 86, 255, 0.14) !important;
+
+    --apple-card-background: rgba(215, 215, 217, 0.94);
+    --apple-card-border: rgba(0, 0, 0, 0.055);
+
+    --apple-card-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.025),
+      0 8px 24px rgba(0, 0, 0, 0.075);
+
+    --apple-card-title-color: rgb(29, 29, 31);
+    --apple-card-meta-color: rgb(100, 100, 105);
+
+    --apple-card-radius: 18px;
+    --apple-cover-radius: 14px;
+
+    --apple-card-space-x: 11px;
+    --apple-card-space-y: 11px;
+    --apple-card-speed: 240ms;
+
+    --video-column-gap: 24px;
+    --video-row-gap: 52px;
+    --video-card-min-width: 290px;
+  }
+
+
+  /* ========================================
+     全站粉色强调元素统一替换为紫色
+     ======================================== */
+
+  /* .bili-dyn-title__text / .bili-dyn-title__text a 故意不在这个列表里：那是动态卡片的
+     作者名，下面单独有一条规则把它改成中性黑/白（深浅色模式各一份），不该被这里统一
+     强制上紫色——之前两条规则同时命中这个元素，:is() 的优先级取列表里最高的那一项，
+     这条紫色规则里 .search-page em.keyword 之类的选择器优先级比另一条高一点，紫色就把
+     黑/白盖掉了，导致深色模式下变紫、而不是原本设计的深色模式浅字 */
+  :is(
+    .bili-dyn-my-info__name,
+    .bili-dyn-card-video__title em,
+    .bili-dyn-card-video__desc em,
+    .search-page .keyword,
+    .search-page em.keyword,
+    .search-page .bili-video-card__info--tit em,
+    .vip-name,
+    .vip-nickname,
+    .nickname.is-vip,
+    .user-name.is-vip,
+    .user-name.vip,
+    .name.is-vip,
+    .name.vip,
+    .pink,
+    .color-pink
+  ) {
+    color: var(--apple-accent-color) !important;
+  }
+
+  :is(
+    .bili-dyn-my-info__badge,
+    .bili-dyn-my-info__vip,
+    .bili-dyn-live-users__item__living,
+    .live-status,
+    .live-tag,
+    .living,
+    .vip-label,
+    .vip-tag,
+    .vip-badge,
+    .bili-avatar-icon-vip
+  ) {
+    color: rgb(255, 255, 255) !important;
+    background-color: var(--apple-accent-color) !important;
+    border-color: var(--apple-accent-color) !important;
+  }
+
+  :is(
+    .bili-dyn-my-info__name,
+    .search-page .keyword,
+    .vip-name,
+    .vip-nickname
+  ):hover {
+    color: var(--apple-accent-color) !important;
+  }
+
+  :is(
+    [style*="#fb7299" i],
+    [style*="#ff6699" i],
+    [style*="rgb(251, 114, 153)" i],
+    [style*="rgb(255, 102, 153)" i]
+  ) {
+    color: var(--apple-accent-color) !important;
+    border-color: var(--apple-accent-color) !important;
+  }
+
+
+  /* Playback comments: hide ornaments, number plates and avatar pendants */
+  body:has(.bpx-player-container)
+  :is(
+    .reply-item .root-reply-container .content-warp .reply-decorate,
+    .reply-item .reply-decorate,
+    .reply-decorate,
+    .user-sailing,
+    .sailing,
+    [class*="reply-decorate"],
+    [class*="reply-ornament"],
+    bili-comment-user-sailing,
+    bili-comment-ornament,
+    bili-comment-decoration,
+    bili-comment-user-decoration,
+    .bili-comment .bili-avatar-pendent-dom,
+    .bb-comment .bili-avatar-pendent-dom,
+    #comment .bili-avatar-pendent-dom
+  ) {
+    display: none !important;
+    visibility: hidden !important;
+    width: 0 !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    pointer-events: none !important;
+  }
+
+  body:has(.bpx-player-container)
+  bili-comment-renderer::part(ornament) {
+    display: none !important;
+  }
+
+
+  /* Playback comments: legacy DOM surface feedback.
+     Keep Bilibili's native layout intact: no position, size or transform overrides. */
+  body:has(.bpx-player-container)
+  :is(
+    #commentapp .reply-list > .reply-item,
+    #commentapp .sub-reply-list > .sub-reply-item
+  ) {
+    border-radius: 4px !important;
+    transition:
+      background-color 170ms ease,
+      box-shadow 220ms ease !important;
+  }
+
+  body:has(.bpx-player-container)
+  :is(
+    #commentapp .reply-list > .reply-item,
+    #commentapp .sub-reply-list > .sub-reply-item
+  ):is(:hover, :focus-within) {
+    background-color: var(--apple-comment-card-hover) !important;
+    box-shadow:
+      inset 0 0 0 1px var(--apple-comment-card-border),
+      var(--apple-comment-card-shadow) !important;
+  }
+
+  /* Playback comments: legacy avatar and editor motion.
+     Current Shadow DOM targets are handled by the companion userscript. */
+  body:has(.bpx-player-container)
+  :is(
+    #commentapp .reply-item .root-reply-avatar,
+    #commentapp .reply-item .sub-reply-avatar,
+    #commentapp .reply-item .avatar,
+    #commentapp .sub-reply-item .avatar,
+    #commentapp .reply-box .reply-box-avatar
+  ) :is(img, bili-avatar, .bili-avatar) {
+    translate: 0 0 !important;
+    scale: 1 !important;
+    transform-origin: center center !important;
+    transition:
+      translate 240ms cubic-bezier(.2, .78, .2, 1),
+      scale 240ms cubic-bezier(.2, .78, .2, 1),
+      filter 220ms ease !important;
+    will-change: translate, scale;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    body:has(.bpx-player-container)
+    :is(
+      #commentapp .reply-item .root-reply-avatar,
+      #commentapp .reply-item .sub-reply-avatar,
+      #commentapp .reply-item .avatar,
+      #commentapp .sub-reply-item .avatar,
+      #commentapp .reply-box .reply-box-avatar
+    ):is(:hover, :focus-visible, :focus-within)
+    :is(img, bili-avatar, .bili-avatar) {
+      translate: 0 -2px !important;
+      scale: 1.08 !important;
+      filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.14)) !important;
+    }
+  }
+
+  body:has(.bpx-player-container)
+  :is(
+    #commentapp #editor,
+    .comment-container #editor
+  ) {
+    background-color: var(--apple-comment-editor-surface) !important;
+    border-radius: 4px !important;
+    translate: 0 0;
+    scale: 1;
+    transform-origin: center center;
+    transition:
+      translate 240ms cubic-bezier(.2, .8, .2, 1),
+      scale 260ms cubic-bezier(.2, .8, .2, 1),
+      box-shadow 220ms ease !important;
+    will-change: translate, scale;
+  }
+
+  body:has(.bpx-player-container)
+  :is(
+    #commentapp #editor,
+    .comment-container #editor
+  ):is(:hover, :focus-within, .active) {
+    translate: -2px 0;
+    scale: 1.004;
+    box-shadow:
+      inset 0 0 0 1px var(--apple-comment-card-border),
+      var(--apple-comment-card-shadow) !important;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    body:has(.bpx-player-container)
+    :is(
+      #commentapp .reply-list > .reply-item,
+      #commentapp .sub-reply-list > .sub-reply-item
+    ) {
+      transition: none !important;
+    }
+
+    body:has(.bpx-player-container)
+    :is(
+      #commentapp .reply-item .root-reply-avatar,
+      #commentapp .reply-item .sub-reply-avatar,
+      #commentapp .reply-item .avatar,
+      #commentapp .sub-reply-item .avatar,
+      #commentapp .reply-box .reply-box-avatar,
+      #commentapp #editor,
+      .comment-container #editor
+    ) :is(img, bili-avatar, .bili-avatar),
+    body:has(.bpx-player-container)
+    :is(
+      #commentapp #editor,
+      .comment-container #editor
+    ) {
+      translate: 0 0 !important;
+      scale: 1 !important;
+      transition: none !important;
+    }
+  }
+
+
+  /* Playback page: replace remaining brand-pink states with purple */
+  body:has(.bpx-player-container)
+  :is(
+    .video-toolbar-left .on,
+    .video-toolbar-left .like.on,
+    .video-toolbar-left .coin.on,
+    .video-toolbar-left .collect.on,
+    .video-toolbar-left .share.on,
+    .toolbar-left-item.on,
+    .reply-like .like-icon.liked,
+    .reply-dislike .dislike-icon.disliked,
+    .reply-icon:hover,
+    .jump-link.search-word,
+    .reply-content .search-word,
+    .bili-comment-user-info-name.is-vip,
+    .user-name.is-vip,
+    .up-name.is-vip
+  ) {
+    color: var(--apple-accent-color) !important;
+    border-color: var(--apple-accent-color) !important;
+  }
+
+  body:has(.bpx-player-container)
+  :is(
+    .follow-btn:not(.following),
+    .bili-follow-button:not(.following),
+    .bili-mini-follow:not(.following),
+    .up-info-container .follow-btn:not(.following),
+    .reply-box .reply-box-send,
+    .reply-box .send-text
+  ) {
+    color: rgb(255, 255, 255) !important;
+    background-color: var(--apple-accent-color) !important;
+    border-color: var(--apple-accent-color) !important;
+  }
+
+  body:has(.bpx-player-container)
+  :is(
+    .video-toolbar-left .on,
+    .toolbar-left-item.on,
+    .reply-like .like-icon.liked,
+    .reply-dislike .dislike-icon.disliked,
+    .follow-btn:not(.following),
+    .bili-follow-button:not(.following)
+  )
+  :is(svg, path) {
+    color: var(--apple-accent-color) !important;
+    fill: currentColor !important;
+  }
+
+  /* Playback page toolbar: preserve native button surfaces and only add motion. */
+  body:has(.bpx-player-container)
+  .video-toolbar-container
+  :is(
+    .video-toolbar-left-item,
+    .video-toolbar-right-item,
+    .toolbar-left-item,
+    .toolbar-right-item,
+    .video-like,
+    .video-coin,
+    .video-fav,
+    .video-share,
+    .video-note,
+    .video-complaint,
+    .video-tool-more
+  ) {
+    scale: 1;
+    transform-origin: center center;
+    transition: scale 220ms cubic-bezier(.2, .78, .2, 1) !important;
+    will-change: scale;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    body:has(.bpx-player-container)
+    .video-toolbar-container
+    :is(
+      .video-toolbar-left-item,
+      .video-toolbar-right-item,
+      .toolbar-left-item,
+      .toolbar-right-item,
+      .video-like,
+      .video-coin,
+      .video-fav,
+      .video-share,
+      .video-note,
+      .video-complaint,
+      .video-tool-more
+    ):is(:hover, :focus-visible, :focus-within) {
+      scale: 1.06;
+    }
+
+    body:has(.bpx-player-container)
+    .video-toolbar-container
+    :is(
+      .video-toolbar-left-item,
+      .video-toolbar-right-item,
+      .toolbar-left-item,
+      .toolbar-right-item,
+      .video-like,
+      .video-coin,
+      .video-fav,
+      .video-share,
+      .video-note,
+      .video-complaint,
+      .video-tool-more
+    ):active {
+      scale: 0.96;
+      transition-duration: 90ms !important;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    body:has(.bpx-player-container)
+    .video-toolbar-container
+    :is(
+      .video-toolbar-left-item,
+      .video-toolbar-right-item,
+      .toolbar-left-item,
+      .toolbar-right-item,
+      .video-like,
+      .video-coin,
+      .video-fav,
+      .video-share,
+      .video-note,
+      .video-complaint,
+      .video-tool-more
+    ) {
+      scale: 1 !important;
+      transition: none !important;
+    }
+  }
+
+
+  /* ========================================
+     2. 深色主题卡片变量
+     ======================================== */
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --apple-card-background: rgb(44, 44, 46);
+      --apple-card-border: rgba(255, 255, 255, 0.10);
+
+      --apple-card-shadow:
+        0 2px 6px rgba(0, 0, 0, 0.28),
+        0 14px 32px rgba(0, 0, 0, 0.38);
+      --apple-comment-card-hover: rgba(255, 255, 255, 0.045);
+      --apple-comment-editor-surface: rgb(44, 44, 46);
+      --apple-comment-card-border: rgba(255, 255, 255, 0.055);
+      --apple-comment-card-shadow:
+        0 1px 2px rgba(0, 0, 0, 0.10),
+        0 6px 18px rgba(0, 0, 0, 0.20);
+
+      --apple-card-title-color: rgb(245, 245, 247);
+      --apple-card-meta-color: rgb(174, 174, 178);
+    }
+  }
+
+  :is(
+    html.dark,
+    html.bili-dark,
+    html[data-theme="dark"],
+    html[data-color-mode="dark"],
+    html[data-theme-style="dark"],
+    html[data-darkreader-scheme="dark"]
+  ) {
+    --apple-card-background: rgb(44, 44, 46);
+    --apple-card-border: rgba(255, 255, 255, 0.10);
+
+    --apple-card-shadow:
+      0 2px 6px rgba(0, 0, 0, 0.28),
+      0 14px 32px rgba(0, 0, 0, 0.38);
+    --apple-comment-card-hover: rgba(255, 255, 255, 0.045);
+    --apple-comment-editor-surface: rgb(44, 44, 46);
+    --apple-comment-card-border: rgba(255, 255, 255, 0.055);
+    --apple-comment-card-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.10),
+      0 6px 18px rgba(0, 0, 0, 0.20);
+
+    --apple-card-title-color: rgb(245, 245, 247);
+    --apple-card-meta-color: rgb(174, 174, 178);
+  }
+
+
+  /* ========================================
+     3. 隐藏首页不规则专题推荐
+     ======================================== */
+
+  .floor-single-card,
+  .recommended-container_floor-aside
+  .container.is-version8
+  > .floor-single-card {
+    display: none !important;
+  }
+
+
+  /* ========================================
+     4. 首页统一视频网格
+     ======================================== */
+
+  .recommended-container_floor-aside
+  .container.is-version8 {
+    display: grid !important;
+
+    grid-template-columns:
+      repeat(
+        auto-fit,
+        minmax(
+          min(var(--video-card-min-width), 100%),
+          1fr
+        )
+      ) !important;
+
+    grid-auto-flow: row !important;
+    grid-auto-rows: auto !important;
+
+    column-gap: var(--video-column-gap) !important;
+    row-gap: var(--video-row-gap) !important;
+
+    align-items: start !important;
+  }
+
+  .recommended-container_floor-aside
+  .container.is-version8
+  > * {
+    grid-column: auto !important;
+    grid-row: auto !important;
+
+    align-self: start !important;
+    margin: 0 !important;
+
+    min-width: 0 !important;
+    max-width: none !important;
+    width: auto !important;
+  }
+
+  .recommended-container_floor-aside
+  .container.is-version8
+  > *:nth-of-type(n + 8) {
+    margin-top: 0 !important;
+  }
+
+
+  /* ========================================
+     5. 首页视频卡片
+     ======================================== */
+
+  .recommended-container_floor-aside
+  .container.is-version8
+  > div:has(.bili-video-card__wrap) {
+    position: relative !important;
+    isolation: isolate;
+    z-index: 0;
+
+    translate: 0 0;
+
+    transition:
+      translate var(--apple-card-speed)
+        cubic-bezier(.2, .8, .2, 1),
+      filter var(--apple-card-speed) ease !important;
+
+    will-change: translate;
+  }
+
+  .recommended-container_floor-aside
+  .container.is-version8
+  > div:has(.bili-video-card__wrap)::before {
+    content: "";
+
+    position: absolute;
+    z-index: -1;
+
+    inset:
+      calc(var(--apple-card-space-y) * -1)
+      calc(var(--apple-card-space-x) * -1);
+
+    border: 1px solid transparent;
+    border-radius: var(--apple-card-radius);
+
+    background: transparent;
+    box-shadow: none;
+
+    opacity: 0;
+    transform: scale(0.975);
+    transform-origin: center;
+
+    pointer-events: none;
+
+    transition:
+      opacity 200ms ease,
+      transform 280ms cubic-bezier(.2, .8, .2, 1),
+      background-color 220ms ease,
+      border-color 220ms ease,
+      box-shadow 280ms ease !important;
+  }
+
+  .recommended-container_floor-aside
+  .container.is-version8
+  > div:has(.bili-video-card__wrap):hover {
+    z-index: 20;
+    translate: 0 -3px;
+  }
+
+  .recommended-container_floor-aside
+  .container.is-version8
+  > div:has(.bili-video-card__wrap):hover::before {
+    opacity: 1;
+    transform: scale(1);
+
+    background: var(--apple-card-background) !important;
+    border-color: var(--apple-card-border) !important;
+    box-shadow: var(--apple-card-shadow) !important;
+  }
+
+
+  /* ========================================
+     6. 首页封面动画
+     ======================================== */
+
+  .recommended-container_floor-aside
+  .container.is-version8
+  > div:has(.bili-video-card__wrap)
+  :is(
+    .bili-video-card__image,
+    .bili-video-card__cover,
+    .bili-video-card__image--wrap,
+    .bili-video-card__cover-group
+  ) {
+    overflow: hidden;
+    border-radius: var(--apple-cover-radius) !important;
+  }
+
+  .recommended-container_floor-aside
+  .container.is-version8
+  > div:has(.bili-video-card__wrap)
+  :is(
+    .bili-video-card__image,
+    .bili-video-card__cover,
+    .bili-video-card__image--wrap,
+    .bili-video-card__cover-group
+  )
+  img {
+    transform: scale(1);
+
+    transition:
+      transform 500ms
+        cubic-bezier(.2, .8, .2, 1) !important;
+
+    will-change: transform;
+  }
+
+  .recommended-container_floor-aside
+  .container.is-version8
+  > div:has(.bili-video-card__wrap):hover
+  :is(
+    .bili-video-card__image,
+    .bili-video-card__cover,
+    .bili-video-card__image--wrap,
+    .bili-video-card__cover-group
+  )
+  img {
+    transform: scale(1.018);
+  }
+
+
+  /* ========================================
+     7. 首页悬浮文字
+     ======================================== */
+
+  .recommended-container_floor-aside
+  .container.is-version8
+  > div:has(.bili-video-card__wrap):hover
+  :is(
+    .bili-video-card__info--tit,
+    .bili-video-card__info--tit a,
+    .bili-video-card__info--title,
+    .title,
+    .title a,
+    h3,
+    h3 a
+  ) {
+    color: var(--apple-card-title-color) !important;
+  }
+
+  .recommended-container_floor-aside
+  .container.is-version8
+  > div:has(.bili-video-card__wrap):hover
+  :is(
+    .bili-video-card__info--bottom,
+    .bili-video-card__info--author,
+    .bili-video-card__info--date,
+    .up-name,
+    .upname,
+    .author,
+    .date
+  ),
+  .recommended-container_floor-aside
+  .container.is-version8
+  > div:has(.bili-video-card__wrap):hover
+  :is(
+    .bili-video-card__info--bottom,
+    .bili-video-card__info--author
+  )
+  * {
+    color: var(--apple-card-meta-color) !important;
+  }
+
+  .bili-video-card__wrap::before,
+  .recommended-container_floor-aside
+  .container.is-version8
+  > div:has(.bili-video-card__wrap)
+  .bili-video-card::before {
+    content: none !important;
+    display: none !important;
+  }
+
+
+  /* ========================================
+     8. 播放页右侧推荐
+     ======================================== */
+
+  :is(
+    .video-page-card-small,
+    .video-page-card,
+    .rec-list .video-page-card-small,
+    .recommend-list-v1 .video-page-card-small
+  ) {
+    position: relative !important;
+    isolation: isolate;
+    z-index: 0;
+
+    translate: 0 0;
+
+    transition:
+      translate var(--apple-card-speed)
+        cubic-bezier(.2, .8, .2, 1),
+      filter var(--apple-card-speed) ease !important;
+
+    will-change: translate;
+  }
+
+  :is(
+    .video-page-card-small,
+    .video-page-card,
+    .rec-list .video-page-card-small,
+    .recommend-list-v1 .video-page-card-small
+  )::before {
+    content: "";
+
+    position: absolute;
+    z-index: -1;
+    inset: -8px -9px;
+
+    border: 1px solid transparent;
+    border-radius: 14px;
+
+    background: transparent;
+    box-shadow: none;
+
+    opacity: 0;
+    transform: scale(0.975);
+    pointer-events: none;
+
+    transition:
+      opacity 200ms ease,
+      transform 280ms cubic-bezier(.2, .8, .2, 1),
+      background-color 220ms ease,
+      border-color 220ms ease,
+      box-shadow 280ms ease !important;
+  }
+
+  :is(
+    .video-page-card-small,
+    .video-page-card,
+    .rec-list .video-page-card-small,
+    .recommend-list-v1 .video-page-card-small
+  ):hover {
+    z-index: 30;
+    translate: -3px 0;
+  }
+
+  :is(
+    .video-page-card-small,
+    .video-page-card,
+    .rec-list .video-page-card-small,
+    .recommend-list-v1 .video-page-card-small
+  ):hover::before {
+    opacity: 1;
+    transform: scale(1);
+
+    background: var(--apple-card-background) !important;
+    border-color: var(--apple-card-border) !important;
+    box-shadow: var(--apple-card-shadow) !important;
+  }
+
+  :is(
+    .video-page-card-small,
+    .video-page-card
+  )
+  :is(
+    .pic-box,
+    .pic,
+    .cover,
+    .video-page-card-small__cover
+  ) {
+    overflow: hidden;
+    border-radius: 10px !important;
+  }
+
+  :is(
+    .video-page-card-small,
+    .video-page-card
+  )
+  :is(
+    .pic-box,
+    .pic,
+    .cover,
+    .video-page-card-small__cover
+  )
+  img {
+    transform: scale(1);
+
+    transition:
+      transform 500ms
+        cubic-bezier(.2, .8, .2, 1) !important;
+  }
+
+  :is(
+    .video-page-card-small,
+    .video-page-card
+  ):hover
+  :is(
+    .pic-box,
+    .pic,
+    .cover,
+    .video-page-card-small__cover
+  )
+  img {
+    transform: scale(1.035);
+  }
+
+  :is(
+    .video-page-card-small,
+    .video-page-card
+  ):hover
+  :is(
+    .title,
+    .title a,
+    .title-txt,
+    .title-txt a,
+    h3,
+    h3 a
+  ) {
+    color: var(--apple-card-title-color) !important;
+  }
+
+  :is(
+    .video-page-card-small,
+    .video-page-card
+  ):hover
+  :is(
+    .upname,
+    .up-name,
+    .author,
+    .info,
+    .playinfo,
+    .play-info,
+    .count,
+    .danmaku
+  ),
+  :is(
+    .video-page-card-small,
+    .video-page-card
+  ):hover
+  :is(
+    .info,
+    .playinfo,
+    .play-info
+  )
+  * {
+    color: var(--apple-card-meta-color) !important;
+  }
+
+  :is(
+    .rec-list,
+    .recommend-list-v1,
+    .recommend-list-container
+  ) {
+    overflow: visible !important;
+  }
+
+
+  /* ========================================
+     8a. 播放页右侧 UP 信息卡片
+     ======================================== */
+
+  .up-panel-container > .up-info-container,
+  .right-container .up-info-container {
+    position: relative !important;
+    isolation: isolate;
+    z-index: 0;
+
+    translate: 0 0;
+
+    transition:
+      translate var(--apple-card-speed)
+        cubic-bezier(.2, .8, .2, 1),
+      filter var(--apple-card-speed) ease !important;
+
+    will-change: translate;
+  }
+
+  .up-panel-container > .up-info-container::before,
+  .right-container .up-info-container::before {
+    content: "";
+
+    position: absolute;
+    z-index: -1;
+    /* 左右仍向外包住整块信息；上下向内收，避免贴住顶栏和弹幕列表。 */
+    inset: 4px -10px 10px;
+
+    border: 1px solid transparent;
+    border-radius: 16px;
+
+    background: transparent;
+    box-shadow: none;
+
+    opacity: 0;
+    transform: scale(.975);
+    pointer-events: none;
+
+    transition:
+      opacity 200ms ease,
+      transform 280ms cubic-bezier(.2, .8, .2, 1),
+      background-color 220ms ease,
+      border-color 220ms ease,
+      box-shadow 280ms ease !important;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .up-panel-container > .up-info-container:hover,
+    .right-container .up-info-container:hover {
+      z-index: 30;
+      translate: 0 -1px;
+    }
+
+    .up-panel-container > .up-info-container:hover::before,
+    .right-container .up-info-container:hover::before {
+      opacity: 1;
+      transform: scale(1);
+
+      background: var(--apple-card-background) !important;
+      border-color: var(--apple-card-border) !important;
+      box-shadow: var(--apple-card-shadow) !important;
+    }
+  }
+
+  .up-panel-container > .up-info-container:focus-within,
+  .right-container .up-info-container:focus-within {
+    z-index: 30;
+    translate: 0 -1px;
+  }
+
+  .up-panel-container > .up-info-container:focus-within::before,
+  .right-container .up-info-container:focus-within::before {
+    opacity: 1;
+    transform: scale(1);
+
+    background: var(--apple-card-background) !important;
+    border-color: var(--apple-card-border) !important;
+    box-shadow: var(--apple-card-shadow) !important;
+  }
+
+  :is(
+    .up-panel-container,
+    .right-container,
+    .right-container-inner
+  ) {
+    overflow: visible !important;
+  }
+
+
+  /* ========================================
+     8b. 播放页：播放器整体圆角（参考 YouTube 播放窗口）
+     ======================================== */
+
+  .bpx-player-container {
+    border-radius: 6px !important;
+    overflow: hidden !important;
+    box-shadow:
+      0 4px 16px rgba(0, 0, 0, 0.10),
+      0 24px 56px rgba(0, 0, 0, 0.18) !important;
+  }
+
+  /* 视频区域只保留上方两个圆角。下方与弹幕发送栏相接，恢复直角，避免黑色
+     播放器底层从左下角和右下角露出。 */
+  .bpx-player-video-area {
+    border-radius: 6px 6px 0 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* 硬件解码可能让 video 单独进入合成层，因此 video 自身也使用相同角度。 */
+  .bpx-player-video-area video {
+    border-radius: 6px 6px 0 0 !important;
+  }
+
+  /* 圆角外露出的黑色其实来自 B 站垫在真实播放器背后的占位层（加载防白屏用）：
+     #bilibili-player-placeholder-top 是和视频区同尺寸的纯黑直角矩形，
+     #bilibili-player-placeholder-bottom 是弹幕发送栏位置的白色矩形。
+     播放器裁了圆角后这层直角黑底就从四角露出来，给它同样裁一遍即可 */
+  #bilibili-player-placeholder {
+    border-radius: 6px !important;
+    overflow: hidden !important;
+  }
+
+  #bilibili-player-placeholder-top {
+    border-radius: 6px 6px 0 0 !important;
+  }
+
+  #bilibili-player-placeholder-bottom {
+    border-radius: 0 0 6px 6px !important;
+  }
+
+  :is(
+    .bpx-player-sending-area,
+    .bpx-player-sending-bar
+  ) {
+    border-bottom-left-radius: 6px !important;
+    border-bottom-right-radius: 6px !important;
+    overflow: hidden !important;
+  }
+
+
+  /* ========================================
+     9. 动态页：仅视频预览矩形
+     ======================================== */
+
+  /* 视频预览这一块本身不再单独做悬浮动画（避免和外层整卡的悬浮动画叠加打架），
+     只保留封面圆角这个静态效果，交互统一交给外层 .bili-dyn-item */
+  .bili-dyn-card-video {
+    position: relative;
+    overflow: hidden !important;
+    align-items: stretch !important;
+    box-sizing: border-box !important;
+    /* 将正文原有的上、下粗边框提升到封面＋正文的共同容器，形成连续整线。 */
+    border-top: 1px solid var(--line_regular, #e3e5e7) !important;
+    border-bottom: 1px solid var(--line_regular, #e3e5e7) !important;
+    border-left: 0 !important;
+    /* 右边线与右侧两个圆角也由同一盒子绘制，消除圆角接缝断口。 */
+    border-right: 1px solid var(--line_regular, #e3e5e7) !important;
+    border-radius: 6px !important;
+  }
+
+  /* 右侧正文面板的底色向左铺满整张视频预览卡；正文仍留在原位，
+     左侧封面以更高层级覆盖在延伸底色上，不改变原生 flex 尺寸。 */
+  .bili-dyn-card-video__body {
+    position: relative;
+    z-index: 0;
+    isolation: isolate;
+    align-self: stretch !important;
+    height: 100% !important;
+    min-height: 100% !important;
+    margin-block: 0 !important;
+    box-sizing: border-box;
+    /* 上、下边框已由共同父容器统一绘制，避免正文处再次叠线。 */
+    border-top-color: transparent !important;
+    border-bottom-color: transparent !important;
+    border-right-color: transparent !important;
+    border-radius: 0 6px 6px 0 !important;
+  }
+
+  .bili-dyn-card-video__body::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    top: 0;
+    /* 延伸层只存在于正文左侧、封面下方，避免与正文自身边框重叠成双线。 */
+    right: 100%;
+    bottom: 0;
+    left: -100vw;
+    box-sizing: border-box;
+    border: 0;
+    border-radius: 0;
+    background: inherit;
+    pointer-events: none;
+  }
+
+  .bili-dyn-card-video__cover {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* 深色模式下的视频动态正文面板：比原生 #17181A 稍亮，
+     同时让向封面下方延伸的 ::before 自动继承这一底色。 */
+  @media (prefers-color-scheme: dark) {
+    .bili-dyn-card-video,
+    .bili-dyn-card-video__body {
+      background-color: #222326 !important;
+    }
+
+    .bili-dyn-card-video {
+      border-top-color: rgba(255, 255, 255, 0.10) !important;
+      border-bottom-color: rgba(255, 255, 255, 0.10) !important;
+      border-right-color: rgba(255, 255, 255, 0.10) !important;
+    }
+
+  }
+
+  :is(
+    html.dark,
+    html.bili-dark,
+    html[data-theme="dark"],
+    html[data-color-mode="dark"],
+    html[data-theme-style="dark"],
+    html[data-darkreader-scheme="dark"]
+  ) :is(
+    .bili-dyn-card-video,
+    .bili-dyn-card-video__body
+  ) {
+    background-color: #222326 !important;
+  }
+
+  :is(
+    html.dark,
+    html.bili-dark,
+    html[data-theme="dark"],
+    html[data-color-mode="dark"],
+    html[data-theme-style="dark"],
+    html[data-darkreader-scheme="dark"]
+  ) .bili-dyn-card-video {
+    border-top-color: rgba(255, 255, 255, 0.10) !important;
+    border-bottom-color: rgba(255, 255, 255, 0.10) !important;
+    border-right-color: rgba(255, 255, 255, 0.10) !important;
+  }
+
+  /* 动态页右侧悬浮按钮（返回顶部等）：Apple 风格卡片动效。 */
+  .bili-dyn-sidebar__btn {
+    box-sizing: border-box !important;
+    border: 1px solid rgba(0, 0, 0, 0.065) !important;
+    border-radius: 10px !important;
+    background-color: rgba(255, 255, 255, 0.76) !important;
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.025),
+      0 6px 18px rgba(31, 38, 50, 0.07) !important;
+    backdrop-filter: saturate(125%) blur(12px) !important;
+    -webkit-backdrop-filter: saturate(125%) blur(12px) !important;
+    transform: translate3d(0, 0, 0) scale(1);
+    transform-origin: center;
+    will-change: transform;
+    transition:
+      transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+      background-color 180ms ease,
+      border-color 180ms ease,
+      box-shadow 220ms ease !important;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .bili-dyn-sidebar__btn:hover {
+      background-color: rgba(255, 255, 255, 0.94) !important;
+      border-color: rgba(0, 0, 0, 0.09) !important;
+      box-shadow:
+        0 2px 5px rgba(0, 0, 0, 0.045),
+        0 11px 26px rgba(31, 38, 50, 0.13) !important;
+      transform: translate3d(0, -2px, 0) scale(1.055);
+    }
+  }
+
+  .bili-dyn-sidebar__btn:focus-visible {
+    outline: 2px solid rgba(120, 86, 255, 0.48) !important;
+    outline-offset: 2px !important;
+    transform: translate3d(0, -1px, 0) scale(1.035);
+  }
+
+  .bili-dyn-sidebar__btn:active {
+    transform: translate3d(0, 0, 0) scale(0.98) !important;
+    transition-duration: 80ms !important;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .bili-dyn-sidebar__btn {
+      background-color: rgba(44, 44, 46, 0.72) !important;
+      border-color: rgba(255, 255, 255, 0.075) !important;
+      box-shadow:
+        0 1px 2px rgba(0, 0, 0, 0.16),
+        0 8px 22px rgba(0, 0, 0, 0.24) !important;
+    }
+
+    .bili-dyn-sidebar__btn:hover {
+      background-color: rgba(54, 54, 57, 0.88) !important;
+      border-color: rgba(255, 255, 255, 0.12) !important;
+      box-shadow:
+        0 2px 5px rgba(0, 0, 0, 0.24),
+        0 12px 28px rgba(0, 0, 0, 0.34) !important;
+    }
+  }
+
+  :is(
+    html.dark,
+    html.bili-dark,
+    html[data-theme="dark"],
+    html[data-color-mode="dark"],
+    html[data-theme-style="dark"],
+    html[data-darkreader-scheme="dark"]
+  ) .bili-dyn-sidebar__btn {
+    background-color: rgba(44, 44, 46, 0.72) !important;
+    border-color: rgba(255, 255, 255, 0.075) !important;
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.16),
+      0 8px 22px rgba(0, 0, 0, 0.24) !important;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    :is(
+      html.dark,
+      html.bili-dark,
+      html[data-theme="dark"],
+      html[data-color-mode="dark"],
+      html[data-theme-style="dark"],
+      html[data-darkreader-scheme="dark"]
+    ) .bili-dyn-sidebar__btn:hover {
+      background-color: rgba(54, 54, 57, 0.88) !important;
+      border-color: rgba(255, 255, 255, 0.12) !important;
+      box-shadow:
+        0 2px 5px rgba(0, 0, 0, 0.24),
+        0 12px 28px rgba(0, 0, 0, 0.34) !important;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bili-dyn-sidebar__btn {
+      transition: none !important;
+    }
+  }
+
+  /* 动态页每条动态的整卡（含头像/昵称/正文），浅色模式下默认就要能看出是张卡片，
+     不依赖 hover；只在浅色模式生效，颜色写死不用变量，不影响暗色模式 */
+  .bili-dyn-item {
+    position: relative;
+    isolation: isolate;
+
+    background-color: rgb(255, 255, 255) !important;
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
+    box-shadow:
+      0 1px 3px rgba(0, 0, 0, 0.04),
+      0 10px 28px rgba(0, 0, 0, 0.09) !important;
+    border-radius: 6px !important;
+
+    translate: 0 0;
+    transition:
+      translate var(--apple-card-speed)
+        cubic-bezier(.2, .8, .2, 1),
+      box-shadow 280ms ease,
+      border-color 220ms ease !important;
+  }
+
+  /* 原本只挂在动态里的视频预览卡（.bili-dyn-card-video）上的“悬浮上浮”交互，
+     现在整张动态卡片（含图文动态）都有，不再局限于视频类动态 */
+  .bili-dyn-item:hover {
+    z-index: 10;
+    translate: 0 -3px;
+    border-color: rgba(0, 0, 0, 0.1) !important;
+    box-shadow:
+      0 4px 12px rgba(0, 0, 0, 0.07),
+      0 20px 44px rgba(0, 0, 0, 0.14) !important;
+  }
+
+  /* 动态页其余的原生白卡片（发布动态框、up主头像快捷栏、分类tab栏、
+     左侧个人信息/直播卡、右侧banner/热搜卡），统一换成和下面动态卡片一样的效果，
+     同一套悬浮上浮交互也一起加上 */
+  :is(
+    .bili-dyn-publishing,
+    .bili-dyn-up-list,
+    .bili-dyn-list-tabs,
+    .bili-dyn-my-info,
+    .bili-dyn-live-users,
+    .bili-dyn-banner,
+    .bili-dyn-search-trendings
+  ) {
+    position: relative;
+    isolation: isolate;
+
+    background-color: rgb(255, 255, 255) !important;
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
+    box-shadow:
+      0 1px 3px rgba(0, 0, 0, 0.04),
+      0 10px 28px rgba(0, 0, 0, 0.09) !important;
+    border-radius: 6px !important;
+
+    translate: 0 0;
+    transition:
+      translate var(--apple-card-speed)
+        cubic-bezier(.2, .8, .2, 1),
+      box-shadow 280ms ease,
+      border-color 220ms ease !important;
+  }
+
+  :is(
+    .bili-dyn-publishing,
+    .bili-dyn-up-list,
+    .bili-dyn-list-tabs,
+    .bili-dyn-my-info,
+    .bili-dyn-live-users,
+    .bili-dyn-banner,
+    .bili-dyn-search-trendings
+  ):hover {
+    z-index: 10;
+    translate: 0 -3px;
+    border-color: rgba(0, 0, 0, 0.1) !important;
+    box-shadow:
+      0 4px 12px rgba(0, 0, 0, 0.07),
+      0 20px 44px rgba(0, 0, 0, 0.14) !important;
+  }
+
+  /* 发布框里的标题输入框和正文编辑区自带一层背景色（暗色模式下比卡片底色更黑，
+     形成两条突兀的黑带），改成透明直接透出卡片背景 */
+  :is(
+    .bili-dyn-publishing__title__input,
+    .bili-rich-textarea__inner
+  ) {
+    background: transparent !important;
+  }
+
+  /* 关注账号头像快捷栏：悬浮时放大+上浮，类似 macOS Dock 图标被激活的弹起感，
+     用稍微回弹超调的缓动曲线（数值先冲过 1.12/-6px 再回落）强化这种"弹"的手感 */
+  .bili-dyn-up-list__item .bili-dyn-up-list__item__face {
+    transform: translateY(0) scale(1);
+    transition: transform 320ms cubic-bezier(.34, 1.56, .64, 1) !important;
+  }
+
+  .bili-dyn-up-list__item:hover .bili-dyn-up-list__item__face {
+    transform: translateY(-6px) scale(1.12);
+  }
+
+  /* 暗色模式：以上全部卡片改用暗色版的卡片变量（跟随系统或站点暗色模式切换） */
+  @media (prefers-color-scheme: dark) {
+    :is(
+      .bili-dyn-item,
+      .bili-dyn-publishing,
+      .bili-dyn-up-list,
+      .bili-dyn-list-tabs,
+      .bili-dyn-my-info,
+      .bili-dyn-live-users,
+      .bili-dyn-banner,
+      .bili-dyn-search-trendings
+    ) {
+      background-color: var(--apple-card-background) !important;
+      border-color: rgba(255, 255, 255, 0.045) !important;
+      box-shadow:
+        0 1px 2px rgba(0, 0, 0, 0.12),
+        0 10px 26px rgba(0, 0, 0, 0.20) !important;
+    }
+
+    :is(
+      .bili-dyn-item,
+      .bili-dyn-publishing,
+      .bili-dyn-up-list,
+      .bili-dyn-list-tabs,
+      .bili-dyn-my-info,
+      .bili-dyn-live-users,
+      .bili-dyn-banner,
+      .bili-dyn-search-trendings
+    ):hover {
+      border-color: rgba(255, 255, 255, 0.075) !important;
+      box-shadow:
+        0 2px 8px rgba(0, 0, 0, 0.18),
+        0 16px 34px rgba(0, 0, 0, 0.28) !important;
+    }
+  }
+
+  :is(
+    html.dark,
+    html.bili-dark,
+    html[data-theme="dark"],
+    html[data-color-mode="dark"],
+    html[data-theme-style="dark"],
+    html[data-darkreader-scheme="dark"]
+  )
+  :is(
+    .bili-dyn-item,
+    .bili-dyn-publishing,
+    .bili-dyn-up-list,
+    .bili-dyn-list-tabs,
+    .bili-dyn-my-info,
+    .bili-dyn-live-users,
+    .bili-dyn-banner,
+    .bili-dyn-search-trendings
+  ) {
+    background-color: var(--apple-card-background) !important;
+    border-color: rgba(255, 255, 255, 0.045) !important;
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.12),
+      0 10px 26px rgba(0, 0, 0, 0.20) !important;
+  }
+
+  :is(
+    html.dark,
+    html.bili-dark,
+    html[data-theme="dark"],
+    html[data-color-mode="dark"],
+    html[data-theme-style="dark"],
+    html[data-darkreader-scheme="dark"]
+  )
+  :is(
+    .bili-dyn-item,
+    .bili-dyn-publishing,
+    .bili-dyn-up-list,
+    .bili-dyn-list-tabs,
+    .bili-dyn-my-info,
+    .bili-dyn-live-users,
+    .bili-dyn-banner,
+    .bili-dyn-search-trendings
+  ):hover {
+    border-color: rgba(255, 255, 255, 0.075) !important;
+    box-shadow:
+      0 2px 8px rgba(0, 0, 0, 0.18),
+      0 16px 34px rgba(0, 0, 0, 0.28) !important;
+  }
+
+  .bili-dyn-card-video
+  :is(
+    .bili-dyn-card-video__cover,
+    .bili-dyn-card-video__cover__img,
+    .bili-dyn-card-video__cover-wrap
+  ) {
+    overflow: hidden;
+    border-radius: 6px !important;
+  }
+
+  /* The mask covers only the thumbnail half. Its inner two corners meet the
+     text panel, so only the two outer-left corners should remain rounded. */
+  .bili-dyn-card-video__cover__mask {
+    border-radius: 6px 0 0 6px !important;
+  }
+
+
+  /* ========================================
+     10. 窄窗口
+     ======================================== */
+
+  /* ========================================
+     动态页 Apple 风格背景
+     必须放在这个主 bilibili.com 规则内，Stylus 才会稳定注入
+     ======================================== */
+
+  html:has(body #app > .bgc) {
+    min-height: 100%;
+    background: rgb(250, 250, 252) !important;
+  }
+
+  /* 之前这里叠了两个蓝/紫色的椭圆光斑做"极光"效果，观感偏花哨，跟全站其余
+     页面走的纯色/近纯色扁平背景不统一。苹果自己的系统背景（如 macOS 设置、
+     Apple.com 正文区）几乎都是不带彩色光斑的浅灰基调，这里改成同样克制的
+     纯色 + 几乎看不出层次的竖向渐变，只留一点点深度，不引入额外颜色 */
+  body:has(#app > .bgc) {
+    min-height: 100vh;
+    background-color: rgb(250, 250, 252) !important;
+    background-image:
+      linear-gradient(180deg, rgb(253, 254, 255) 0%, rgb(250, 251, 253) 52%, rgb(252, 252, 254) 100%) !important;
+    background-attachment: fixed !important;
+    background-repeat: no-repeat !important;
+    background-size: cover !important;
+  }
+
+  /* 网站真实的浅蓝底层与左右人物图片层 */
+  html body #app > div.bgc,
+  html body #app > div.bg {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    background: none !important;
+    background-color: transparent !important;
+    background-image: none !important;
+    pointer-events: none !important;
+  }
+
+  body:has(#app > .bgc) #app,
+  body:has(#app > .bgc) :is(
+    .bili-dyn-home,
+    .bili-dyn-home--member,
+    .bili-dyn-home__main,
+    .bili-dyn-home--member__main,
+    .bili-dyn-home__content,
+    .bili-dyn-home--member__content
+  ) {
+    background-color: transparent !important;
+    background-image: none !important;
+  }
+
+  /* 动态页顶栏搜索框：按整个窗口水平居中 */
+  body:has(#app > .bgc) :is(
+    .center-search-container,
+    .bili-header .center-search-container,
+    .bili-header__bar .center-search-container,
+    #bili-header-container .center-search-container,
+    .z-top-container .center-search-container
+  ) {
+    position: absolute !important;
+    left: 50% !important;
+    right: auto !important;
+    width: min(620px, 42vw) !important;
+    max-width: 620px !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    transform: translateX(-50%) !important;
+    z-index: 10 !important;
+  }
+
+  /* 首页顶栏搜索框：原生只是在 logo 和右侧图标之间居中，两边宽度不等时会偏；改成按整个窗口居中 */
+  .bili-header .center-search-container {
+    position: absolute !important;
+    left: 50% !important;
+    right: auto !important;
+    width: min(620px, 42vw) !important;
+    max-width: 620px !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    transform: translateX(-50%) !important;
+    z-index: 10 !important;
+  }
+
+  /* 防御性处理：搜索框脱离文档流后，保证头像/图标依然强制贴在最右侧 */
+  .bili-header .right-entry {
+    margin-left: auto !important;
+  }
+
+  /* 右上角图标（消息/动态/收藏/历史等）悬浮弹出的浮层：原生用 left + transform 组合算出
+     一个具体偏移量把浮层"对准"图标，这个偏移量是按较宽的桌面视口算的，窗口变窄之后
+     偏移量还是那么大，浮层右边缘就会被推出屏幕外、显示不全（实测在 900px 宽的窗口下
+     右边缘会超出视口约 44px）。改成从图标锚点本身的右边缘直接向左展开（right:0 +
+     去掉 left/transform），不管视口多窄，浮层的右边界都不会超过图标位置，自然就不会
+     跑到屏幕外面 */
+  .v-popover.v-popover {
+    left: auto !important;
+    right: 0 !important;
+    transform: none !important;
+    /* 原生进场动画是 transition:all 0.3s ease，连带宽高/位置一起过渡，浮层在展开过程中
+       尺寸和位置都在变，backdrop-filter 实时采样背后内容，看起来就像模糊效果中途变了一次。
+       收窄成只过渡 opacity，尺寸位置从第一帧就是最终值，只剩一个干净的淡入，模糊感全程
+       稳定，换一条更柔和的缓动曲线也顺带让开合手感更细腻 */
+    transition: opacity 220ms cubic-bezier(.25, .46, .45, .94) !important;
+  }
+
+  /* 消息/动态/收藏/历史等按钮悬浮弹出的浮层内容（.v-popover-content，登录卡片、大会员
+     卡片、动态列表都共用这个类），原生纯白底 + 阴影，和顶栏的毛玻璃风格不统一；上一版
+     只换了背景色和模糊，阴影还留着原生那个 0 0 30px 的重投影，两种质感混在一起显得不
+     协调。这版直接把顶栏 .bili-header__bar 的参数原封不动搬过来（连阴影一起去掉），
+     选择器也重复类名顶一下优先级，确保不会被原生浮层样式盖掉 */
+  .v-popover-content.v-popover-content {
+    background-color: rgba(255, 255, 255, 0.86) !important;
+    background-image: none !important;
+    box-shadow: none !important;
+    backdrop-filter: saturate(110%) blur(12px) !important;
+    -webkit-backdrop-filter: saturate(110%) blur(12px) !important;
+    transform: translateZ(0) !important;
+    isolation: isolate !important;
+    will-change: backdrop-filter !important;
+  }
+
+  /* 用户用 DevTools 揪出了真正的原因：.v-popover-content 内部还套了一层
+     .dynamic-panel-popover → .header-tabs-panel_content（滚动容器）→ .header-content-panel
+     → .dynamic-header / .dynamic-all，这几层原生各自也有纯白底，一层层叠在最外层的
+     毛玻璃背景上面，把它完全盖住了——跟之前分类条/展开面板踩过的坑是同一种模式（子元素
+     自己的不透明背景把父元素的毛玻璃糊住）。这里直接把这条链路上所有中间层都清成透明，
+     只让最外层 .v-popover-content 一个人负责画背景和模糊 */
+  .v-popover-content :is(
+    .dynamic-panel-popover,
+    .header-tabs-panel_content,
+    .header-content-panel,
+    .dynamic-header,
+    .dynamic-all
+  ) {
+    background: transparent !important;
+    background-color: transparent !important;
+    background-image: none !important;
+    box-shadow: none !important;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .v-popover-content.v-popover-content {
+      background-color: rgba(28, 28, 30, 0.86) !important;
+    }
+  }
+
+  :is(
+    html.dark,
+    html.bili-dark,
+    html[data-theme="dark"],
+    html[data-color-mode="dark"],
+    html[data-theme-style="dark"],
+    html[data-darkreader-scheme="dark"]
+  ) .v-popover-content.v-popover-content {
+    background-color: rgba(28, 28, 30, 0.86) !important;
+  }
+
+
+  /* ========================================
+     顶栏浮层：头像面板与搜索展开面板
+     ======================================== */
+
+  /*
+   * 头像面板使用与顶栏同系的透明玻璃；比顶栏多一层边框和阴影，
+   * 让它在展开时仍然明确是一张悬浮面板。
+   */
+  .right-entry .v-popover-content.v-popover-content,
+  .v-popover-content.avatar-popover,
+  .v-popover-content:has(> .avatar-panel-popover) {
+    overflow: hidden !important;
+
+    background-color: rgba(255, 255, 255, 0.76) !important;
+    background-image: none !important;
+
+    border: 1px solid rgba(255, 255, 255, 0.62) !important;
+    border-radius: 18px !important;
+
+    box-shadow:
+      0 1px 2px rgba(15, 23, 42, 0.05),
+      0 18px 48px rgba(38, 51, 77, 0.18) !important;
+
+    backdrop-filter: saturate(170%) blur(24px) !important;
+    -webkit-backdrop-filter: saturate(170%) blur(24px) !important;
+
+    transform: translateZ(0) !important;
+    isolation: isolate !important;
+  }
+
+  /* 原生内层是不透明灰底，会完全盖住外层的磨砂取样，必须清成透明。 */
+  .avatar-popover .avatar-panel-popover,
+  .v-popover-content > .avatar-panel-popover,
+  .right-entry .v-popover-content > [class*="panel-popover"],
+  .right-entry .v-popover-content > [class*="-panel"],
+  .right-entry .v-popover-content > [class*="_panel"] {
+    background: transparent !important;
+    background-color: transparent !important;
+    background-image: none !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+
+  /*
+   * 搜索面板采用“高一级的浮层玻璃”：比顶栏更不透明、模糊略弱，
+   * 再通过下方圆角、细边框和投影与顶栏/搜索框区分。
+   */
+  .bili-header__bar.slide-down .search-panel.search-panel,
+  .bili-header__bar .center-search-container .search-panel.search-panel {
+    overflow: hidden !important;
+
+    background-color: rgba(255, 255, 255, 0.84) !important;
+    background-image: none !important;
+
+    border: 1px solid rgba(15, 23, 42, 0.075) !important;
+    border-top-color: rgba(15, 23, 42, 0.10) !important;
+    border-radius: 0 0 8px 8px !important;
+
+    box-shadow:
+      0 2px 5px rgba(15, 23, 42, 0.055),
+      0 20px 46px rgba(38, 51, 77, 0.17) !important;
+
+    backdrop-filter: saturate(145%) blur(18px) !important;
+    -webkit-backdrop-filter: saturate(145%) blur(18px) !important;
+
+    transform: translateZ(0) !important;
+    isolation: isolate !important;
+  }
+
+  /* 搜索框本体：与浮层同系的玻璃胶囊，并保留展开时与面板相接的上圆角。 */
+  .bili-header__bar #nav-searchform,
+  .bili-header__bar .center-search-container #nav-searchform {
+    position: relative !important;
+    isolation: isolate;
+
+    background-color: rgba(255, 255, 255, 0.58) !important;
+    background-image: none !important;
+
+    border: 1px solid rgba(15, 23, 42, 0.085) !important;
+    border-radius: 8px !important;
+
+    box-shadow:
+      0 1px 2px rgba(15, 23, 42, 0.035),
+      0 6px 18px rgba(38, 51, 77, 0.075) !important;
+
+    backdrop-filter: saturate(150%) blur(18px) !important;
+    -webkit-backdrop-filter: saturate(150%) blur(18px) !important;
+
+    translate: 0 0;
+    scale: 1;
+
+    transition:
+      translate 220ms cubic-bezier(.2, .8, .2, 1),
+      scale 220ms cubic-bezier(.2, .8, .2, 1),
+      background-color 180ms ease,
+      border-color 180ms ease,
+      box-shadow 220ms ease !important;
+
+    will-change: translate, scale;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .bili-header__bar #nav-searchform:hover:not(:focus-within),
+    .bili-header__bar .center-search-container #nav-searchform:hover:not(:focus-within) {
+      background-color: rgba(255, 255, 255, 0.72) !important;
+      border-color: rgba(15, 23, 42, 0.13) !important;
+      box-shadow:
+        0 2px 5px rgba(15, 23, 42, 0.05),
+        0 11px 28px rgba(38, 51, 77, 0.13) !important;
+
+      translate: 0 -1px;
+      scale: 1.006;
+    }
+  }
+
+  .bili-header__bar #nav-searchform:focus-within,
+  .bili-header__bar .center-search-container #nav-searchform:focus-within {
+    background-color: rgba(255, 255, 255, 0.78) !important;
+    border-color: rgba(120, 86, 255, 0.30) !important;
+    box-shadow:
+      0 0 0 3px rgba(120, 86, 255, 0.09),
+      0 12px 30px rgba(38, 51, 77, 0.14) !important;
+
+    translate: 0 0;
+    scale: 1;
+  }
+
+  .bili-header__bar .center-search__bar.is-focus #nav-searchform,
+  .bili-header__bar #nav-searchform.is-focus {
+    border-radius: 8px 8px 0 0 !important;
+  }
+
+  /* 放大镜按钮只在原来的右侧区域内缩放，不改变搜索框整体宽度。 */
+  .bili-header__bar #nav-searchform .nav-search-btn {
+    border-left: 1px solid rgba(15, 23, 42, 0.07) !important;
+    border-radius: 0 8px 8px 0 !important;
+
+    background-color: rgba(255, 255, 255, 0.18) !important;
+
+    transform: translateZ(0) scale(1);
+    transform-origin: center center;
+
+    transition:
+      transform 220ms cubic-bezier(.20, .88, .24, 1.12),
+      background-color 180ms ease,
+      filter 180ms ease,
+      box-shadow 220ms ease !important;
+
+    will-change: transform;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .bili-header__bar #nav-searchform .nav-search-btn:hover {
+      background-color: rgba(255, 255, 255, 0.52) !important;
+      box-shadow: 0 5px 14px rgba(38, 51, 77, 0.13) !important;
+      filter: brightness(1.035) saturate(1.04);
+      transform: translateZ(0) scale(1.10);
+    }
+  }
+
+  .bili-header__bar #nav-searchform .nav-search-btn:active {
+    transform: translateZ(0) scale(.95);
+    transition-duration: 90ms !important;
+  }
+
+  .bili-header__bar .center-search__bar.is-focus
+  #nav-searchform .nav-search-btn {
+    border-radius: 0 8px 0 0 !important;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .right-entry .v-popover-content.v-popover-content,
+    .v-popover-content.avatar-popover,
+    .v-popover-content:has(> .avatar-panel-popover) {
+      background-color: rgba(28, 28, 30, 0.76) !important;
+      border-color: rgba(255, 255, 255, 0.13) !important;
+      box-shadow:
+        0 2px 6px rgba(0, 0, 0, 0.25),
+        0 20px 50px rgba(0, 0, 0, 0.42) !important;
+    }
+
+    .bili-header__bar.slide-down .search-panel.search-panel,
+    .bili-header__bar .center-search-container .search-panel.search-panel {
+      background-color: rgba(30, 30, 34, 0.86) !important;
+      border-color: rgba(255, 255, 255, 0.11) !important;
+      border-top-color: rgba(255, 255, 255, 0.15) !important;
+      box-shadow:
+        0 2px 6px rgba(0, 0, 0, 0.28),
+        0 22px 52px rgba(0, 0, 0, 0.44) !important;
+    }
+
+    .bili-header__bar #nav-searchform,
+    .bili-header__bar .center-search-container #nav-searchform {
+      background-color: rgba(35, 35, 39, 0.66) !important;
+      border-color: rgba(255, 255, 255, 0.11) !important;
+      box-shadow:
+        0 1px 3px rgba(0, 0, 0, 0.20),
+        0 8px 22px rgba(0, 0, 0, 0.27) !important;
+    }
+
+    .bili-header__bar #nav-searchform:hover:not(:focus-within),
+    .bili-header__bar .center-search-container
+    #nav-searchform:hover:not(:focus-within) {
+      background-color: rgba(40, 40, 44, 0.72) !important;
+      border-color: rgba(255, 255, 255, 0.14) !important;
+      box-shadow:
+        0 1px 3px rgba(0, 0, 0, 0.18),
+        0 9px 24px rgba(0, 0, 0, 0.24) !important;
+    }
+
+    .bili-header__bar #nav-searchform:focus-within,
+    .bili-header__bar .center-search-container #nav-searchform:focus-within {
+      background-color: rgba(38, 38, 42, 0.82) !important;
+      border-color: rgba(165, 141, 255, 0.40) !important;
+      box-shadow:
+        0 0 0 3px rgba(120, 86, 255, 0.13),
+        0 13px 32px rgba(0, 0, 0, 0.36) !important;
+    }
+
+    .bili-header__bar #nav-searchform .nav-search-btn {
+      background-color: rgba(255, 255, 255, 0.07) !important;
+      border-left-color: rgba(255, 255, 255, 0.10) !important;
+    }
+
+    .bili-header__bar #nav-searchform .nav-search-btn:hover {
+      background-color: rgba(255, 255, 255, 0.14) !important;
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.34) !important;
+    }
+  }
+
+  :is(
+    html.dark,
+    html.bili-dark,
+    html[data-theme="dark"],
+    html[data-color-mode="dark"],
+    html[data-theme-style="dark"],
+    html[data-darkreader-scheme="dark"]
+  ) :is(
+    .right-entry .v-popover-content.v-popover-content,
+    .v-popover-content.avatar-popover,
+    .v-popover-content:has(> .avatar-panel-popover)
+  ) {
+    background-color: rgba(28, 28, 30, 0.76) !important;
+    border-color: rgba(255, 255, 255, 0.13) !important;
+    box-shadow:
+      0 2px 6px rgba(0, 0, 0, 0.25),
+      0 20px 50px rgba(0, 0, 0, 0.42) !important;
+  }
+
+  :is(
+    html.dark,
+    html.bili-dark,
+    html[data-theme="dark"],
+    html[data-color-mode="dark"],
+    html[data-theme-style="dark"],
+    html[data-darkreader-scheme="dark"]
+  ) :is(
+    .bili-header__bar.slide-down .search-panel.search-panel,
+    .bili-header__bar .center-search-container .search-panel.search-panel
+  ) {
+    background-color: rgba(30, 30, 34, 0.86) !important;
+    border-color: rgba(255, 255, 255, 0.11) !important;
+    border-top-color: rgba(255, 255, 255, 0.15) !important;
+    box-shadow:
+      0 2px 6px rgba(0, 0, 0, 0.28),
+      0 22px 52px rgba(0, 0, 0, 0.44) !important;
+  }
+
+  :is(
+    html.dark,
+    html.bili-dark,
+    html[data-theme="dark"],
+    html[data-color-mode="dark"],
+    html[data-theme-style="dark"],
+    html[data-darkreader-scheme="dark"]
+  ) :is(
+    .bili-header__bar #nav-searchform,
+    .bili-header__bar .center-search-container #nav-searchform
+  ) {
+    background-color: rgba(35, 35, 39, 0.66) !important;
+    border-color: rgba(255, 255, 255, 0.11) !important;
+    box-shadow:
+      0 1px 3px rgba(0, 0, 0, 0.20),
+      0 8px 22px rgba(0, 0, 0, 0.27) !important;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    :is(
+      html.dark,
+      html.bili-dark,
+      html[data-theme="dark"],
+      html[data-color-mode="dark"],
+      html[data-theme-style="dark"],
+      html[data-darkreader-scheme="dark"]
+    ) :is(
+      .bili-header__bar #nav-searchform:hover:not(:focus-within),
+      .bili-header__bar .center-search-container
+      #nav-searchform:hover:not(:focus-within)
+    ) {
+      background-color: rgba(40, 40, 44, 0.72) !important;
+      border-color: rgba(255, 255, 255, 0.14) !important;
+      box-shadow:
+        0 1px 3px rgba(0, 0, 0, 0.18),
+        0 9px 24px rgba(0, 0, 0, 0.24) !important;
+    }
+  }
+
+  :is(
+    html.dark,
+    html.bili-dark,
+    html[data-theme="dark"],
+    html[data-color-mode="dark"],
+    html[data-theme-style="dark"],
+    html[data-darkreader-scheme="dark"]
+  ) :is(
+    .bili-header__bar #nav-searchform:focus-within,
+    .bili-header__bar .center-search-container #nav-searchform:focus-within
+  ) {
+    background-color: rgba(38, 38, 42, 0.82) !important;
+    border-color: rgba(165, 141, 255, 0.40) !important;
+    box-shadow:
+      0 0 0 3px rgba(120, 86, 255, 0.13),
+      0 13px 32px rgba(0, 0, 0, 0.36) !important;
+  }
+
+  :is(
+    html.dark,
+    html.bili-dark,
+    html[data-theme="dark"],
+    html[data-color-mode="dark"],
+    html[data-theme-style="dark"],
+    html[data-darkreader-scheme="dark"]
+  ) .bili-header__bar #nav-searchform .nav-search-btn {
+    background-color: rgba(255, 255, 255, 0.07) !important;
+    border-left-color: rgba(255, 255, 255, 0.10) !important;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bili-header__bar #nav-searchform,
+    .bili-header__bar .center-search-container #nav-searchform {
+      translate: 0 0 !important;
+      scale: 1 !important;
+      transition: none !important;
+    }
+
+    .bili-header__bar #nav-searchform .nav-search-btn {
+      transform: none !important;
+      transition: none !important;
+    }
+  }
+
+  /* 首页顶栏最上面那条搜索框+头像的 .bili-header__bar 是 position:absolute，天生就悬浮在
+     顶部大图 .bili-header__banner 的头 64px 上方，把大图硬生生盖掉一截、显得发灰发暗。
+     第一版直接给 .bili-header__banner 加 padding-top，结果轮播图内部是按固定像素高度
+     裁切/定位的，容器变高之后图片没跟着变高，露出来的空隙里出现了图片被截断重复的
+     显示 bug。改成给外层 .bili-header.large-header 整体加 padding-top——banner 自己的
+     盒子尺寸完全不动，只是和后面的分类条一起被这块空白顶下去 64px，顶栏正好落在这块
+     空白里，不再压banner，也不会触发 banner 内部的裁切 bug */
+  .bili-header.large-header {
+    padding-top: 64px !important;
+  }
+
+  /* 热门及其五个分类页使用普通 .bili-header，而不是首页的 .large-header。
+     顶栏本身为 absolute；在外层预留原生 64px 高度，让横幅从顶栏下方开始，
+     既不遮住图片，也不改变 banner 内部固定尺寸与裁切方式。 */
+  body:has(.popular-container) .bili-header {
+    padding-top: 64px !important;
+  }
+
+  body:has(.popular-container) .bili-header > .bili-header__bar {
+    top: 0 !important;
+  }
+
+  /* 首页/搜索页/视频播放页/UP主空间页顶栏：这几个页面 bilibili 自己的 JS 已经会在滚动后把
+     .bili-header__bar 固定在顶部（大首页 large-header、搜索页 mini-header 都是这样），
+     不需要再额外强制 position:fixed，这里只需要把原生的纯白底替换成毛玻璃质感即可。
+     参考 X（twitter）顶栏的克制风格：几乎不透，只留一点点模糊感，而不是大面积透色，
+     这样才不会在鲜艳的视频封面/banner 上显得"炸眼"。下边框直接去掉——它和下面接着的
+     .header-channel 是同一条视觉上连续的玻璃面板，中间不该有分隔线，只在
+     .header-channel 自己的下边缘留一条线收尾 */
+  /* 背景+模糊改画在 ::before 伪元素上，不直接放在 .bili-header__bar 本身：实测确认
+     .bili-header__bar 上如果直接有 backdrop-filter，会变成一个"毛玻璃根"，导致它内部嵌套的
+     悬浮浮层（消息/动态/收藏/历史那几个按钮弹出的 .v-popover-content）自己的 backdrop-filter
+     不能正常取样——透明度能生效，但模糊完全不生效，是 Chromium 处理嵌套 backdrop-filter 的
+     已知限制。把毛玻璃搬到伪元素上之后，.bili-header__bar 本身不再直接带 backdrop-filter，
+     里面嵌套的浮层就不会被这个"根"卡住了 */
+  .bili-header__bar {
+    background-color: transparent !important;
+    background-image: none !important;
+    border-bottom: none !important;
+    box-shadow: none !important;
+  }
+
+  .bili-header__bar::before {
+    content: "" !important;
+    position: absolute !important;
+    inset: 0 !important;
+    z-index: -1 !important;
+    pointer-events: none !important;
+    background-color: rgba(255, 255, 255, 0.86) !important;
+    backdrop-filter: saturate(110%) blur(12px) !important;
+    -webkit-backdrop-filter: saturate(110%) blur(12px) !important;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .bili-header__bar::before {
+      background-color: rgba(28, 28, 30, 0.86) !important;
+    }
+  }
+
+  :is(
+    html.dark,
+    html.bili-dark,
+    html[data-theme="dark"],
+    html[data-color-mode="dark"],
+    html[data-theme-style="dark"],
+    html[data-darkreader-scheme="dark"]
+  ) .bili-header__bar::before {
+    background-color: rgba(28, 28, 30, 0.86) !important;
+  }
+
+  /* 首页顶栏右上角（消息/大会员/动态/收藏/历史）：原生在"顶栏透明、悬浮在banner上"这个
+     状态下，图标和文字是单独设成白色的（不是继承色，SVG/span 各自都写死了 color:#fff），
+     用来在彩色banner上保持可读。现在顶栏背景常驻浅色磨砂，白字压在浅色底上完全看不清，
+     所以强制改成和正文一致的深色；暗色模式下顶栏本身是深色磨砂，改回浅色文字 */
+  .right-entry .right-entry-icon,
+  .right-entry .right-entry-text,
+  .right-entry__outside span {
+    color: rgb(24, 25, 28) !important;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .right-entry .right-entry-icon,
+    .right-entry .right-entry-text,
+    .right-entry__outside span {
+      color: rgb(229, 229, 234) !important;
+    }
+  }
+
+  :is(
+    html.dark,
+    html.bili-dark,
+    html[data-theme="dark"],
+    html[data-color-mode="dark"],
+    html[data-theme-style="dark"],
+    html[data-darkreader-scheme="dark"]
+  ) :is(
+    .right-entry .right-entry-icon,
+    .right-entry .right-entry-text,
+    .right-entry__outside span
+  ) {
+    color: rgb(229, 229, 234) !important;
+  }
+
+  /* 首页顶栏正下方的分类导航条（动态/热门 + 番剧/国创/综艺...标签）：未滚动、悬浮在banner
+     上方时曾经改成毛玻璃，实测和真实 banner 配色不太协调、显得色调不统一，索性恢复原生
+     白底，只有下面"更多"展开、页面已滚动吸顶的 .header-channel 才用毛玻璃 */
+
+  /* "更多"展开后的分类面板：真正撑起悬浮效果的是 .header-channel 本身——页面往下滚动后
+     它会被切成 position:fixed，贴在顶栏正下方（top: 顶栏高度），下面的视频栅格确实会
+     往上划到它身后。之前一直改错了对象：.header-channel-fixed 只是它内部的子元素，
+     自己是透明的、没有背景，真正画白底的是 .header-channel（原生 background:#fff），
+     所以之前不管怎么调 .header-channel-fixed 的透明度，都是一层半透明白叠在
+     .header-channel 那层不透明白之上，看起来当然还是纯白。这次直接把毛玻璃画在
+     .header-channel 上，.header-channel-fixed 保持透明即可 */
+  .header-channel.header-channel {
+    background-color: rgba(255, 255, 255, 0.86) !important;
+    background-image: none !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.045) !important;
+    box-shadow: none !important;
+    backdrop-filter: saturate(110%) blur(12px) !important;
+    -webkit-backdrop-filter: saturate(110%) blur(12px) !important;
+  }
+
+  .header-channel-fixed.header-channel-fixed {
+    background: transparent !important;
+    background-color: transparent !important;
+    background-image: none !important;
+    box-shadow: none !important;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .header-channel.header-channel {
+      background-color: rgba(28, 28, 30, 0.86) !important;
+      background-image: none !important;
+      border-bottom-color: rgba(255, 255, 255, 0.07) !important;
+      box-shadow: none !important;
+    }
+  }
+
+  :is(
+    html.dark,
+    html.bili-dark,
+    html[data-theme="dark"],
+    html[data-color-mode="dark"],
+    html[data-theme-style="dark"],
+    html[data-darkreader-scheme="dark"]
+  ) .header-channel.header-channel {
+    background-color: rgba(28, 28, 30, 0.86) !important;
+    background-image: none !important;
+    border-bottom-color: rgba(255, 255, 255, 0.07) !important;
+    box-shadow: none !important;
+  }
+
+  /* 分类标签（番剧/国创/综艺...）：原生是块块实色浅灰底，压在毛玻璃顶栏上显得像贴上去的
+     死板色块。改成半透明的"玻璃小标签"——极淡的黑色叠加 + 几乎看不见的发丝描边、
+     去掉阴影，让标签本身也带一点毛玻璃质感、融进顶栏而不是浮在上面，是更克制、更
+     苹果风格的"轻量分段控件"处理（参考 Safari 标签组/macOS 侧边栏筛选项那种感觉） */
+  .channel-link {
+    background-color: rgba(0, 0, 0, 0.045) !important;
+    border-color: rgba(0, 0, 0, 0.07) !important;
+    box-shadow: none !important;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .channel-link {
+      background-color: rgba(255, 255, 255, 0.06) !important;
+      border-color: rgba(255, 255, 255, 0.10) !important;
+    }
+  }
+
+  :is(
+    html.dark,
+    html.bili-dark,
+    html[data-theme="dark"],
+    html[data-color-mode="dark"],
+    html[data-theme-style="dark"],
+    html[data-darkreader-scheme="dark"]
+  ) .channel-link {
+    background-color: rgba(255, 255, 255, 0.06) !important;
+    border-color: rgba(255, 255, 255, 0.10) !important;
+  }
+
+  /* 分类标签悬浮动效：和文件里其它卡片一致的克制上浮 + 投影，鼠标划过时标签本身
+     "浮起来"一点，呼应整个主题的卡片动效语言，不是孤立地只有颜色变化 */
+  .channel-link {
+    transition:
+      transform 220ms cubic-bezier(.2, .8, .2, 1),
+      box-shadow 220ms ease,
+      background-color 220ms ease !important;
+  }
+
+  .channel-link:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.16) !important;
+    background-color: rgba(0, 0, 0, 0.06) !important;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .channel-link:hover {
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.36) !important;
+      background-color: rgba(255, 255, 255, 0.10) !important;
+    }
+  }
+
+  :is(
+    html.dark,
+    html.bili-dark,
+    html[data-theme="dark"],
+    html[data-color-mode="dark"],
+    html[data-theme-style="dark"],
+    html[data-darkreader-scheme="dark"]
+  ) .channel-link:hover {
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.36) !important;
+    background-color: rgba(255, 255, 255, 0.10) !important;
+  }
+
+  /* "动态"/"热门"左侧两个圆形图标按钮，同样补上悬浮上浮动效 */
+  .channel-icons__item {
+    transition: transform 220ms cubic-bezier(.2, .8, .2, 1) !important;
+  }
+
+  .channel-icons__item:hover {
+    transform: translateY(-3px) scale(1.06) !important;
+  }
+
+  /* "更多"展开后的完整分类面板，同一批标签在不同 B 站灰度版本下用的容器/DOM 结构不一样
+     （实测遇到过至少两种：一种复用折叠状态下同一批 .channel-link；另一种是完全独立的
+     纯 <a> 标签，自己不带任何背景样式）。这里把两种容器都覆盖到，确保不管命中哪个版本，
+     展开面板里的每个标签都有一致的上浮+投影反馈，而不是只有折叠状态生效。
+     注意排除 .header-channel-fixed-left 里的两个链接：那其实是折叠态 .channel-icons__item
+     （"动态"/"热门"图标）在展开面板里的重复渲染，不是文字分类标签，矩形卡片背景+投影
+     套在图标按钮上观感很奇怪，单独在下面给它们更克制的图标式反馈 */
+  :is(
+    .header-channel a:not(.header-channel-fixed-left a),
+    .right-channel-container a,
+    .channel-items__left a
+  ) {
+    display: inline-block !important;
+    border-radius: 6px !important;
+    transition:
+      transform 220ms cubic-bezier(.2, .8, .2, 1),
+      box-shadow 220ms ease,
+      background-color 220ms ease !important;
+  }
+
+  :is(
+    .header-channel a:not(.header-channel-fixed-left a),
+    .right-channel-container a,
+    .channel-items__left a
+  ):hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.16) !important;
+    background-color: rgba(0, 0, 0, 0.06) !important;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :is(
+      .header-channel a:not(.header-channel-fixed-left a),
+      .right-channel-container a,
+      .channel-items__left a
+    ):hover {
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.36) !important;
+      background-color: rgba(255, 255, 255, 0.10) !important;
+    }
+  }
+
+  :is(
+    html.dark,
+    html.bili-dark,
+    html[data-theme="dark"],
+    html[data-color-mode="dark"],
+    html[data-theme-style="dark"],
+    html[data-darkreader-scheme="dark"]
+  ) :is(
+    .header-channel a:not(.header-channel-fixed-left a),
+    .right-channel-container a,
+    .channel-items__left a
+  ):hover {
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.36) !important;
+    background-color: rgba(255, 255, 255, 0.10) !important;
+  }
+
+  /* .header-channel-fixed-left 里"动态"/"热门"这两个图标按钮，展开面板下是原生
+     纯 <a>（自己不带 class），是折叠状态 .channel-icons__item 同一对入口的重复渲染，
+     所以用完全一致的"位移+缩放"反馈，不加矩形背景块和投影，跟折叠态观感统一，
+     也更贴近 Apple 图标按钮那种克制的悬浮反馈 */
+  .header-channel-fixed-left a {
+    display: inline-block !important;
+    transition: transform 220ms cubic-bezier(.2, .8, .2, 1) !important;
+  }
+
+  .header-channel-fixed-left a:hover {
+    transform: translateY(-3px) scale(1.06) !important;
+  }
+
+  /* 首页右下角悬浮按钮（换一换/画中画播放/更多/回到顶部）：原生是纯白方块贴在页面边缘，
+     完全没有交互反馈，补上和分类标签同一套上浮+投影动效，让整页的悬浮反馈风格统一 */
+  :is(
+    .primary-btn.three-dots,
+    .primary-btn.top-btn,
+    .watchlater-pip-button-inner,
+    .roll-btn
+  ) {
+    transition:
+      transform 220ms cubic-bezier(.2, .8, .2, 1),
+      box-shadow 220ms ease !important;
+  }
+
+  :is(
+    .primary-btn.three-dots,
+    .primary-btn.top-btn,
+    .watchlater-pip-button-inner,
+    .roll-btn
+  ):hover {
+    transform: translateY(-3px) scale(1.06) !important;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.20) !important;
+    z-index: 10 !important;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :is(
+      .primary-btn.three-dots,
+      .primary-btn.top-btn,
+      .watchlater-pip-button-inner,
+      .roll-btn
+    ):hover {
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45) !important;
+    }
+  }
+
+  :is(
+    html.dark,
+    html.bili-dark,
+    html[data-theme="dark"],
+    html[data-color-mode="dark"],
+    html[data-theme-style="dark"],
+    html[data-darkreader-scheme="dark"]
+  ) :is(
+    .primary-btn.three-dots,
+    .primary-btn.top-btn,
+    .watchlater-pip-button-inner,
+    .roll-btn
+  ):hover {
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45) !important;
+  }
+
+  /* UP主个人空间页（space.bilibili.com）：全局顶栏 .bili-header 滚动后不会保持吸顶，
+     真正跟随滚动一直停留在顶部的是页面自己的二级导航条 .nav-bar.space-navbar
+     （主页/动态/投稿/合集和系列 + 搜索框那一条，原生 position:sticky），
+     所以毛玻璃效果要加在这一条上，才是用户滚动时实际会看到的"顶栏" */
+  .nav-bar.space-navbar {
+    background-color: rgba(255, 255, 255, 0.86) !important;
+    background-image: none !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.045) !important;
+    box-shadow: none !important;
+    backdrop-filter: saturate(110%) blur(12px) !important;
+    -webkit-backdrop-filter: saturate(110%) blur(12px) !important;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .nav-bar.space-navbar {
+      background-color: rgba(28, 28, 30, 0.86) !important;
+      background-image: none !important;
+      border-bottom-color: rgba(255, 255, 255, 0.07) !important;
+      box-shadow: none !important;
+    }
+  }
+
+  :is(
+    html.dark,
+    html.bili-dark,
+    html[data-theme="dark"],
+    html[data-color-mode="dark"],
+    html[data-theme-style="dark"],
+    html[data-darkreader-scheme="dark"]
+  ) .nav-bar.space-navbar {
+    background-color: rgba(28, 28, 30, 0.86) !important;
+    background-image: none !important;
+    border-bottom-color: rgba(255, 255, 255, 0.07) !important;
+    box-shadow: none !important;
+  }
+
+  /* 搜索结果页（search.bilibili.com）：往下滚动后原生的 .bili-header__bar 会整个滚出
+     屏幕，真正接管顶部、一直吸顶的是搜索页自己的 .search-fixed-header（只剩 logo+搜索框），
+     和 UP 主空间页的 .nav-bar.space-navbar 是同一种模式，毛玻璃也要加在这条真正生效的栏上 */
+  .search-fixed-header {
+    background-color: rgba(255, 255, 255, 0.86) !important;
+    background-image: none !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.045) !important;
+    box-shadow: none !important;
+    backdrop-filter: saturate(110%) blur(12px) !important;
+    -webkit-backdrop-filter: saturate(110%) blur(12px) !important;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .search-fixed-header {
+      background-color: rgba(28, 28, 30, 0.86) !important;
+      background-image: none !important;
+      border-bottom-color: rgba(255, 255, 255, 0.07) !important;
+      box-shadow: none !important;
+    }
+  }
+
+  :is(
+    html.dark,
+    html.bili-dark,
+    html[data-theme="dark"],
+    html[data-color-mode="dark"],
+    html[data-theme-style="dark"],
+    html[data-darkreader-scheme="dark"]
+  ) .search-fixed-header {
+    background-color: rgba(28, 28, 30, 0.86) !important;
+    background-image: none !important;
+    border-bottom-color: rgba(255, 255, 255, 0.07) !important;
+    box-shadow: none !important;
+  }
+
+  /* 动态页顶栏：搜索框与头像/快捷入口合并为同一条吸顶毛玻璃栏。
+     背景+模糊同样搬到 ::before 伪元素上——原因见上面首页顶栏那条注释，这里是
+     嵌套悬浮浮层（消息/动态/收藏/历史）真正在用的那条规则，必须一起改，否则
+     嵌套 backdrop-filter 的问题在动态页也一样会发生 */
+  body:has(#app > .bgc) :is(
+    .bili-header.fixed-header > .bili-header__bar.mini-header,
+    .bili-header__bar,
+    .bili-header .bili-header__bar,
+    #bili-header-container .bili-header__bar,
+    .z-top-container
+  ) {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    z-index: 100001 !important;
+    background-color: transparent !important;
+    background-image: none !important;
+  }
+
+  body:has(#app > .bgc) :is(
+    .bili-header.fixed-header > .bili-header__bar.mini-header,
+    .bili-header__bar,
+    .bili-header .bili-header__bar,
+    #bili-header-container .bili-header__bar,
+    .z-top-container
+  )::before {
+    content: "" !important;
+    position: absolute !important;
+    inset: 0 !important;
+    z-index: -1 !important;
+    pointer-events: none !important;
+    background-color: rgba(255, 255, 255, 0.48) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.55) !important;
+    box-shadow:
+      0 1px 0 rgba(0, 0, 0, 0.03),
+      0 8px 24px rgba(45, 55, 72, 0.08) !important;
+    backdrop-filter: saturate(180%) blur(28px) !important;
+    -webkit-backdrop-filter: saturate(180%) blur(28px) !important;
+  }
+
+  /* 外层容器保持透明，避免覆盖内层磨砂玻璃 */
+  body:has(#app > .bgc) :is(
+    .bili-header,
+    #bili-header-container
+  ) {
+    background-color: transparent !important;
+    background-image: none !important;
+  }
+
+  /* 头像/大会员/消息/动态/收藏/历史：融入顶栏背景，并强制贴右（不依赖原生 justify-content） */
+  body:has(#app > .bgc) :is(
+    .bili-header .right-entry,
+    .bili-header__bar .right-entry,
+    #bili-header-container .right-entry,
+    .z-top-container .right-entry,
+    .mini-header .right-entry
+  ) {
+    position: static !important;
+    margin-left: auto !important;
+    display: flex !important;
+    align-items: center !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+
+  /* 顶栏改为 fixed 脱离文档流后，左右侧边栏和中间发布卡片列都会整体上移 64px，这里补回来 */
+  body:has(#app > .bgc) :is(aside.left, aside.right, main) {
+    margin-top: 64px !important;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    html:has(body #app > .bgc) {
+      background: rgb(9, 10, 14) !important;
+    }
+
+    body:has(#app > .bgc) {
+      background-color: rgb(9, 10, 14) !important;
+      background-image:
+        linear-gradient(145deg, rgb(8, 9, 13), rgb(13, 15, 21) 43%, rgb(19, 21, 29) 74%, rgb(10, 11, 16)) !important;
+    }
+
+    body:has(#app > .bgc) :is(
+      .bili-header.fixed-header > .bili-header__bar.mini-header,
+      .bili-header__bar,
+      .bili-header .bili-header__bar,
+      #bili-header-container .bili-header__bar,
+      .z-top-container
+    )::before {
+      background-color: rgba(28, 28, 30, 0.48) !important;
+      border-bottom-color: rgba(255, 255, 255, 0.10) !important;
+      box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.03),
+        0 10px 30px rgba(0, 0, 0, 0.26) !important;
+    }
+  }
+
+  :is(
+    html.dark,
+    html.bili-dark,
+    html[data-theme="dark"],
+    html[data-color-mode="dark"],
+    html[data-theme-style="dark"],
+    html[data-darkreader-scheme="dark"]
+  ):has(body #app > .bgc) {
+    background: rgb(9, 10, 14) !important;
+  }
+
+  :is(
+    html.dark,
+    html.bili-dark,
+    html[data-theme="dark"],
+    html[data-color-mode="dark"],
+    html[data-theme-style="dark"],
+    html[data-darkreader-scheme="dark"]
+  ) body:has(#app > .bgc) {
+    background-color: rgb(9, 10, 14) !important;
+    background-image:
+      linear-gradient(145deg, rgb(8, 9, 13), rgb(13, 15, 21) 43%, rgb(19, 21, 29) 74%, rgb(10, 11, 16)) !important;
+  }
+
+  :is(
+    html.dark,
+    html.bili-dark,
+    html[data-theme="dark"],
+    html[data-color-mode="dark"],
+    html[data-theme-style="dark"],
+    html[data-darkreader-scheme="dark"]
+  ) body:has(#app > .bgc) :is(
+    .bili-header.fixed-header > .bili-header__bar.mini-header,
+    .bili-header__bar,
+    .bili-header .bili-header__bar,
+    #bili-header-container .bili-header__bar,
+    .z-top-container
+  )::before {
+    background-color: rgba(28, 28, 30, 0.48) !important;
+    border-bottom-color: rgba(255, 255, 255, 0.10) !important;
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.03),
+      0 10px 30px rgba(0, 0, 0, 0.26) !important;
+  }
+
+
+  /* ========================================
+     热门页：沿用首页 Apple 视频卡片动效
+     ======================================== */
+
+  /* 允许悬浮背景与阴影越过列表本身，不改变原生两列排版。 */
+  .popular-container .popular-list,
+  .popular-container .popular-list .card-list {
+    overflow: visible !important;
+  }
+
+  .popular-container
+  .popular-list
+  .card-list
+  > .video-card {
+    position: relative !important;
+    isolation: isolate;
+    z-index: 0;
+    translate: 0 0;
+    transition:
+      translate var(--apple-card-speed) cubic-bezier(0.2, 0.8, 0.2, 1),
+      filter var(--apple-card-speed) ease !important;
+    will-change: translate;
+  }
+
+  .popular-container
+  .popular-list
+  .card-list
+  > .video-card::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: -9px -11px;
+    border: 1px solid transparent;
+    border-radius: var(--apple-card-radius);
+    background: transparent;
+    box-shadow: none;
+    opacity: 0;
+    transform: scale(0.975);
+    transform-origin: center;
+    pointer-events: none;
+    transition:
+      opacity 200ms ease,
+      transform 280ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      background-color 220ms ease,
+      border-color 220ms ease,
+      box-shadow 280ms ease !important;
+  }
+
+  .popular-container
+  .popular-list
+  .video-card__content {
+    overflow: hidden !important;
+    border-radius: var(--apple-cover-radius) !important;
+  }
+
+  .popular-container
+  .popular-list
+  .video-card__content
+  img {
+    transform: scale(1);
+    transition: transform 500ms cubic-bezier(0.2, 0.8, 0.2, 1) !important;
+    will-change: transform;
+  }
+
+  /* 顶部五个频道按钮只做轻微缩放，不额外增加背景卡片。 */
+  .popular-container .nav-tabs__item > div {
+    transform: translate3d(0, 0, 0) scale(1);
+    transform-origin: center;
+    transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1) !important;
+    will-change: transform;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .popular-container
+    .popular-list
+    .card-list
+    > .video-card:hover {
+      z-index: 20;
+      translate: 0 -3px;
+    }
+
+    .popular-container
+    .popular-list
+    .card-list
+    > .video-card:hover::before {
+      opacity: 1;
+      transform: scale(1);
+      background: var(--apple-card-background) !important;
+      border-color: var(--apple-card-border) !important;
+      box-shadow: var(--apple-card-shadow) !important;
+    }
+
+    .popular-container
+    .popular-list
+    .card-list
+    > .video-card:hover
+    .video-card__content
+    img {
+      transform: scale(1.018);
+    }
+
+    .popular-container
+    .popular-list
+    .card-list
+    > .video-card:hover
+    .video-name {
+      color: var(--apple-card-title-color) !important;
+    }
+
+    .popular-container
+    .popular-list
+    .card-list
+    > .video-card:hover
+    :is(.up-name, .up-name *, .video-stat, .video-stat *) {
+      color: var(--apple-card-meta-color) !important;
+    }
+
+    .popular-container .nav-tabs__item:hover > div {
+      transform: translate3d(0, -1px, 0) scale(1.045);
+    }
+  }
+
+  .popular-container .nav-tabs__item:active > div {
+    transform: translate3d(0, 0, 0) scale(0.98) !important;
+    transition-duration: 80ms !important;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .popular-container
+    .popular-list
+    .card-list
+    > .video-card,
+
+    .popular-container
+    .popular-list
+    .card-list
+    > .video-card::before,
+
+    .popular-container
+    .popular-list
+    .video-card__content
+    img,
+
+    .popular-container .nav-tabs__item > div {
+      transition: none !important;
+    }
+  }
+
+  /* 每周必看、入站必刷、排行榜与全站音乐榜使用了不同组件结构。
+     这里把四类页面的真实卡片外层统一接入与综合热门相同的 Apple 动效；
+     音乐榜只依赖卡片层级和类名语义片段，不绑定构建时会变化的完整哈希。 */
+  .popular-container :is(
+    .weekly-list,
+    .history-list,
+    .rank-list,
+    .music-rank-list,
+    [class*="_cardList_"]
+  ) {
+    overflow: visible !important;
+  }
+
+  .popular-container :is(
+    .weekly-list .video-card,
+    .history-list .video-card,
+    .rank-container .rank-list > .rank-item,
+    .music-rank-list [class*="_card_"][class*="_popular_"]
+  ) {
+    position: relative !important;
+    isolation: isolate;
+    z-index: 0;
+    translate: 0 0;
+    transition:
+      translate var(--apple-card-speed) cubic-bezier(0.2, 0.8, 0.2, 1),
+      filter var(--apple-card-speed) ease !important;
+    will-change: translate;
+  }
+
+  .popular-container :is(
+    .weekly-list .video-card,
+    .history-list .video-card,
+    .rank-container .rank-list > .rank-item,
+    .music-rank-list [class*="_card_"][class*="_popular_"]
+  )::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: -9px -11px;
+    border: 1px solid transparent;
+    border-radius: var(--apple-card-radius);
+    background: transparent;
+    box-shadow: none;
+    opacity: 0;
+    transform: scale(0.975);
+    transform-origin: center;
+    pointer-events: none;
+    transition:
+      opacity 200ms ease,
+      transform 280ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      background-color 220ms ease,
+      border-color 220ms ease,
+      box-shadow 280ms ease !important;
+  }
+
+  .popular-container :is(
+    .weekly-list .video-card__content,
+    .history-list .video-card__content,
+    .rank-container .rank-item :is(.cover, .img, .pic),
+    .music-rank-list [class*="_card_"][class*="_popular_"] :is([class*="_cover_"], [class*="_pic_"])
+  ) {
+    overflow: hidden !important;
+    border-radius: var(--apple-cover-radius) !important;
+  }
+
+  .popular-container :is(
+    .weekly-list .video-card__content img,
+    .history-list .video-card__content img,
+    .rank-container .rank-item img,
+    .music-rank-list [class*="_card_"][class*="_popular_"] img
+  ) {
+    transform: scale(1);
+    transition: transform 500ms cubic-bezier(0.2, 0.8, 0.2, 1) !important;
+    will-change: transform;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .popular-container :is(
+      .weekly-list .video-card,
+      .history-list .video-card,
+      .rank-container .rank-list > .rank-item,
+      .music-rank-list [class*="_card_"][class*="_popular_"]
+    ):hover {
+      z-index: 20;
+      translate: 0 -3px;
+    }
+
+    .popular-container :is(
+      .weekly-list .video-card,
+      .history-list .video-card,
+      .rank-container .rank-list > .rank-item,
+      .music-rank-list [class*="_card_"][class*="_popular_"]
+    ):hover::before {
+      opacity: 1;
+      transform: scale(1);
+      background: var(--apple-card-background) !important;
+      border-color: var(--apple-card-border) !important;
+      box-shadow: var(--apple-card-shadow) !important;
+    }
+
+    .popular-container :is(
+      .weekly-list .video-card,
+      .history-list .video-card,
+      .rank-container .rank-list > .rank-item,
+      .music-rank-list [class*="_card_"][class*="_popular_"]
+    ):hover img {
+      transform: scale(1.018);
+    }
+
+    .popular-container :is(
+      .weekly-list .video-card,
+      .history-list .video-card,
+      .rank-container .rank-list > .rank-item,
+      .music-rank-list [class*="_card_"][class*="_popular_"]
+    ):hover .video-name {
+      color: var(--apple-card-title-color) !important;
+    }
+
+    .popular-container :is(
+      .weekly-list .video-card,
+      .history-list .video-card,
+      .rank-container .rank-list > .rank-item,
+      .music-rank-list [class*="_card_"][class*="_popular_"]
+    ):hover :is(.up-name, .up-name *, .video-stat, .video-stat *) {
+      color: var(--apple-card-meta-color) !important;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .popular-container :is(
+      .weekly-list .video-card,
+      .history-list .video-card,
+      .rank-container .rank-list > .rank-item,
+      .music-rank-list [class*="_card_"][class*="_popular_"]
+    ),
+
+    .popular-container :is(
+      .weekly-list .video-card,
+      .history-list .video-card,
+      .rank-container .rank-list > .rank-item,
+      .music-rank-list [class*="_card_"][class*="_popular_"]
+    )::before,
+
+    .popular-container :is(
+      .weekly-list .video-card__content img,
+      .history-list .video-card__content img,
+      .rank-container .rank-item img,
+      .music-rank-list [class*="_card_"][class*="_popular_"] img
+    ) {
+      transition: none !important;
+    }
+  }
+
+
+  @media (max-width: 650px) {
+    :root {
+      --video-card-min-width: 240px;
+      --video-column-gap: 16px;
+      --video-row-gap: 42px;
+    }
+  }
+
+
+  /* ========================================
+     11. 减少动画
+     ======================================== */
+
+  @media (prefers-reduced-motion: reduce) {
+    .up-panel-container > .up-info-container,
+    .right-container .up-info-container,
+    .up-panel-container > .up-info-container::before,
+    .right-container .up-info-container::before,
+
+    .recommended-container_floor-aside
+    .container.is-version8
+    > div:has(.bili-video-card__wrap),
+
+    .recommended-container_floor-aside
+    .container.is-version8
+    > div:has(.bili-video-card__wrap)::before,
+
+    :is(
+      .video-page-card-small,
+      .video-page-card
+    ),
+
+    :is(
+      .video-page-card-small,
+      .video-page-card
+    )::before,
+
+    :is(
+      .bili-dyn-item,
+      .bili-dyn-publishing,
+      .bili-dyn-up-list,
+      .bili-dyn-list-tabs,
+      .bili-dyn-my-info,
+      .bili-dyn-live-users,
+      .bili-dyn-banner,
+      .bili-dyn-search-trendings
+    ),
+
+    .bili-dyn-up-list__item .bili-dyn-up-list__item__face,
+
+    .recommended-container_floor-aside img,
+    :is(
+      .video-page-card-small,
+      .video-page-card
+    )
+    img {
+      transition: none !important;
+    }
+  }
+
+}
+
+
+/* Dynamic card author names: neutral color instead of accent purple.
+   之前写死成 rgb(0,0,0)，深色模式下完全没适配，黑字糊在深色卡片背景上看不清。
+   B站给作者名用了好几种不同的变体类（.normal-vip-color、.default 等，具体哪个
+   取决于账号类型），选择器里把目前实测到的几种都列出来。
+   这条规则之前不管怎么加选择器、怎么顶优先级都盖不掉原生颜色，实测发现原生样式是用
+   CSS Cascade Layers（@layer）包起来的——重要声明之间比的是"层"的先后顺序，根本不看
+   选择器优先级，不在任何层里的样式在这种比较里反而权重最低。所以这里也用 @layer 包一层，
+   同时保留重复类名顶优先级的写法，双重保险 */
+@-moz-document domain("t.bilibili.com"), domain("www.bilibili.com") {
+  @layer bili-apple-dyn-author-override {
+    :is(
+      .bili-dyn-title__text.bili-dyn-title__text,
+      .bili-dyn-title__text.normal-vip-color,
+      .bili-dyn-title__text.default,
+      .bili-dyn-title__text a,
+      .bili-dyn-item__author__name,
+      .bili-dyn-item__author__name a,
+      .bili-dyn-card__author,
+      .bili-dyn-card__author a,
+      .bili-dyn-item .user-name,
+      .bili-dyn-list__item .user-name,
+      .bili-dyn-title__text *,
+      .bili-dyn-item__author__name *,
+      .bili-dyn-card__author *,
+      .bili-dyn-item .user-name *,
+      .bili-dyn-list__item .user-name *,
+      .normal-vip-color,
+      .default
+    ) {
+      color: rgb(29, 29, 31) !important;
+      -webkit-text-fill-color: rgb(29, 29, 31) !important;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :is(
+        .bili-dyn-title__text.bili-dyn-title__text,
+        .bili-dyn-title__text.normal-vip-color,
+        .bili-dyn-title__text.default,
+        .bili-dyn-title__text a,
+        .bili-dyn-item__author__name,
+        .bili-dyn-item__author__name a,
+        .bili-dyn-card__author,
+        .bili-dyn-card__author a,
+        .bili-dyn-item .user-name,
+        .bili-dyn-list__item .user-name,
+        .bili-dyn-title__text *,
+        .bili-dyn-item__author__name *,
+        .bili-dyn-card__author *,
+        .bili-dyn-item .user-name *,
+        .bili-dyn-list__item .user-name *,
+        .normal-vip-color,
+        .default
+      ) {
+        color: rgb(245, 245, 247) !important;
+        -webkit-text-fill-color: rgb(245, 245, 247) !important;
+      }
+    }
+
+    :is(
+      html.dark,
+      html.bili-dark,
+      html[data-theme="dark"],
+      html[data-color-mode="dark"],
+      html[data-theme-style="dark"],
+      html[data-darkreader-scheme="dark"]
+    ) :is(
+      .bili-dyn-title__text.bili-dyn-title__text,
+      .bili-dyn-title__text.normal-vip-color,
+      .bili-dyn-title__text.default,
+      .bili-dyn-title__text a,
+      .bili-dyn-item__author__name,
+      .bili-dyn-item__author__name a,
+      .bili-dyn-card__author,
+      .bili-dyn-card__author a,
+      .bili-dyn-item .user-name,
+      .bili-dyn-list__item .user-name,
+      .bili-dyn-title__text *,
+      .bili-dyn-item__author__name *,
+      .bili-dyn-card__author *,
+      .bili-dyn-item .user-name *,
+      .bili-dyn-list__item .user-name *,
+      .normal-vip-color,
+      .default
+    ) {
+      color: rgb(245, 245, 247) !important;
+      -webkit-text-fill-color: rgb(245, 245, 247) !important;
+    }
+  }
+}
+
+
+/* ============================================================
+   Message center: dynamic-page Apple background and card motion
+   ============================================================ */
+@-moz-document domain("message.bilibili.com") {
+
+  :root {
+    --apple-accent-color: rgb(120, 86, 255);
+    --apple-accent-thin: rgba(120, 86, 255, 0.14);
+    --brand_pink: rgb(120, 86, 255) !important;
+    --brand_pink_hover: rgb(120, 86, 255) !important;
+    --brand_pink_active: rgb(120, 86, 255) !important;
+    --Pi5: rgb(120, 86, 255) !important;
+    --Pi4: rgb(120, 86, 255) !important;
+    --Pi3: rgb(120, 86, 255) !important;
+    --apple-card-background: rgba(255, 255, 255, 0.88);
+    --apple-card-border: rgba(0, 0, 0, 0.055);
+    --apple-card-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.025),
+      0 10px 28px rgba(42, 55, 78, 0.10);
+    --apple-card-title-color: rgb(29, 29, 31);
+    --apple-card-meta-color: rgb(100, 100, 105);
+  }
+
+  html,
+  body,
+  #app {
+    min-height: 100% !important;
+    background-color: rgb(250, 250, 252) !important;
+    background-image:
+      radial-gradient(
+        ellipse 48% 68% at -3% 18%,
+        rgba(145, 201, 255, 0.28) 0%,
+        rgba(170, 215, 255, 0.12) 38%,
+        transparent 74%
+      ),
+      radial-gradient(
+        ellipse 46% 70% at 103% 58%,
+        rgba(226, 179, 255, 0.23) 0%,
+        rgba(255, 203, 235, 0.10) 42%,
+        transparent 75%
+      ),
+      linear-gradient(
+        180deg,
+        rgb(253, 254, 255),
+        rgb(250, 251, 253) 52%,
+        rgb(252, 252, 254)
+      ) !important;
+    background-attachment: fixed !important;
+    background-repeat: no-repeat !important;
+    background-size: cover !important;
+  }
+
+  /* Remove Bilibili's aqua background artwork and cloud characters */
+  .background,
+  [class*="space-bg"],
+  [class*="bg-decoration"] {
+    display: none !important;
+    background: none !important;
+    background-image: none !important;
+  }
+
+  :is(
+    .space-left,
+    .space-right-top,
+    .bili-im,
+    .router-view
+  ) {
+    background: var(--apple-card-background) !important;
+    border: 1px solid var(--apple-card-border) !important;
+    border-radius: 18px !important;
+    box-shadow: var(--apple-card-shadow) !important;
+    backdrop-filter: blur(22px) saturate(160%) !important;
+    -webkit-backdrop-filter: blur(22px) saturate(160%) !important;
+  }
+
+  :is(
+    .space-right,
+    .space-right-bottom,
+    .bili-im .left,
+    .bili-im .right,
+    .list-container,
+    .message-list
+  ) {
+    background-color: transparent !important;
+    background-image: none !important;
+  }
+
+  /* Message rows use the same restrained hover card used on the dynamic page */
+  :is(
+    .bili-im .list-container .list-item,
+    .message-list > .msg-notify,
+    .message-list > .message-content,
+    .message-list > .interaction-item,
+    .interaction-item,
+    .space-left .list > .item
+  ) {
+    position: relative !important;
+    z-index: 0 !important;
+    border: 1px solid transparent !important;
+    border-radius: 14px !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    transform: translate3d(0, 0, 0);
+    transition:
+      transform 240ms cubic-bezier(0.2, 0.72, 0.2, 1),
+      background-color 240ms ease,
+      border-color 240ms ease,
+      box-shadow 240ms ease !important;
+  }
+
+  :is(
+    .bili-im .list-container .list-item,
+    .message-list > .msg-notify,
+    .message-list > .message-content,
+    .message-list > .interaction-item,
+    .interaction-item,
+    .space-left .list > .item
+  ):hover {
+    z-index: 2 !important;
+    background: var(--apple-card-background) !important;
+    border-color: var(--apple-card-border) !important;
+    box-shadow: var(--apple-card-shadow) !important;
+    transform: translate3d(0, -3px, 0) !important;
+  }
+
+  :is(
+    .bili-im .list-container .list-item.active,
+    .bili-im .list-container .list-item.selected,
+    .space-left .list > .item.active
+  ) {
+    color: var(--apple-accent-color) !important;
+    background: var(--apple-accent-thin) !important;
+    border-color: rgba(120, 86, 255, 0.25) !important;
+  }
+
+  :is(
+    .bili-im .list-container .list-item,
+    .message-list > .msg-notify,
+    .message-list > .message-content,
+    .message-list > .interaction-item,
+    .interaction-item
+  )
+  :is(.avatar, .avatar-box, .face)
+  img {
+    transition: transform 240ms cubic-bezier(0.2, 0.72, 0.2, 1) !important;
+  }
+
+  :is(
+    .bili-im .list-container .list-item,
+    .message-list > .msg-notify,
+    .message-list > .message-content,
+    .message-list > .interaction-item,
+    .interaction-item
+  ):hover
+  :is(.avatar, .avatar-box, .face)
+  img {
+    transform: scale(1.035) !important;
+  }
+
+  :is(
+    .space-left .list .item.active,
+    .space-left .list .item:hover,
+    .bili-im .list-item.active,
+    .bili-im .list-item:hover,
+    a:hover,
+    .primary,
+    .active
+  ) {
+    --brand_pink: rgb(120, 86, 255) !important;
+    --Pi5: rgb(120, 86, 255) !important;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --apple-card-background: rgba(44, 44, 46, 0.90);
+      --apple-card-border: rgba(255, 255, 255, 0.10);
+      --apple-card-shadow:
+        0 2px 6px rgba(0, 0, 0, 0.28),
+        0 14px 32px rgba(0, 0, 0, 0.38);
+      --apple-card-title-color: rgb(245, 245, 247);
+      --apple-card-meta-color: rgb(174, 174, 178);
+    }
+
+    html,
+    body,
+    #app {
+      background-color: rgb(9, 10, 14) !important;
+      background-image:
+        radial-gradient(
+          ellipse 48% 68% at -3% 18%,
+          rgba(70, 118, 190, 0.25) 0%,
+          rgba(48, 81, 132, 0.10) 40%,
+          transparent 74%
+        ),
+        radial-gradient(
+          ellipse 46% 70% at 103% 58%,
+          rgba(120, 86, 255, 0.20) 0%,
+          rgba(92, 55, 150, 0.09) 42%,
+          transparent 75%
+        ),
+        linear-gradient(
+          180deg,
+          rgb(12, 13, 18),
+          rgb(8, 9, 13) 54%,
+          rgb(11, 11, 16)
+        ) !important;
+    }
+  }
+
+  :is(
+    html.dark,
+    html.bili-dark,
+    html[data-theme="dark"],
+    html[data-color-mode="dark"],
+    html[data-theme-style="dark"]
+  ) {
+    --apple-card-background: rgba(44, 44, 46, 0.90);
+    --apple-card-border: rgba(255, 255, 255, 0.10);
+    --apple-card-shadow:
+      0 2px 6px rgba(0, 0, 0, 0.28),
+      0 14px 32px rgba(0, 0, 0, 0.38);
+  }
+
+  :is(
+    html.dark,
+    html.bili-dark,
+    html[data-theme="dark"],
+    html[data-color-mode="dark"],
+    html[data-theme-style="dark"]
+  ),
+  :is(
+    html.dark,
+    html.bili-dark,
+    html[data-theme="dark"],
+    html[data-color-mode="dark"],
+    html[data-theme-style="dark"]
+  )
+  body,
+  :is(
+    html.dark,
+    html.bili-dark,
+    html[data-theme="dark"],
+    html[data-color-mode="dark"],
+    html[data-theme-style="dark"]
+  )
+  #app {
+    background-color: rgb(9, 10, 14) !important;
+    background-image:
+      radial-gradient(
+        ellipse 48% 68% at -3% 18%,
+        rgba(70, 118, 190, 0.25) 0%,
+        rgba(48, 81, 132, 0.10) 40%,
+        transparent 74%
+      ),
+      radial-gradient(
+        ellipse 46% 70% at 103% 58%,
+        rgba(120, 86, 255, 0.20) 0%,
+        rgba(92, 55, 150, 0.09) 42%,
+        transparent 75%
+      ),
+      linear-gradient(
+        180deg,
+        rgb(12, 13, 18),
+        rgb(8, 9, 13) 54%,
+        rgb(11, 11, 16)
+      ) !important;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    :is(
+      .bili-im .list-container .list-item,
+      .message-list > .msg-notify,
+      .message-list > .message-content,
+      .message-list > .interaction-item,
+      .interaction-item,
+      .space-left .list > .item
+    ),
+    :is(
+      .bili-im .list-container .list-item,
+      .message-list > .msg-notify,
+      .message-list > .message-content,
+      .message-list > .interaction-item,
+      .interaction-item
+    )
+    img {
+      transition: none !important;
+    }
+  }
+}
+
+
+/* ========================================
+   动态页 Apple 风格背景
+   ======================================== */
+
+@-moz-document domain("t.bilibili.com") {
+
+  /*
+   * 移除哔哩哔哩动态页自带的浅蓝底色与左下角装饰图。
+   * 背景完全由本地 CSS 渐变生成，不加载外部图片。
+   */
+
+  html {
+    min-height: 100%;
+    background-color: rgb(250, 250, 252) !important;
+  }
+
+  /*
+   * 动态页实际使用的两个独立背景层：
+   * .bgc 是浅蓝色底层，.bg 是左右两侧人物装饰图。
+   */
+  #app > .bgc,
+  #app > .bg {
+    display: none !important;
+    visibility: hidden !important;
+
+    background: none !important;
+    background-color: transparent !important;
+    background-image: none !important;
+
+    pointer-events: none !important;
+  }
+
+  /* 同上：去掉蓝/紫色光斑，只保留一层几乎看不出来的竖向渐变，纯色打底 */
+  body {
+    min-height: 100vh;
+
+    background-color: rgb(250, 250, 252) !important;
+    background-image:
+      linear-gradient(
+        180deg,
+        rgb(253, 254, 255) 0%,
+        rgb(250, 251, 253) 52%,
+        rgb(252, 252, 254) 100%
+      ) !important;
+
+    background-attachment: fixed !important;
+    background-repeat: no-repeat !important;
+    background-size: cover !important;
+  }
+
+  /*
+   * 网站会把旧背景分别挂在不同版本的主页容器上，
+   * 因此同时清理这些容器的底色和背景图片。
+   */
+  :is(
+    #app,
+    .bili-dyn-home,
+    .bili-dyn-home--member,
+    .bili-dyn-home__main,
+    .bili-dyn-home--member__main,
+    .bili-dyn-home__content,
+    .bili-dyn-home--member__content
+  ) {
+    background-color: transparent !important;
+    background-image: none !important;
+  }
+
+  :is(
+    .bili-dyn-home--member__bg,
+    .bili-dyn-home__bg,
+    [class*="bili-dyn-home"][class*="background"],
+    [class*="bili-dyn-home"][class*="__bg"]
+  ) {
+    display: none !important;
+    visibility: hidden !important;
+
+    background: none !important;
+    background-image: none !important;
+  }
+
+  .bili-dyn-home--member::before,
+  .bili-dyn-home--member::after,
+  .bili-dyn-home::before,
+  .bili-dyn-home::after {
+    background-image: none !important;
+  }
+
+  /* 动态页顶栏搜索框：按整个窗口水平居中 */
+  :is(
+    .center-search-container,
+    .bili-header .center-search-container,
+    .bili-header__bar .center-search-container,
+    #bili-header-container .center-search-container,
+    .z-top-container .center-search-container
+  ) {
+    position: absolute !important;
+    left: 50% !important;
+    right: auto !important;
+    width: min(620px, 42vw) !important;
+    max-width: 620px !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    transform: translateX(-50%) !important;
+    z-index: 10 !important;
+  }
+
+  /* 顶栏：搜索框与头像/快捷入口合并为同一条吸顶毛玻璃栏（兼容独立 t.bilibili.com 样式块） */
+  :is(
+    .bili-header.fixed-header > .bili-header__bar.mini-header,
+    .bili-header__bar,
+    .bili-header .bili-header__bar,
+    #bili-header-container .bili-header__bar,
+    .z-top-container
+  ) {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    z-index: 100001 !important;
+    background-color: rgba(255, 255, 255, 0.48) !important;
+    background-image: none !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.55) !important;
+    box-shadow:
+      0 1px 0 rgba(0, 0, 0, 0.03),
+      0 8px 24px rgba(45, 55, 72, 0.08) !important;
+    /* backdrop-filter 故意不放在这里：这条规则被上面 body:has(#app > .bgc) 那条
+       更高优先级的规则盖过背景色，是重复/冗余的旧规则，但如果这里还留着
+       backdrop-filter，会因为没有更高优先级的同名属性竞争而单独生效，重新在
+       .bili-header__bar 上形成"毛玻璃根"，把嵌套浮层的模糊卡住 */
+  }
+
+  :is(
+    .bili-header,
+    #bili-header-container
+  ) {
+    background-color: transparent !important;
+    background-image: none !important;
+  }
+
+  /* 头像/大会员/消息/动态/收藏/历史：融入顶栏背景，并强制贴右（不依赖原生 justify-content） */
+  :is(
+    .bili-header .right-entry,
+    .bili-header__bar .right-entry,
+    #bili-header-container .right-entry,
+    .z-top-container .right-entry,
+    .mini-header .right-entry
+  ) {
+    position: static !important;
+    margin-left: auto !important;
+    display: flex !important;
+    align-items: center !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+
+  /* 顶栏改为 fixed 脱离文档流后，左右侧边栏和中间发布卡片列都会整体上移 64px，这里补回来 */
+  :is(aside.left, aside.right, main) {
+    margin-top: 64px !important;
+  }
+
+
+  /* 系统深色模式 */
+  @media (prefers-color-scheme: dark) {
+    html {
+      background-color: rgb(9, 10, 14) !important;
+    }
+
+    body {
+      background-color: rgb(9, 10, 14) !important;
+      background-image:
+        linear-gradient(
+          145deg,
+          rgb(8, 9, 13) 0%,
+          rgb(13, 15, 21) 43%,
+          rgb(19, 21, 29) 74%,
+          rgb(10, 11, 16) 100%
+        ) !important;
+    }
+  }
+
+  /* 哔哩哔哩自身深色模式 */
+  :is(
+    html.dark,
+    html.bili-dark,
+    html[data-theme="dark"],
+    html[data-color-mode="dark"],
+    html[data-theme-style="dark"],
+    html[data-darkreader-scheme="dark"]
+  ) {
+    background-color: rgb(9, 10, 14) !important;
+  }
+
+  :is(
+    html.dark,
+    html.bili-dark,
+    html[data-theme="dark"],
+    html[data-color-mode="dark"],
+    html[data-theme-style="dark"],
+    html[data-darkreader-scheme="dark"]
+  )
+  body {
+    background-color: rgb(9, 10, 14) !important;
+    background-image:
+      linear-gradient(
+        145deg,
+        rgb(8, 9, 13) 0%,
+        rgb(13, 15, 21) 43%,
+        rgb(19, 21, 29) 74%,
+        rgb(10, 11, 16) 100%
+      ) !important;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :is(
+      .bili-header.fixed-header > .bili-header__bar.mini-header,
+      .bili-header__bar,
+      .bili-header .bili-header__bar,
+      #bili-header-container .bili-header__bar,
+      .z-top-container
+    ) {
+      background-color: rgba(28, 28, 30, 0.48) !important;
+      background-image: none !important;
+      border-bottom-color: rgba(255, 255, 255, 0.10) !important;
+      box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.03),
+        0 10px 30px rgba(0, 0, 0, 0.26) !important;
+      /* backdrop-filter 不放这里，理由同上面那条冗余规则 */
+    }
+  }
+
+  :is(
+    html.dark,
+    html.bili-dark,
+    html[data-theme="dark"],
+    html[data-color-mode="dark"],
+    html[data-theme-style="dark"],
+    html[data-darkreader-scheme="dark"]
+  ) :is(
+    .bili-header.fixed-header > .bili-header__bar.mini-header,
+    .bili-header__bar,
+    .bili-header .bili-header__bar,
+    #bili-header-container .bili-header__bar,
+    .z-top-container
+  ) {
+    background-color: rgba(28, 28, 30, 0.48) !important;
+    background-image: none !important;
+    border-bottom-color: rgba(255, 255, 255, 0.10) !important;
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.03),
+      0 10px 30px rgba(0, 0, 0, 0.26) !important;
+    /* backdrop-filter 不放这里，理由同上面那条冗余规则 */
+  }
+
+}
+
+
+/* ========================================
+   动态页最终顶栏：X 风格整宽透明磨砂玻璃
+   放在独立动态规则之后，确保覆盖网站及前述兼容样式
+   ======================================== */
+@-moz-document domain("t.bilibili.com"), regexp("^https://www\\.bilibili\\.com/opus/.*") {
+
+  .bili-header.fixed-header
+  > .bili-header__bar.mini-header {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    box-sizing: border-box !important;
+    z-index: 100001 !important;
+
+    /* 无彩色底，只保留透明度和模糊，让信息流从后方透出 */
+    background: rgba(255, 255, 255, 0.14) !important;
+    background-color: rgba(255, 255, 255, 0.14) !important;
+    background-image: none !important;
+    border: 0 !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.075) !important;
+    border-radius: 0 !important;
+    box-shadow: 0 1px 8px rgba(32, 38, 48, 0.045) !important;
+
+    /* backdrop-filter 不放这里：这条规则实际会被更前面 body:has(#app > .bgc) 那条
+       更高优先级（:has() 里带 #app 这个 ID）的规则盖过背景色，是旧的冗余规则，注释里
+       "确保覆盖" 的意图并未真正生效；但如果这里还留着 backdrop-filter，就会因为没有
+       更高优先级的同名属性竞争而单独生效，在 .bili-header__bar 上重新形成"毛玻璃根"，
+       卡住嵌套在里面的消息/动态/收藏/历史悬浮浮层的模糊效果 */
+    overflow: visible !important;
+  }
+
+  /* 清除可能盖在玻璃面板上的白色伪元素 */
+  .bili-header.fixed-header
+  > .bili-header__bar.mini-header::before,
+  .bili-header.fixed-header
+  > .bili-header__bar.mini-header::after {
+    background: transparent !important;
+    background-image: none !important;
+    box-shadow: none !important;
+  }
+
+  /* 外层只负责占位，不再绘制白底 */
+  :is(
+    .bili-header.fixed-header,
+    #bili-header-container
+  ) {
+    background: transparent !important;
+    background-image: none !important;
+    box-shadow: none !important;
+  }
+
+  /* 恢复原始顶栏高度对应的内容间距；滚动内容仍会进入顶栏后方 */
+  :is(aside.left, aside.right, main) {
+    margin-top: 64px !important;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .bili-header.fixed-header
+    > .bili-header__bar.mini-header {
+      background: rgba(12, 12, 15, 0.18) !important;
+      background-color: rgba(12, 12, 15, 0.18) !important;
+      background-image: none !important;
+      border-bottom-color: rgba(255, 255, 255, 0.10) !important;
+      box-shadow: 0 1px 8px rgba(0, 0, 0, 0.10) !important;
+    }
+  }
+
+  :is(
+    html.dark,
+    html.bili-dark,
+    html[data-theme="dark"],
+    html[data-color-mode="dark"],
+    html[data-theme-style="dark"],
+    html[data-darkreader-scheme="dark"]
+  )
+  .bili-header.fixed-header
+  > .bili-header__bar.mini-header {
+    background: rgba(12, 12, 15, 0.18) !important;
+    background-color: rgba(12, 12, 15, 0.18) !important;
+    background-image: none !important;
+    border-bottom-color: rgba(255, 255, 255, 0.10) !important;
+    box-shadow: 0 1px 8px rgba(0, 0, 0, 0.10) !important;
+  }
+}
+
+
+/* ========================================
+   搜索页：右上角快捷入口与视频卡片
+   ======================================== */
+
+@-moz-document domain("search.bilibili.com") {
+
+  /* 头像/大会员/消息/动态/收藏/历史：固定在右上角，和首页位置保持一致（不碰搜索框，避免重蹈覆辙） */
+  .right-entry {
+    position: fixed !important;
+    top: 0 !important;
+    right: 24px !important;
+    left: auto !important;
+    height: 64px !important;
+    display: flex !important;
+    align-items: center !important;
+    z-index: 100001 !important;
+  }
+
+  /* 搜索结果的完整卡片范围 */
+  :is(
+    .search-page-video,
+    .search-page
+  )
+  .video-list.row
+  > div:has(.bili-video-card) {
+    position: relative !important;
+    isolation: isolate;
+    z-index: 0;
+    translate: 0 0;
+    transition:
+      translate var(--apple-card-speed) cubic-bezier(.2, .8, .2, 1),
+      filter var(--apple-card-speed) ease !important;
+    will-change: translate;
+  }
+
+  :is(
+    .search-page-video,
+    .search-page
+  )
+  .video-list.row
+  > div:has(.bili-video-card)::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: -11px;
+    border: 1px solid transparent;
+    border-radius: var(--apple-card-radius);
+    background: transparent;
+    box-shadow: none;
+    opacity: 0;
+    transform: scale(.975);
+    transform-origin: center;
+    pointer-events: none;
+    transition:
+      opacity 200ms ease,
+      transform 280ms cubic-bezier(.2, .8, .2, 1),
+      background-color 220ms ease,
+      border-color 220ms ease,
+      box-shadow 280ms ease !important;
+  }
+
+  :is(
+    .search-page-video,
+    .search-page
+  )
+  .video-list.row
+  > div:has(.bili-video-card):hover {
+    z-index: 30;
+    translate: 0 -3px;
+  }
+
+  :is(
+    .search-page-video,
+    .search-page
+  )
+  .video-list.row
+  > div:has(.bili-video-card):hover::before {
+    opacity: 1;
+    transform: scale(1);
+    background: var(--apple-card-background) !important;
+    border-color: var(--apple-card-border) !important;
+    box-shadow: var(--apple-card-shadow) !important;
+  }
+
+  /* 搜索结果封面圆角与轻微放大动画 */
+  .video-list.row :is(
+    .bili-video-card,
+    .bili-video-card__wrap,
+    .bili-video-card__info,
+    .bili-video-card__info--right,
+    .bili-video-card__info--bottom
+  ) {
+    background: transparent !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .video-list.row .bili-video-card :is(
+    .bili-video-card__image,
+    .bili-video-card__image--wrap,
+    .bili-video-card__cover,
+    .bili-video-card__cover-group
+  ) {
+    overflow: hidden !important;
+    border-radius: var(--apple-cover-radius) !important;
+  }
+
+  .video-list.row .bili-video-card :is(
+    .bili-video-card__image,
+    .bili-video-card__image--wrap,
+    .bili-video-card__cover,
+    .bili-video-card__cover-group
+  ) img {
+    transform: scale(1);
+    transition: transform 500ms cubic-bezier(.2, .8, .2, 1) !important;
+    will-change: transform;
+  }
+
+  .video-list.row > div:has(.bili-video-card):hover
+  .bili-video-card :is(
+    .bili-video-card__image,
+    .bili-video-card__image--wrap,
+    .bili-video-card__cover,
+    .bili-video-card__cover-group
+  ) img {
+    transform: scale(1.022);
+  }
+
+  .video-list.row > div:has(.bili-video-card):hover :is(
+    .bili-video-card__info--tit,
+    .bili-video-card__info--tit a,
+    .bili-video-card__info--title,
+    h3,
+    h3 a
+  ) {
+    color: var(--apple-card-title-color) !important;
+  }
+
+  .video-list.row > div:has(.bili-video-card):hover :is(
+    .bili-video-card__info--bottom,
+    .bili-video-card__info--author,
+    .bili-video-card__info--date,
+    .up-name,
+    .author,
+    .date
+  ),
+  .video-list.row > div:has(.bili-video-card):hover
+  :is(.bili-video-card__info--bottom, .bili-video-card__info--author) * {
+    color: var(--apple-card-meta-color) !important;
+  }
+
+  .video-list,
+  .search-page-video {
+    overflow: visible !important;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .video-list.row > div:has(.bili-video-card),
+    .video-list.row > div:has(.bili-video-card)::before,
+    .video-list.row .bili-video-card img {
+      transition: none !important;
+    }
+  }
+}
+
+
+/* ========================================
+   个人空间页视频卡片
+   ======================================== */
+
+@-moz-document domain("space.bilibili.com") {
+
+  /*
+   * 兼容个人空间首页、投稿页和不同版本类名。
+   * 排除内部使用BEM命名的子元素，防止双层背景。
+   */
+  :is(
+    .video-card,
+    .small-item,
+    .upload-video-card,
+    .video-list-item,
+    .space-video-card,
+    .video-item,
+    [class*="video-card"]:not([class*="__"]):not([class*="--"])
+  ):has(a[href*="/video/"]) {
+    position: relative !important;
+    isolation: isolate;
+    z-index: 0;
+
+    translate: 0 0;
+
+    transition:
+      translate var(--apple-card-speed)
+        cubic-bezier(.2, .8, .2, 1),
+      filter var(--apple-card-speed) ease !important;
+
+    will-change: translate;
+  }
+
+  :is(
+    .video-card,
+    .small-item,
+    .upload-video-card,
+    .video-list-item,
+    .space-video-card,
+    .video-item,
+    [class*="video-card"]:not([class*="__"]):not([class*="--"])
+  ):has(a[href*="/video/"])::before {
+    content: "";
+
+    position: absolute;
+    z-index: -1;
+
+    inset: -9px;
+
+    border: 1px solid transparent;
+    border-radius: var(--apple-card-radius);
+
+    background: transparent;
+    box-shadow: none;
+
+    opacity: 0;
+    transform: scale(0.975);
+    transform-origin: center;
+
+    pointer-events: none;
+
+    transition:
+      opacity 200ms ease,
+      transform 280ms cubic-bezier(.2, .8, .2, 1),
+      background-color 220ms ease,
+      border-color 220ms ease,
+      box-shadow 280ms ease !important;
+  }
+
+  :is(
+    .video-card,
+    .small-item,
+    .upload-video-card,
+    .video-list-item,
+    .space-video-card,
+    .video-item,
+    [class*="video-card"]:not([class*="__"]):not([class*="--"])
+  ):has(a[href*="/video/"]):hover {
+    z-index: 30;
+    translate: 0 -3px;
+  }
+
+  :is(
+    .video-card,
+    .small-item,
+    .upload-video-card,
+    .video-list-item,
+    .space-video-card,
+    .video-item,
+    [class*="video-card"]:not([class*="__"]):not([class*="--"])
+  ):has(a[href*="/video/"]):hover::before {
+    opacity: 1;
+    transform: scale(1);
+
+    background: var(--apple-card-background) !important;
+    border-color: var(--apple-card-border) !important;
+    box-shadow: var(--apple-card-shadow) !important;
+  }
+
+
+  /* 个人空间视频封面 */
+  :is(
+    .video-card,
+    .small-item,
+    .upload-video-card,
+    .video-list-item,
+    .space-video-card,
+    .video-item
+  )
+  :is(
+    .cover,
+    .video-cover,
+    .video-card__cover,
+    .small-item__cover,
+    .cover-container
+  ) {
+    overflow: hidden;
+    border-radius: var(--apple-cover-radius) !important;
+  }
+
+  :is(
+    .video-card,
+    .small-item,
+    .upload-video-card,
+    .video-list-item,
+    .space-video-card,
+    .video-item
+  )
+  :is(
+    .cover,
+    .video-cover,
+    .video-card__cover,
+    .small-item__cover,
+    .cover-container
+  )
+  img {
+    transform: scale(1);
+
+    transition:
+      transform 500ms
+        cubic-bezier(.2, .8, .2, 1) !important;
+
+    will-change: transform;
+  }
+
+  :is(
+    .video-card,
+    .small-item,
+    .upload-video-card,
+    .video-list-item,
+    .space-video-card,
+    .video-item
+  ):hover
+  :is(
+    .cover,
+    .video-cover,
+    .video-card__cover,
+    .small-item__cover,
+    .cover-container
+  )
+  img {
+    transform: scale(1.025);
+  }
+
+
+  /* 个人空间标题和日期 */
+  :is(
+    .video-card,
+    .small-item,
+    .upload-video-card,
+    .video-list-item,
+    .space-video-card,
+    .video-item
+  ):hover
+  :is(
+    .title,
+    .title a,
+    .video-name,
+    .video-name a,
+    .video-title,
+    .video-title a
+  ) {
+    color: var(--apple-card-title-color) !important;
+  }
+
+  :is(
+    .video-card,
+    .small-item,
+    .upload-video-card,
+    .video-list-item,
+    .space-video-card,
+    .video-item
+  ):hover
+  :is(
+    .meta,
+    .date,
+    .time,
+    .play,
+    .play-count,
+    .video-meta
+  ) {
+    color: var(--apple-card-meta-color) !important;
+  }
+
+
+  @media (prefers-reduced-motion: reduce) {
+    :is(
+      .video-card,
+      .small-item,
+      .upload-video-card,
+      .video-list-item,
+      .space-video-card,
+      .video-item
+    ),
+    :is(
+      .video-card,
+      .small-item,
+      .upload-video-card,
+      .video-list-item,
+      .space-video-card,
+      .video-item
+    )::before,
+    :is(
+      .video-card,
+      .small-item,
+      .upload-video-card,
+      .video-list-item,
+      .space-video-card,
+      .video-item
+    )
+    img {
+      transition: none !important;
+    }
+  }
+
+}
+
+/* ===== module: 20-popular-rank.css ===== */
+/* ========================================
+   热门页 / 排行榜
+   只保存排行榜页面的增量覆盖，基础动画来自冻结基线。
+   ======================================== */
+
+@-moz-document domain("www.bilibili.com") {
+  /* 原生 .rank-item 使用 overflow:hidden，会把基线中的圆角悬浮背景
+     裁成直角。释放外层裁切后，沿用首页相同的 18px 卡片圆角。 */
+  .popular-container
+  .rank-container
+  .rank-list
+  > .rank-item {
+    overflow: visible !important;
+    border-radius: var(--apple-card-radius) !important;
+  }
+
+  .popular-container
+  .rank-container
+  .rank-list
+  > .rank-item
+  > .content {
+    overflow: visible !important;
+    border-radius: inherit !important;
+  }
+
+  /* 排行榜的内容分类按钮：只做克制的位移与缩放，不额外增加背景。 */
+  .popular-container .rank-tab > li {
+    transform: translate3d(0, 0, 0) scale(1);
+    transform-origin: center;
+    transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1) !important;
+    will-change: transform;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .popular-container .rank-tab > li:hover {
+      transform: translate3d(0, -1px, 0) scale(1.045);
+    }
+  }
+
+  .popular-container .rank-tab > li:active {
+    transform: translate3d(0, 0, 0) scale(0.98) !important;
+    transition-duration: 80ms !important;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .popular-container .rank-tab > li {
+      transition: none !important;
+    }
+  }
+}
+
+/* ===== module: 90-patches.css ===== */
+/* ========================================
+   临时修补区
+
+   后续小改优先写在这里；确认稳定后，再移动到对应页面模块。
+   当前没有待合并的临时规则。
+   ======================================== */

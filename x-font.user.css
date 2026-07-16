@@ -1,0 +1,46 @@
+/* ==UserStyle==
+@name           X
+@namespace      GavinLeee-Stylus-Cascadea-x-font
+@version        1.0.0
+@description    Converted from the local Stylus style “X”.
+@updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/x-font.user.css
+@downloadURL    https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/x-font.user.css
+==/UserStyle== */
+
+@-moz-document domain("x.com") {
+  html,
+  body,
+  main,
+  article,
+  [role="main"],
+  [role="article"],
+  [data-testid="tweetText"],
+  [data-testid="UserName"],
+  [data-testid="UserDescription"],
+  [data-testid="cellInnerDiv"],
+  div[dir="auto"],
+  span,
+  a,
+  button,
+  input,
+  textarea {
+    font-family:
+      "Anthropic Sans Text",
+      "Anthropic Sans",
+      "Noto Sans SC",
+      "Noto Sans CJK SC",
+      "Noto Sans JP",
+      "Noto Sans CJK JP",
+      "Segoe UI Emoji",
+      sans-serif !important;
+  }
+
+  svg,
+  path,
+  code,
+  pre,
+  kbd,
+  samp {
+    font-family: initial !important;
+  }
+}

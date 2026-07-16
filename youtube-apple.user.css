@@ -1,0 +1,3007 @@
+/* ==UserStyle==
+@name           YouTube Apple 克制卡片与动效
+@namespace      youtube-apple-card-motion
+@version        2.20.36
+@description    顶栏、分类栏、左侧导航和视频卡片的克制 Apple 风格悬浮动效
+@author         Codex
+@updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/youtube-apple.user.css
+@downloadURL    https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/youtube-apple.user.css
+==/UserStyle== */
+
+@-moz-document domain("youtube.com") {
+  /* ---------- 颜色与动效参数 ---------- */
+  :root {
+    --yt-apple-card-bg: rgba(255, 255, 255, 0.82);
+    --yt-apple-card-bg-strong: rgba(247, 247, 249, 0.96);
+    --yt-apple-card-stroke: rgba(15, 23, 42, 0.10);
+    --yt-apple-card-shadow:
+      0 12px 30px rgba(15, 23, 42, 0.11),
+      0 2px 8px rgba(15, 23, 42, 0.06);
+    --yt-apple-card-shadow-soft:
+      0 7px 18px rgba(15, 23, 42, 0.09),
+      0 1px 5px rgba(15, 23, 42, 0.05);
+    --yt-apple-card-shadow-pressed:
+      0 3px 10px rgba(15, 23, 42, 0.08);
+    --yt-apple-focus: rgba(120, 86, 255, 0.48);
+    --yt-apple-motion: 220ms cubic-bezier(0.2, 0.75, 0.25, 1);
+    --yt-apple-motion-spring: 280ms cubic-bezier(0.18, 0.89, 0.32, 1.18);
+    /* 卡片悬停上浮量。悬停预览浮层（ytd-video-preview）按缩略图原始
+       位置定位，必须和卡片用同一个值一起上移，才能贴合放大后的卡片。 */
+    --yt-apple-card-lift: -3px;
+    /* 封面悬停放大倍数。预览浮层也用同一个值缩放，正好盖住放大后的
+       封面图，边缘不会露出下层图片。 */
+    --yt-apple-thumb-zoom: 1.018;
+  }
+
+  html[dark] {
+    --yt-apple-card-bg: rgba(42, 42, 45, 0.86);
+    --yt-apple-card-bg-strong: rgba(48, 48, 52, 0.97);
+    --yt-apple-card-stroke: rgba(255, 255, 255, 0.12);
+    --yt-apple-card-shadow:
+      0 14px 34px rgba(0, 0, 0, 0.36),
+      0 2px 8px rgba(0, 0, 0, 0.24);
+    --yt-apple-card-shadow-soft:
+      0 8px 20px rgba(0, 0, 0, 0.30),
+      0 1px 5px rgba(0, 0, 0, 0.22);
+    --yt-apple-card-shadow-pressed:
+      0 3px 10px rgba(0, 0, 0, 0.24);
+    --yt-apple-focus: rgba(165, 141, 255, 0.58);
+  }
+
+  /* ---------- 1. 顶栏按钮、搜索按钮与头像 ---------- */
+  ytd-masthead yt-icon-button#guide-button,
+  ytd-masthead button[aria-label="Search"],
+  ytd-masthead .ytSearchboxComponentSearchButton,
+  ytd-masthead button[aria-label="Search with your voice"],
+  ytd-masthead button[aria-label="Create"],
+  ytd-masthead button[aria-label="Notifications"],
+  ytd-masthead button[aria-label="Account menu"] {
+    border: 1px solid transparent !important;
+    border-radius: 999px !important;
+    box-sizing: border-box !important;
+    transform: translateZ(0) scale(1);
+    transform-origin: center;
+    transition:
+      transform var(--yt-apple-motion-spring),
+      background-color var(--yt-apple-motion),
+      border-color var(--yt-apple-motion),
+      box-shadow var(--yt-apple-motion),
+      filter var(--yt-apple-motion) !important;
+    will-change: transform;
+  }
+
+  ytd-masthead button[aria-label="Account menu"] {
+    border-radius: 50% !important;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    ytd-masthead yt-icon-button#guide-button:hover,
+    ytd-masthead button[aria-label="Search"]:hover,
+    ytd-masthead .ytSearchboxComponentSearchButton:hover,
+    ytd-masthead button[aria-label="Search with your voice"]:hover,
+    ytd-masthead button[aria-label="Create"]:hover,
+    ytd-masthead button[aria-label="Notifications"]:hover {
+      background-color: var(--yt-apple-card-bg-strong) !important;
+      border-color: var(--yt-apple-card-stroke) !important;
+      box-shadow: var(--yt-apple-card-shadow-soft) !important;
+      transform: translateY(-2px) scale(1.075);
+      z-index: 3;
+    }
+
+    ytd-masthead button[aria-label="Account menu"]:hover {
+      background-color: var(--yt-apple-card-bg-strong) !important;
+      border-color: var(--yt-apple-card-stroke) !important;
+      box-shadow: var(--yt-apple-card-shadow-soft) !important;
+      transform: translateY(-2px) scale(1.13);
+      z-index: 3;
+    }
+  }
+
+  ytd-masthead yt-icon-button#guide-button:active,
+  ytd-masthead button[aria-label="Search"]:active,
+  ytd-masthead .ytSearchboxComponentSearchButton:active,
+  ytd-masthead button[aria-label="Search with your voice"]:active,
+  ytd-masthead button[aria-label="Create"]:active,
+  ytd-masthead button[aria-label="Notifications"]:active,
+  ytd-masthead button[aria-label="Account menu"]:active {
+    box-shadow: var(--yt-apple-card-shadow-pressed) !important;
+    transform: translateY(0) scale(0.96);
+    transition-duration: 90ms !important;
+  }
+
+  ytd-masthead yt-icon-button#guide-button:focus-visible,
+  ytd-masthead button[aria-label="Search"]:focus-visible,
+  ytd-masthead .ytSearchboxComponentSearchButton:focus-visible,
+  ytd-masthead button[aria-label="Search with your voice"]:focus-visible,
+  ytd-masthead button[aria-label="Create"]:focus-visible,
+  ytd-masthead button[aria-label="Notifications"]:focus-visible,
+  ytd-masthead button[aria-label="Account menu"]:focus-visible {
+    outline: 3px solid var(--yt-apple-focus) !important;
+    outline-offset: 2px !important;
+  }
+
+  /*
+   * 头像按钮：只让圆形头像本身缩放上浮，不再画外层胶囊卡片的背景/描边/
+   * 阴影（那层外框不好看）。缩放/位移仍从上面的顶栏按钮通用规则继承，
+   * 这里只把外框那三样清掉。放在通用规则之后、同选择器覆盖，确保生效。
+   */
+  ytd-masthead button[aria-label="Account menu"],
+  ytd-masthead button[aria-label="Account menu"]:hover,
+  ytd-masthead button[aria-label="Account menu"]:active {
+    background-color: transparent !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+  }
+
+  /* ---------- 2A. 顶部分类胶囊 ---------- */
+
+  /* 非滚动的外层壳：直接放开溢出。 */
+  ytd-feed-filter-chip-bar-renderer,
+  yt-chip-cloud-renderer,
+  ytd-feed-filter-chip-bar-renderer #chips-wrapper {
+    overflow: visible !important;
+  }
+
+  /* 真正横向滚动的容器：overflow-x:auto 会把 overflow-y 一并强制成"裁剪"
+     （CSS 规范：一个轴非 visible 时另一个轴的 visible 会被算成 auto/clip），
+     所以之前写的 overflow-y:visible 根本没生效、放大的胶囊纵向被切。改为
+     上下各加 padding 腾出放大空间，再用等量负 margin 抵消，既不撑高胶囊条
+     也不影响横向滚动。 */
+  ytd-feed-filter-chip-bar-renderer #scroll-container,
+  yt-chip-cloud-renderer #chips,
+  yt-chip-cloud-renderer #scroll-container {
+    padding-top: 9px !important;
+    padding-bottom: 9px !important;
+    margin-top: -9px !important;
+    margin-bottom: -9px !important;
+  }
+
+  yt-chip-cloud-chip-renderer {
+    position: relative;
+    z-index: 0;
+    transform: translateZ(0) scale(1);
+    /* 顶边为原点：放大时向【下】生长，远离上方（顶栏/容器顶）的遮挡，
+       配合上面容器的 padding 腾空间，放大部分不会被切、也不会被顶栏盖住。 */
+    transform-origin: center top;
+    transition:
+      transform var(--yt-apple-motion-spring),
+      filter var(--yt-apple-motion) !important;
+    will-change: transform;
+  }
+
+  yt-chip-cloud-chip-renderer button,
+  yt-chip-cloud-chip-renderer .ytChipShapeHost {
+    border-radius: 10px !important;
+    transition:
+      background-color var(--yt-apple-motion),
+      border-color var(--yt-apple-motion),
+      box-shadow var(--yt-apple-motion) !important;
+  }
+
+  yt-chip-cloud-chip-renderer button {
+    border: 1px solid transparent !important;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    yt-chip-cloud-chip-renderer:hover {
+      z-index: 30;
+      transform: scale(1.06);
+    }
+
+    yt-chip-cloud-chip-renderer:hover button {
+      background-color: var(--yt-apple-card-bg-strong) !important;
+      border-color: var(--yt-apple-card-stroke) !important;
+      box-shadow: var(--yt-apple-card-shadow-soft) !important;
+    }
+  }
+
+  yt-chip-cloud-chip-renderer:active {
+    transform: translateY(0) scale(0.96);
+    transition-duration: 90ms !important;
+  }
+
+  yt-chip-cloud-chip-renderer.iron-selected button,
+  yt-chip-cloud-chip-renderer[selected] button {
+    box-shadow:
+      0 0 0 1px var(--yt-apple-card-stroke),
+      0 3px 9px rgba(0, 0, 0, 0.10) !important;
+  }
+
+  /* ---------- 2B. 左侧导航按钮 ---------- */
+  ytd-guide-entry-renderer,
+  ytd-mini-guide-entry-renderer {
+    position: relative;
+    z-index: 0;
+    transform: translateZ(0) scale(1);
+    transform-origin: left center;
+    transition:
+      transform var(--yt-apple-motion-spring),
+      filter var(--yt-apple-motion) !important;
+    will-change: transform;
+  }
+
+  ytd-guide-entry-renderer #endpoint,
+  ytd-mini-guide-entry-renderer #endpoint {
+    border: 1px solid transparent !important;
+    border-radius: 12px !important;
+    box-sizing: border-box !important;
+    transition:
+      background-color var(--yt-apple-motion),
+      border-color var(--yt-apple-motion),
+      box-shadow var(--yt-apple-motion) !important;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    ytd-guide-entry-renderer:hover,
+    ytd-mini-guide-entry-renderer:hover {
+      z-index: 4;
+      transform: translateX(5px) scale(1.025);
+    }
+
+    ytd-guide-entry-renderer:hover #endpoint,
+    ytd-mini-guide-entry-renderer:hover #endpoint {
+      background-color: var(--yt-apple-card-bg-strong) !important;
+      border-color: var(--yt-apple-card-stroke) !important;
+      box-shadow: var(--yt-apple-card-shadow-soft) !important;
+    }
+  }
+
+  ytd-guide-entry-renderer:active,
+  ytd-mini-guide-entry-renderer:active {
+    transform: translateX(2px) scale(0.985);
+    transition-duration: 90ms !important;
+  }
+
+  ytd-guide-entry-renderer[active] #endpoint,
+  ytd-guide-entry-renderer.iron-selected #endpoint,
+  ytd-mini-guide-entry-renderer[active] #endpoint,
+  ytd-mini-guide-entry-renderer.iron-selected #endpoint {
+    border-color: var(--yt-apple-card-stroke) !important;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08) !important;
+  }
+
+  /* ---------- 3. 视频卡片 ---------- */
+
+  /*
+   * 参照 Bilibili 版本已验证过的做法：外层整卡只做位移（translate），
+   * 不做缩放；缩放效果只加在缩略图的 img 本身（见下方）。悬浮预览
+   * （video / moving-thumbnail / inline-player）是缩略图内和 img 平级
+   * 的另一层，不受 img 自身缩放影响——外层从始至终没有缩放过，也就
+   * 没有什么状态需要靠 :has(video) 之类的条件去"保持"，预览出现/
+   * 替换缩略图时自然不会打断或抖动。
+   */
+  ytd-rich-item-renderer {
+    position: relative !important;
+    z-index: 0;
+    translate: 0 0;
+    transition:
+      translate 300ms cubic-bezier(0.20, 0.88, 0.24, 1.10),
+      filter 220ms ease !important;
+    will-change: translate;
+  }
+
+  /*
+   * 搜索页和旧版网格未必具备新版原生卡片，因此继续保留兼容背景。
+   */
+  :is(
+    ytd-grid-video-renderer,
+    ytd-video-renderer,
+    ytd-compact-video-renderer
+  ) {
+    position: relative !important;
+    isolation: isolate;
+    z-index: 0;
+    border-radius: 16px;
+    translate: 0 0;
+    transition:
+      translate var(--yt-apple-motion-spring),
+      filter var(--yt-apple-motion) !important;
+    will-change: translate;
+  }
+
+  :is(
+    ytd-grid-video-renderer,
+    ytd-video-renderer,
+    ytd-compact-video-renderer
+  )::before {
+    content: "";
+    position: absolute;
+    inset: -7px;
+    z-index: -1;
+    pointer-events: none;
+    border: 1px solid transparent;
+    border-radius: 19px;
+    background: transparent;
+    box-shadow: none;
+    opacity: 0;
+    transition:
+      opacity var(--yt-apple-motion),
+      background-color var(--yt-apple-motion),
+      border-color var(--yt-apple-motion),
+      box-shadow var(--yt-apple-motion) !important;
+  }
+
+  /*
+   * 缩略图容器不再裁剪：悬浮预览（moving-thumbnail / inline-player / video）
+   * 常常以比静态封面更大或层级更高的方式插入，容器裁剪会把预览连同放大
+   * 动效一起挡住。改由封面图和预览层各自继承圆角、自行裁剪。
+   */
+  :is(
+    ytd-grid-video-renderer,
+    ytd-video-renderer
+  ) :is(yt-thumbnail-view-model, ytd-thumbnail) {
+    overflow: visible !important;
+    border-radius: 14px !important;
+  }
+
+  :is(
+    ytd-rich-item-renderer,
+    ytd-grid-video-renderer,
+    ytd-video-renderer,
+    ytd-compact-video-renderer
+  ) :is(yt-thumbnail-view-model, ytd-thumbnail) :is(
+    img,
+    video,
+    canvas,
+    ytd-moving-thumbnail-renderer,
+    ytd-inline-player-renderer,
+    yt-inline-player-controls,
+    [class*="InlinePlayer"],
+    [class*="inline-player"]
+  ) {
+    border-radius: inherit !important;
+    overflow: hidden !important;
+  }
+
+  /*
+   * 预览层始终叠在静态封面之上；同时关闭预览层自带的进场动画/过渡，
+   * 避免它和封面缩放叠加出抖动。
+   */
+  :is(
+    ytd-rich-item-renderer,
+    ytd-grid-video-renderer,
+    ytd-video-renderer,
+    ytd-compact-video-renderer
+  ) :is(
+    video,
+    canvas,
+    ytd-moving-thumbnail-renderer,
+    ytd-inline-player-renderer,
+    yt-inline-player-controls
+  ) {
+    z-index: 2 !important;
+    animation: none !important;
+    transition: none !important;
+  }
+
+  /*
+   * 预览层不拦截鼠标：一旦预览出现，浏览器会把 hover 命中它而不是
+   * 卡片本身，卡片的 :hover 因此掉线、缩放跟着复位。让预览层把鼠标
+   * 事件透传给底下的卡片/链接，:hover 就不会因为预览出现而丢失。
+   * 静音等控件（yt-inline-player-controls）保留可点击，不受影响。
+   */
+  :is(
+    ytd-rich-item-renderer,
+    ytd-grid-video-renderer,
+    ytd-video-renderer,
+    ytd-compact-video-renderer
+  ) :is(
+    video,
+    canvas,
+    ytd-moving-thumbnail-renderer,
+    ytd-inline-player-renderer,
+    [class*="InlinePlayer"],
+    [class*="inline-player"]
+  ) {
+    pointer-events: none;
+  }
+
+  /*
+   * 关键：YouTube 的悬停预览播放器（ytd-video-preview#video-preview）
+   * 不在卡片内部，而是挂在 ytd-app 下的全局浮层，由 JS 定位到被悬停的
+   * 缩略图上方。这正是两个顽固问题的根源：
+   * 1) 浮层盖到卡片上后接管了鼠标，卡片自身的 :hover 消失，悬停动效
+   *    被强制复位（先放大、预览一出现就抖一下缩回去）；
+   * 2) 卡片 hover 时抬了 z-index 并带有自己的层叠上下文，反而把这个
+   *    浮层压到下面（预览在卡片底下播放、看起来被遮挡）。
+   * 修复：浮层画在卡片内容之上、原生导航之下；浮层本体不接收鼠标事件，hover 穿透回
+   * 底下的卡片；预览上的静音/字幕等控件单独恢复可点击。
+   */
+  /*
+   * 浮层的上移/放大不能写成恒定值：浮层可能在卡片上浮动画进行到一半时
+   * 才现身（相邻卡片间快速移动时预览出现很快），恒定终点姿态会比卡片
+   * 高出几像素，底边露出一条还没升上来的静态封面。改成由"有卡片处于
+   * 悬停"这个状态驱动、和卡片同一时刻触发、同参数的过渡（见下方
+   * hover 媒体查询内的规则），两者全程同步。
+   * translate/scale 属性与 YouTube 自己定位用的 transform 相互独立、
+   * 效果叠加，不会覆盖它的定位。
+   */
+  ytd-app ytd-video-preview,
+  ytd-video-preview#video-preview {
+    z-index: 100 !important;
+    pointer-events: none !important;
+    translate: 0 0;
+    scale: 1;
+    transition:
+      translate 300ms cubic-bezier(0.20, 0.88, 0.24, 1.10),
+      scale 500ms cubic-bezier(.2, .8, .2, 1) !important;
+  }
+
+  /*
+   * 只把静音/字幕这类小按钮恢复可点击。注意不能包含 a 和 [role="button"]：
+   * 浮层里有一个覆盖整个画面的跳转大链接，恢复它的鼠标事件会把整个
+   * 缩略图区域的 hover 重新拦走，卡片动效又会失效。点击穿透到卡片
+   * 自己的链接上，跳转行为不变。
+   */
+  :is(ytd-app ytd-video-preview, ytd-video-preview#video-preview)
+  :is(button, yt-icon-button) {
+    pointer-events: auto !important;
+  }
+
+  /* 浮层隐藏期间，里面的按钮也不许拦截鼠标（防止 YouTube 用 opacity
+     隐藏浮层时，透明按钮还停留在上一张卡片的位置挡住 hover）。 */
+  ytd-video-preview[hidden] :is(button, yt-icon-button) {
+    pointer-events: none !important;
+  }
+
+  /*
+   * 缩放效果只加在封面 img 本身，不加在外层卡片或预览层上。img 是
+   * 替换元素、没有子节点，缩放它不会牵扯到任何容器/层级问题。
+   */
+  :is(
+    ytd-rich-item-renderer,
+    ytd-grid-video-renderer,
+    ytd-video-renderer,
+    ytd-compact-video-renderer
+  ) :is(yt-thumbnail-view-model, ytd-thumbnail) img {
+    transform: scale(1);
+    transition: transform 500ms cubic-bezier(.2, .8, .2, 1) !important;
+    will-change: transform;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    /* 所有卡片统一用 --yt-apple-card-lift，保证预览浮层跟得上。 */
+    ytd-rich-item-renderer:is(:hover, :focus-within) {
+      z-index: 8;
+      translate: 0 var(--yt-apple-card-lift);
+    }
+
+    ytd-grid-video-renderer:is(:hover, :focus-within) {
+      z-index: 8;
+      translate: 0 var(--yt-apple-card-lift);
+    }
+
+    :is(
+      ytd-video-renderer,
+      ytd-compact-video-renderer
+    ):is(:hover, :focus-within) {
+      z-index: 8;
+      translate: 0 var(--yt-apple-card-lift);
+    }
+
+    /*
+     * 只保留描边和阴影，不再填充背景色：光晕在部分缩略图上
+     * 会整块盖在封面和文字上方（而不是只露出卡片外沿），
+     * 去掉背景色可以从根源上避免出现色块/遮罩观感。
+     */
+    :is(
+      ytd-grid-video-renderer,
+      ytd-video-renderer,
+      ytd-compact-video-renderer
+    ):is(:hover, :focus-within)::before {
+      border-color: var(--yt-apple-card-stroke) !important;
+      box-shadow: var(--yt-apple-card-shadow) !important;
+      opacity: 1;
+    }
+
+    /* 缩放值必须和预览浮层的 scale 一致（同一个变量），否则预览
+       出现后会从边缘露出下层放大的封面图。 */
+    :is(
+      ytd-rich-item-renderer,
+      ytd-grid-video-renderer,
+      ytd-video-renderer,
+      ytd-compact-video-renderer
+    ):is(:hover, :focus-within)
+    :is(yt-thumbnail-view-model, ytd-thumbnail) img {
+      transform: scale(var(--yt-apple-thumb-zoom));
+    }
+
+    /* 有卡片悬停时预览浮层同步上浮+放大：触发时机、时长、曲线都和
+       卡片的 translate / 封面 img 的 scale 完全一致，即使浮层在动画
+       中途现身，姿态也和卡片对得上，不会露出底边封面条。 */
+    ytd-app:has(
+      ytd-rich-item-renderer:is(:hover, :focus-within),
+      ytd-grid-video-renderer:is(:hover, :focus-within),
+      ytd-video-renderer:is(:hover, :focus-within),
+      ytd-compact-video-renderer:is(:hover, :focus-within)
+    ) ytd-video-preview {
+      translate: 0 var(--yt-apple-card-lift) !important;
+      scale: var(--yt-apple-thumb-zoom) !important;
+    }
+  }
+
+  ytd-rich-item-renderer:active {
+    translate: 0 -1px;
+    transition-duration: 100ms !important;
+  }
+
+  :is(
+    ytd-grid-video-renderer,
+    ytd-video-renderer,
+    ytd-compact-video-renderer
+  ):active {
+    translate: 0 -1px;
+    transition-duration: 100ms !important;
+  }
+
+  /* 键盘操作时给旧版卡片保留清晰的焦点反馈。 */
+  :is(
+    ytd-grid-video-renderer,
+    ytd-video-renderer,
+    ytd-compact-video-renderer
+  ):focus-within::before {
+    border-color: var(--yt-apple-focus) !important;
+  }
+
+  /* ---------- 4. 顶栏细节修正 ---------- */
+
+  /*
+   * 头像按钮：整个圆形按钮作为卡片放大（底色、描边、阴影、缩放都来自
+   * 第 1 节的顶栏按钮统一规则），不再只放大内部头像图片。
+   */
+
+  /* 恢复搜索按钮原生的右侧半圆形状，只在原形状上增加位移和阴影。 */
+  ytd-masthead button[aria-label="Search"],
+  ytd-masthead .ytSearchboxComponentSearchButton {
+    background-color:
+      var(--ytd-searchbox-legacy-button-color, rgba(0, 0, 0, 0.04)) !important;
+    border: 1px solid
+      var(--ytd-searchbox-legacy-button-border-color, rgba(0, 0, 0, 0.12)) !important;
+    border-radius: 0 40px 40px 0 !important;
+    box-shadow: none !important;
+    transform: translateY(0) scale(1);
+    transform-origin: left center;
+    filter: none !important;
+    transition:
+      transform 220ms cubic-bezier(0.20, 0.88, 0.24, 1.10),
+      background-color 180ms ease,
+      border-color 180ms ease,
+      box-shadow 220ms ease,
+      filter 180ms ease !important;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    ytd-masthead button[aria-label="Search"]:hover,
+    ytd-masthead .ytSearchboxComponentSearchButton:hover {
+      background-color:
+        var(--ytd-searchbox-legacy-button-hover-color, rgba(0, 0, 0, 0.075)) !important;
+      border-color:
+        var(--ytd-searchbox-legacy-button-hover-border-color, rgba(0, 0, 0, 0.18)) !important;
+      border-radius: 0 40px 40px 0 !important;
+      box-shadow: var(--yt-apple-card-shadow-soft) !important;
+      transform: translateY(-1px) scale(1.035);
+      filter: brightness(1.015) saturate(0.98) !important;
+    }
+  }
+
+  ytd-masthead button[aria-label="Search"]:active,
+  ytd-masthead .ytSearchboxComponentSearchButton:active {
+    border-radius: 0 40px 40px 0 !important;
+    box-shadow: var(--yt-apple-card-shadow-pressed) !important;
+    transform: translateY(0) scale(0.975);
+    transition-duration: 90ms !important;
+  }
+
+  /* 左上角 YouTube Premium 标志：保持原尺寸，仅增加克制的卡片反馈。 */
+  ytd-masthead ytd-topbar-logo-renderer#logo {
+    position: relative !important;
+    isolation: isolate;
+    z-index: 0;
+    border-radius: 13px !important;
+    transform: translateY(0) scale(1);
+    transform-origin: center center;
+    transition: transform var(--yt-apple-motion-spring) !important;
+    will-change: transform;
+  }
+
+  ytd-masthead ytd-topbar-logo-renderer#logo::before {
+    content: "";
+    position: absolute;
+    /* logo 右侧的 "JP" 地区角标不算在 renderer 自身的布局宽度里，
+       右边需要多留一些余量，否则光晕卡片会把角标挡在外面。 */
+    inset: 7px -22px 7px -2px;
+    z-index: -1;
+    pointer-events: none;
+    border: 1px solid transparent;
+    border-radius: 13px;
+    background-color: transparent;
+    box-shadow: none;
+    opacity: 0;
+    transition:
+      opacity var(--yt-apple-motion),
+      background-color var(--yt-apple-motion),
+      border-color var(--yt-apple-motion),
+      box-shadow var(--yt-apple-motion) !important;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    ytd-masthead ytd-topbar-logo-renderer#logo:hover {
+      z-index: 4;
+      transform: translateY(-2px) scale(1.045);
+    }
+
+    ytd-masthead ytd-topbar-logo-renderer#logo:hover::before {
+      background-color: var(--yt-apple-card-bg-strong) !important;
+      border-color: var(--yt-apple-card-stroke) !important;
+      box-shadow: var(--yt-apple-card-shadow-soft) !important;
+      opacity: 1;
+    }
+  }
+
+  ytd-masthead ytd-topbar-logo-renderer#logo:active {
+    transform: translateY(0) scale(0.975);
+    transition-duration: 90ms !important;
+  }
+
+  /*
+   * 顶栏磨砂玻璃：YouTube 自身浅色/深色模式都没有这个材质，两种模式都补上。
+   * 把 YouTube 自己的顶栏底色改透明，在全宽背景层 #background 上叠半透明底
+   * + 背景模糊；模糊参数两种模式共用，底色浅/深各一份。backdrop-filter 放在
+   * 只作背景、无子节点的 #background 上（不是 #container），避免顶栏里搜索
+   * 建议/通知等弹层自己的 backdrop-filter 因祖先也有而失效（Chromium 嵌套
+   * backdrop-filter 限制）。
+   */
+  /*
+   * 顶栏材质交还给 YouTube 原生的 #frosted-glass 层管理：位于页面顶部时透明，
+   * 开始向下滚动后由 YouTube 自己切换为磨砂玻璃。这里只提供玻璃颜色，不再
+   * 强制覆盖 ytd-masthead #background，否则原生的滚动状态会被锁死。
+   * 同时兼容 YouTube 新旧两套变量名。
+   */
+
+  /*
+   * 顶栏层级：视频悬停预览限制在 100，因此顶栏、搜索框和搜索建议
+   * 依次提升到更高的独立层，避免首页卡片放大后盖住顶栏控件。
+   */
+  ytd-app #masthead-container {
+    display: block !important;
+    position: fixed !important;
+    top: 0 !important;
+    right: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    min-height: var(--ytd-masthead-height, 56px) !important;
+    z-index: 100000 !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    transform: none !important;
+    translate: none !important;
+    overflow: visible !important;
+    isolation: isolate !important;
+  }
+
+  ytd-masthead#masthead {
+    display: block !important;
+    position: relative !important;
+    width: 100% !important;
+    min-height: var(--ytd-masthead-height, 56px) !important;
+    z-index: 100001 !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    transform: none !important;
+    translate: none !important;
+    overflow: visible !important;
+    pointer-events: auto !important;
+  }
+
+  ytd-masthead #container {
+    position: relative;
+    z-index: 1;
+    min-height: var(--ytd-masthead-height, 56px) !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    transform: none !important;
+    translate: none !important;
+    overflow: visible !important;
+  }
+
+  ytd-masthead :is(#start, #center, #end) {
+    position: relative;
+    z-index: 100002 !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+
+  ytd-masthead :is(#center, yt-searchbox, .ytSearchboxComponentHost) {
+    position: relative;
+    z-index: 100100 !important;
+  }
+
+  .ytSearchboxComponentSuggestionsContainer {
+    z-index: 100200 !important;
+    isolation: isolate;
+  }
+
+  /* 首页顶栏下方的分类胶囊栏也保持在视频预览层之上。 */
+  ytd-feed-filter-chip-bar-renderer,
+  ytd-feed-filter-chip-bar-renderer #chips-wrapper,
+  yt-chip-cloud-renderer {
+    z-index: 99900 !important;
+  }
+
+  html:not([dark]) {
+    --yt-apple-masthead-glass: rgba(255, 255, 255, 0.82);
+  }
+
+  html[dark] {
+    --yt-apple-masthead-glass: rgba(24, 24, 26, 0.80);
+  }
+
+  /* 关闭会因 YouTube 灰度版本而变化的原生玻璃层，统一由 masthead 背景承载材质。 */
+  body:has(ytd-watch-flexy:not([hidden])) ytd-app #frosted-glass,
+  body:has(ytd-watch-flexy:not([hidden])) #frosted-glass.ytd-app,
+  body:has(ytd-watch-flexy:not([hidden])) #frosted-glass:has(+ #masthead-container) {
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  /* 顶栏外壳保持透明，实际玻璃只画在无子元素的 #background 上。 */
+  body:has(ytd-watch-flexy:not([hidden])) ytd-masthead,
+  body:has(ytd-watch-flexy:not([hidden])) ytd-masthead #container {
+    background-color: transparent !important;
+    background-image: none !important;
+  }
+
+  /*
+   * 回退状态：若浏览器不支持滚动驱动动画，始终显示磨砂顶栏，避免顶栏消失。
+   * 支持时，下方动画会在滚动 0–96px 内从透明连续过渡到完整磨砂材质。
+   */
+  body:has(ytd-watch-flexy:not([hidden])) ytd-masthead > #background {
+    opacity: 1 !important;
+    background-color: var(--yt-apple-masthead-glass);
+    background-image: none !important;
+    backdrop-filter: saturate(180%) blur(22px);
+    -webkit-backdrop-filter: saturate(180%) blur(22px);
+    border-bottom: none !important;
+  }
+
+  /*
+   * JS 提供滚动状态后：页面顶部透明，向下滚动后切换为完整磨砂顶栏。
+   * 如果 JS 未运行，则沿用上面的完整磨砂回退，不会出现永久透明的顶栏。
+   */
+  html[data-yt-scroll-aware]:not([data-yt-scrolled])
+  body:has(ytd-watch-flexy:not([hidden])) ytd-masthead > #background {
+    background-color: transparent !important;
+    backdrop-filter: saturate(100%) blur(0px) !important;
+    -webkit-backdrop-filter: saturate(100%) blur(0px) !important;
+    transition:
+      background-color 220ms cubic-bezier(0.2, 0.75, 0.25, 1),
+      backdrop-filter 220ms cubic-bezier(0.2, 0.75, 0.25, 1),
+      -webkit-backdrop-filter 220ms cubic-bezier(0.2, 0.75, 0.25, 1) !important;
+  }
+
+  html[data-yt-scroll-aware][data-yt-scrolled]
+  body:has(ytd-watch-flexy:not([hidden])) ytd-masthead > #background {
+    background-color: var(--yt-apple-masthead-glass) !important;
+    backdrop-filter: saturate(180%) blur(22px) !important;
+    -webkit-backdrop-filter: saturate(180%) blur(22px) !important;
+    transition:
+      background-color 220ms cubic-bezier(0.2, 0.75, 0.25, 1),
+      backdrop-filter 220ms cubic-bezier(0.2, 0.75, 0.25, 1),
+      -webkit-backdrop-filter 220ms cubic-bezier(0.2, 0.75, 0.25, 1) !important;
+  }
+
+  /*
+   * 搜索框 + 放大镜按钮：比顶栏底板更不透明、更模糊的磨砂玻璃——Apple
+   * 分层玻璃（上层控件比底板更实、更糊，形成层次）。两种模式都做，模糊
+   * 共用、底色各一份。这些控件的祖先都没有 backdrop-filter（顶栏的模糊在
+   * 旁支 #background 上），所以自己的 backdrop-filter 能正常取样。
+   */
+  ytd-masthead yt-searchbox .ytSearchboxComponentInputBox,
+  ytd-masthead yt-searchbox .ytSearchboxComponentSearchButton,
+  ytd-masthead button[aria-label="Search"] {
+    backdrop-filter: saturate(185%) blur(30px) !important;
+    -webkit-backdrop-filter: saturate(185%) blur(30px) !important;
+  }
+
+  html:not([dark]) ytd-masthead yt-searchbox .ytSearchboxComponentInputBox,
+  html:not([dark]) ytd-masthead yt-searchbox .ytSearchboxComponentSearchButton,
+  html:not([dark]) ytd-masthead button[aria-label="Search"] {
+    background-color: rgba(255, 255, 255, 0.88) !important;
+  }
+
+  html[dark] ytd-masthead yt-searchbox .ytSearchboxComponentInputBox,
+  html[dark] ytd-masthead yt-searchbox .ytSearchboxComponentSearchButton,
+  html[dark] ytd-masthead button[aria-label="Search"] {
+    background-color: rgba(52, 52, 56, 0.84) !important;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    html:not([dark]) ytd-masthead yt-searchbox .ytSearchboxComponentSearchButton:hover,
+    html:not([dark]) ytd-masthead button[aria-label="Search"]:hover {
+      background-color: rgba(255, 255, 255, 0.96) !important;
+    }
+
+    html[dark] ytd-masthead yt-searchbox .ytSearchboxComponentSearchButton:hover,
+    html[dark] ytd-masthead button[aria-label="Search"]:hover {
+      background-color: rgba(68, 68, 72, 0.92) !important;
+    }
+  }
+
+  /*
+   * 搜索建议下拉浮层：和搜索框同款磨砂玻璃，两种模式都做。它是搜索框的
+   * 兄弟节点、祖先无 backdrop-filter，所以模糊能正常取样（模糊浮层下方的
+   * 页面内容）。行默认透明，玻璃从行间透出；把可能存在的内层不透明底
+   * 清成透明，避免盖住玻璃。选中/悬停行的高亮保留。
+   */
+  .ytSearchboxComponentSuggestionsContainer {
+    backdrop-filter: saturate(185%) blur(30px) !important;
+    -webkit-backdrop-filter: saturate(185%) blur(30px) !important;
+  }
+
+  html:not([dark]) .ytSearchboxComponentSuggestionsContainer {
+    background-color: rgba(255, 255, 255, 0.90) !important;
+  }
+
+  html[dark] .ytSearchboxComponentSuggestionsContainer {
+    background-color: rgba(30, 30, 34, 0.88) !important;
+  }
+
+  .ytSearchboxComponentSuggestionsContainer
+  :is(.ytSuggestionsContainer, .ytSearchboxComponentSuggestionsList) {
+    background-color: transparent !important;
+  }
+
+  /* 修复新版侧栏的 Subscriptions / You 分组标题高度被压缩为 0。 */
+  ytd-guide-collapsible-section-entry-renderer
+  #header-entry
+  tp-yt-paper-item {
+    align-items: center !important;
+  }
+
+  ytd-guide-collapsible-section-entry-renderer
+  #header-entry
+  yt-formatted-string.title {
+    display: block !important;
+    flex: 0 0 auto !important;
+    width: auto !important;
+    height: 22px !important;
+    min-height: 22px !important;
+    max-height: 22px !important;
+    overflow: visible !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    color: rgb(15, 15, 15) !important;
+    font-size: 16px !important;
+    font-weight: 500 !important;
+    line-height: 22px !important;
+    white-space: nowrap !important;
+  }
+
+  /* 上面这条标题颜色原来跟随 --yt-spec-text-primary，深色模式下该变量在
+     这个位置没有正确生效，标题一直是浅色模式的深色文字，这里改成显式
+     跟随站点自己的深色模式开关。 */
+  html[dark]
+  ytd-guide-collapsible-section-entry-renderer
+  #header-entry
+  yt-formatted-string.title {
+    color: rgb(245, 245, 247) !important;
+  }
+
+  /* ---------- 5. 搜索框整体卡片 ---------- */
+
+  /*
+   * 搜索框真实标签是 yt-searchbox（不是 ytd-searchbox，之前写错所以一直
+   * 没生效）。鼠标进入搜索框任意位置时整框上浮+阴影；放大镜按钮在框内，
+   * 悬停它时框整体上浮（本规则）与按钮自己的动效（第 1 节的
+   * .ytSearchboxComponentSearchButton）叠加触发。:focus-within 让输入
+   * 期间保持上浮，不会打字打到一半落回去。
+   */
+  ytd-masthead yt-searchbox {
+    translate: 0 0;
+    transition: translate var(--yt-apple-motion-spring) !important;
+  }
+
+  ytd-masthead yt-searchbox .ytSearchboxComponentInputBox {
+    transition:
+      border-color var(--yt-apple-motion),
+      box-shadow var(--yt-apple-motion) !important;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    ytd-masthead yt-searchbox:is(:hover, :focus-within) {
+      translate: 0 -2px;
+    }
+
+    html:not([dark]) ytd-masthead yt-searchbox:is(:hover, :focus-within)
+    .ytSearchboxComponentInputBox {
+      border-color: var(--yt-apple-card-stroke) !important;
+    }
+
+    ytd-masthead yt-searchbox:is(:hover, :focus-within)
+    .ytSearchboxComponentInputBox {
+      box-shadow: var(--yt-apple-card-shadow-soft) !important;
+    }
+  }
+
+  /* 搜索框激活展开后，用克制的中性灰替换 YouTube 原生蓝色焦点描边。 */
+  html:not([dark]) ytd-masthead yt-searchbox:focus-within
+  .ytSearchboxComponentInputBox {
+    border-color: rgba(15, 23, 42, 0.18) !important;
+    outline-color: transparent !important;
+  }
+
+  html[dark] ytd-masthead yt-searchbox:focus-within
+  .ytSearchboxComponentInputBox {
+    border-color: rgba(255, 255, 255, 0.20) !important;
+    outline-color: transparent !important;
+  }
+
+  /* ---------- 6. 播放页信息区按钮与圆角卡片 ---------- */
+
+  /*
+   * 订阅、点赞、点踩、分享、保存、更多这些按钮各自作为一个整体上浮，
+   * 互相独立触发。点赞和点踩是分开的两个元素（like-button-view-model /
+   * dislike-button-view-model），悬停其一时只有那一半抬起，另一半不动。
+   * "..."更多菜单是 #actions 里的 yt-icon-button，单独补进来。
+   * position:relative + 悬停 z-index 让抬起的一半盖在相邻按钮之上，
+   * 阴影不被邻居切掉。阴影用 drop-shadow（跟随按钮实际轮廓），
+   * 而不是 box-shadow（只会画矩形）。
+   */
+  ytd-watch-metadata :is(
+    #subscribe-button,
+    ytd-video-owner-renderer #sponsor-button,
+    ytd-video-owner-renderer #membership-button,
+    like-button-view-model,
+    dislike-button-view-model,
+    #actions yt-button-view-model,
+    #actions ytd-button-renderer,
+    #actions yt-icon-button
+  ) {
+    position: relative;
+    translate: 0 0;
+    transition:
+      translate var(--yt-apple-motion-spring),
+      filter var(--yt-apple-motion) !important;
+  }
+
+  /* 频道区不再整体画卡片；只让频道头像使用与评论区头像一致的圆形动效。 */
+  ytd-watch-metadata ytd-video-owner-renderer #avatar {
+    border-radius: 50%;
+    transform: translateY(0) scale(1);
+    transform-origin: center;
+    transition: transform var(--yt-apple-motion-spring) !important;
+    will-change: transform;
+  }
+
+  /* 描述框和直播聊天入口这两块圆角矩形 */
+  ytd-watch-metadata #bottom-row > * {
+    translate: 0 0;
+    border-radius: 12px;
+    transition:
+      translate var(--yt-apple-motion-spring),
+      box-shadow var(--yt-apple-motion) !important;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    ytd-watch-metadata :is(
+      #subscribe-button,
+      ytd-video-owner-renderer #sponsor-button,
+      ytd-video-owner-renderer #membership-button,
+      like-button-view-model,
+      dislike-button-view-model,
+      #actions yt-button-view-model,
+      #actions ytd-button-renderer,
+      #actions yt-icon-button
+    ):hover {
+      translate: 0 -2px;
+      filter: drop-shadow(0 5px 10px rgba(15, 23, 42, 0.16));
+      z-index: 2;
+    }
+
+    html[dark] ytd-watch-metadata :is(
+      #subscribe-button,
+      ytd-video-owner-renderer #sponsor-button,
+      ytd-video-owner-renderer #membership-button,
+      like-button-view-model,
+      dislike-button-view-model,
+      #actions yt-button-view-model,
+      #actions ytd-button-renderer,
+      #actions yt-icon-button
+    ):hover {
+      filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.40));
+    }
+
+    ytd-watch-metadata ytd-video-owner-renderer #avatar:hover {
+      transform: translateY(-2px) scale(1.12);
+    }
+
+    ytd-watch-metadata #bottom-row > *:hover {
+      translate: 0 -2px;
+      box-shadow: var(--yt-apple-card-shadow-soft) !important;
+    }
+  }
+
+  ytd-watch-metadata :is(
+    #subscribe-button,
+    ytd-video-owner-renderer #sponsor-button,
+    ytd-video-owner-renderer #membership-button,
+    like-button-view-model,
+    dislike-button-view-model,
+    #actions yt-button-view-model,
+    #actions ytd-button-renderer,
+    #actions yt-icon-button
+  ):active {
+    translate: 0 0;
+    transition-duration: 90ms !important;
+  }
+
+  /* ---------- 7. 直播聊天面板 ---------- */
+
+  /*
+   * 外框（圆角矩形容器）在主文档；面板内部的按钮、输入框、评论都在
+   * youtube.com/live_chat 这个 iframe 文档里，Stylus 会对匹配域名的
+   * iframe 注入同一份样式，所以下面各组规则各自在对应文档中生效。
+   */
+  ytd-live-chat-frame#chat {
+    translate: 0 0;
+    transition:
+      translate var(--yt-apple-motion-spring),
+      box-shadow var(--yt-apple-motion) !important;
+  }
+
+  /*
+   * 顶部三个按钮：0XP、菜单（⋮）、关闭（✕）。
+   * 用 :not() 明确排除左侧的 "Top chat" 下拉——实测它的真实祖先元素是
+   * tp-yt-paper-menu-button（"yt-dropdown-menu" 只是 style-scope 类名，
+   * 没有对应元素，所以之前排除 yt-dropdown-menu 无效）。这里把
+   * tp-yt-paper-menu-button 及其内部一并排除，它完全用 YouTube 原生效果。
+   */
+  yt-live-chat-header-renderer :is(
+    yt-icon-button,
+    tp-yt-paper-button,
+    yt-button-shape,
+    button,
+    [role="button"]
+  ):not(
+    yt-live-chat-view-selector-renderer,
+    yt-live-chat-view-selector-renderer *,
+    yt-dropdown-menu,
+    yt-dropdown-menu *,
+    tp-yt-paper-menu-button,
+    tp-yt-paper-menu-button *
+  ) {
+    border-radius: 999px !important;
+    transform: translateZ(0) scale(1);
+    transform-origin: center;
+    transition:
+      transform var(--yt-apple-motion-spring),
+      background-color var(--yt-apple-motion),
+      box-shadow var(--yt-apple-motion) !important;
+  }
+
+  /*
+   * 底部输入区里灰框之外的按钮：超级留言（¥）、点赞（♡）等。
+   * :not(#input-container *) 排除灰框内部的表情按钮——它归下面灰框
+   * 整体那张卡片管，避免和灰框上浮叠成双重动效。
+   */
+  yt-live-chat-message-input-renderer :is(
+    yt-icon-button,
+    yt-button-shape,
+    button,
+    [role="button"]
+  ):not(#input-container, #input-container *) {
+    border-radius: 999px !important;
+    transform: translateZ(0) scale(1);
+    transform-origin: center;
+    transition:
+      transform var(--yt-apple-motion-spring),
+      background-color var(--yt-apple-motion),
+      box-shadow var(--yt-apple-motion) !important;
+  }
+
+  /*
+   * 聊天输入框卡片：加在灰色外框 #input-container 上（图4 那块 174×36、
+   * 含"Chat..."和表情按钮的灰盒子），不再加在内部窄的文字域 #input 上，
+   * 去掉之前那层多余的内层卡片。
+   */
+  yt-live-chat-message-input-renderer #input-container {
+    translate: 0 0;
+    transition:
+      translate var(--yt-apple-motion-spring),
+      box-shadow var(--yt-apple-motion) !important;
+  }
+
+  /*
+   * 评论行：不再给每条消息里的三点菜单按钮做动效（已随上面按钮组
+   * 收窄到 header / 输入区而被排除）。改成整条评论作为卡片：在
+   * YouTube 自身悬停高亮的基础上叠一层柔和阴影，并向左做一个小的
+   * 横向位移。只用横向位移（纵向会和列表滚动打架）。
+   */
+  yt-live-chat-item-list-renderer :is(
+    yt-live-chat-text-message-renderer,
+    yt-live-chat-paid-message-renderer,
+    yt-live-chat-membership-item-renderer,
+    yt-live-chat-paid-sticker-renderer
+  ) {
+    border-radius: 10px;
+    translate: 0 0;
+    transition:
+      translate var(--yt-apple-motion-spring),
+      box-shadow var(--yt-apple-motion) !important;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    ytd-live-chat-frame#chat:hover {
+      translate: 0 -2px;
+      box-shadow: var(--yt-apple-card-shadow-soft) !important;
+    }
+
+    yt-live-chat-header-renderer :is(
+      yt-icon-button,
+      tp-yt-paper-button,
+      yt-button-shape,
+      button,
+      [role="button"]
+    ):not(
+      yt-live-chat-view-selector-renderer,
+      yt-live-chat-view-selector-renderer *
+    ):hover,
+    yt-live-chat-message-input-renderer :is(
+      yt-icon-button,
+      yt-button-shape,
+      button,
+      [role="button"]
+    ):not(#input-container, #input-container *):hover {
+      background-color: var(--yt-apple-card-bg-strong) !important;
+      box-shadow: var(--yt-apple-card-shadow-soft) !important;
+      transform: translateY(-1px) scale(1.06);
+      z-index: 2;
+    }
+
+    yt-live-chat-message-input-renderer
+    #input-container:is(:hover, :focus-within) {
+      translate: 0 -1px;
+      box-shadow: var(--yt-apple-card-shadow-soft) !important;
+    }
+
+    yt-live-chat-item-list-renderer :is(
+      yt-live-chat-text-message-renderer,
+      yt-live-chat-paid-message-renderer,
+      yt-live-chat-membership-item-renderer,
+      yt-live-chat-paid-sticker-renderer
+    ):hover {
+      translate: -4px 0;
+      box-shadow: var(--yt-apple-card-shadow-soft) !important;
+    }
+  }
+
+  yt-live-chat-header-renderer :is(
+    yt-icon-button,
+    tp-yt-paper-button,
+    yt-button-shape,
+    button,
+    [role="button"]
+  ):not(
+    yt-live-chat-view-selector-renderer,
+    yt-live-chat-view-selector-renderer *,
+    yt-dropdown-menu,
+    yt-dropdown-menu *,
+    tp-yt-paper-menu-button,
+    tp-yt-paper-menu-button *
+  ):active,
+  yt-live-chat-message-input-renderer :is(
+    yt-icon-button,
+    yt-button-shape,
+    button,
+    [role="button"]
+  ):not(#input-container, #input-container *):active {
+    transform: translateY(0) scale(0.94);
+    transition-duration: 90ms !important;
+  }
+
+  /* ---------- 8. 播放页右侧推荐（向左位移的卡片） ---------- */
+
+  /*
+   * 右侧 up-next / 推荐列表的每条视频卡片，效果和首页卡片一致
+   * （卡片阴影 + 封面轻微放大），但位移方向是向左而不是向上。
+   * 现版 YouTube 用 yt-lockup-view-model，老版是 ytd-compact-video-renderer，
+   * 两者都覆盖；作用域限定 #secondary，不影响其它位置的同名组件。
+   */
+  ytd-watch-flexy #secondary :is(
+    yt-lockup-view-model,
+    ytd-compact-video-renderer
+  ) {
+    position: relative;
+    isolation: isolate;
+    z-index: 0;
+    border-radius: 12px;
+    translate: 0 0;
+    transition:
+      translate var(--yt-apple-motion-spring),
+      filter var(--yt-apple-motion) !important;
+  }
+
+  /*
+   * 完全不画自绘卡片：右侧推荐直接用 YouTube 原生 lockup 的有色卡片，
+   * 我只保留"向左位移 + 封面放大"两个动效。content:none 让 ::before
+   * 不生成，同时压过第 3 节可能命中 compact 卡片的那层 ::before，
+   * 彻底消除垫在原生卡片下方、比它大一圈的白色/阴影卡片。
+   */
+  ytd-watch-flexy #secondary :is(
+    yt-lockup-view-model,
+    ytd-compact-video-renderer
+  )::before {
+    content: none !important;
+  }
+
+  ytd-watch-flexy #secondary :is(
+    yt-lockup-view-model,
+    ytd-compact-video-renderer
+  ) :is(yt-thumbnail-view-model, ytd-thumbnail) {
+    overflow: hidden !important;
+    border-radius: 10px !important;
+  }
+
+  ytd-watch-flexy #secondary :is(
+    yt-lockup-view-model,
+    ytd-compact-video-renderer
+  ) :is(yt-thumbnail-view-model, ytd-thumbnail) img {
+    transform: scale(1);
+    transition: transform 500ms cubic-bezier(.2, .8, .2, 1) !important;
+    will-change: transform;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    ytd-watch-flexy #secondary :is(
+      yt-lockup-view-model,
+      ytd-compact-video-renderer
+    ):is(:hover, :focus-within) {
+      z-index: 8;
+      translate: -4px 0;
+    }
+
+    ytd-watch-flexy #secondary :is(
+      yt-lockup-view-model,
+      ytd-compact-video-renderer
+    ):is(:hover, :focus-within)
+    :is(yt-thumbnail-view-model, ytd-thumbnail) img {
+      transform: scale(1.03);
+    }
+  }
+
+  /* ---------- 9. 评论区 ---------- */
+
+  /*
+   * 每条评论作为卡片，轻微向上位移 + 柔和阴影（::before 画卡片，
+   * 避免加背景/内边距导致布局位移）。回复本身也是 comment-view-model，
+   * 同样各自成卡片。顶部的评论输入框（ytd-comment-simplebox-renderer，
+   * 含头像/输入区/取消·评论按钮）用同一套效果，头像也一起。
+   */
+  ytd-comments :is(ytd-comment-view-model, ytd-comment-renderer, ytd-comment-simplebox-renderer) {
+    position: relative;
+    isolation: isolate;
+    z-index: 0;
+    translate: 0 0;
+    transition: translate var(--yt-apple-motion-spring) !important;
+  }
+
+  ytd-comments :is(ytd-comment-view-model, ytd-comment-renderer, ytd-comment-simplebox-renderer)::before {
+    content: "";
+    position: absolute;
+    inset: -3px -8px;
+    z-index: -1;
+    pointer-events: none;
+    border-radius: 12px;
+    background-color: transparent;
+    box-shadow: none;
+    opacity: 0;
+    transition:
+      opacity var(--yt-apple-motion),
+      background-color var(--yt-apple-motion),
+      box-shadow var(--yt-apple-motion) !important;
+  }
+
+  /*
+   * 评论者头像：和右上角头像一致——只让圆形头像本身缩放上浮，
+   * 不画外层卡片底色。
+   */
+  ytd-comments :is(ytd-comment-view-model, ytd-comment-renderer, ytd-comment-simplebox-renderer) #author-thumbnail {
+    border-radius: 50%;
+    transform: translateY(0) scale(1);
+    transform-origin: center;
+    transition: transform var(--yt-apple-motion-spring) !important;
+    will-change: transform;
+  }
+
+  /*
+   * 评论的点赞/点踩按钮：小卡片动效（放大上浮 + 原生底色）。
+   */
+  ytd-comments :is(
+    ytd-comment-engagement-bar,
+    ytd-comment-action-buttons-renderer
+  ) :is(#like-button, #dislike-button) {
+    border-radius: 999px !important;
+    transform: translateY(0) scale(1);
+    transform-origin: center;
+    transition:
+      transform var(--yt-apple-motion-spring),
+      background-color var(--yt-apple-motion) !important;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    ytd-comments :is(
+      ytd-comment-view-model,
+      ytd-comment-renderer,
+      ytd-comment-simplebox-renderer
+    ):hover {
+      z-index: 1;
+      translate: 0 -2px;
+    }
+
+    ytd-comments :is(
+      ytd-comment-view-model,
+      ytd-comment-renderer,
+      ytd-comment-simplebox-renderer
+    ):hover::before {
+      opacity: 1;
+      background-color: var(--yt-spec-badge-chip-background, rgba(0, 0, 0, 0.05)) !important;
+      box-shadow: var(--yt-apple-card-shadow-soft) !important;
+    }
+
+    ytd-comments :is(
+      ytd-comment-view-model,
+      ytd-comment-renderer,
+      ytd-comment-simplebox-renderer
+    ) #author-thumbnail:hover {
+      transform: translateY(-2px) scale(1.12);
+    }
+
+    ytd-comments :is(
+      ytd-comment-engagement-bar,
+      ytd-comment-action-buttons-renderer
+    ) :is(#like-button, #dislike-button):hover {
+      transform: translateY(-1px) scale(1.14);
+      background-color: var(--yt-apple-card-bg-strong) !important;
+    }
+  }
+
+  /* ---------- 10. 评论排序按钮与 Top / Newest 菜单项 ---------- */
+
+  /* Sort by：只保留缩放动画，不绘制背景、阴影或额外卡片。 */
+  ytd-comments ytd-comments-header-renderer
+  yt-dropdown-menu tp-yt-paper-button#label.dropdown-trigger {
+    transform: scale(1);
+    transform-origin: center;
+    transition: transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1) !important;
+    will-change: transform;
+  }
+
+  /* 关闭按钮点击时原生 paper ripple 的阴影扩散，避免和缩放动画叠加卡顿。 */
+  ytd-comments ytd-comments-header-renderer
+  yt-dropdown-menu tp-yt-paper-button#label.dropdown-trigger
+  :is(tp-yt-paper-ripple, #ink, .paper-ripple) {
+    display: none !important;
+  }
+
+  /* 隐藏 Sort by 悬停后出现的“Sort comments”灰色提示气泡。 */
+  ytd-comments ytd-comments-header-renderer
+  yt-dropdown-menu tp-yt-paper-tooltip,
+  ytd-comments ytd-comments-header-renderer
+  #sort-menu tp-yt-paper-tooltip {
+    display: none !important;
+  }
+
+  /*
+   * 清除 Top 外层包装节点上常驻的直角选中遮罩。包装层只负责布局，
+   * 不允许绘制背景、阴影或焦点伪层；真正的卡片效果留给内部 paper-item。
+   */
+  tp-yt-paper-listbox#menu.dropdown-content > * {
+    background: transparent !important;
+    box-shadow: none !important;
+    filter: none !important;
+  }
+
+  tp-yt-paper-listbox#menu.dropdown-content > *::before,
+  tp-yt-paper-listbox#menu.dropdown-content > *::after {
+    content: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    opacity: 0 !important;
+  }
+
+  tp-yt-paper-listbox#menu.dropdown-content > :is(
+    .iron-selected,
+    [selected],
+    [aria-selected="true"],
+    [focused]
+  ) {
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  /*
+   * 弹层会被 YouTube 移到评论区祖先之外，因此直接锁定 listbox 的直接子项。
+   * Top / Newest 的背景和阴影沿各自真实外框绘制，不使用伪卡片。
+   */
+  tp-yt-paper-listbox#menu.dropdown-content tp-yt-paper-item {
+    position: relative;
+    z-index: 0;
+    box-sizing: border-box;
+    width: calc(100% - 12px) !important;
+    margin-inline: 6px !important;
+    border-radius: 10px !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    filter: none;
+    transform: translateY(0) scale(1);
+    transform-origin: center;
+    transition:
+      transform var(--yt-apple-motion-spring),
+      background-color var(--yt-apple-motion),
+      filter var(--yt-apple-motion) !important;
+    will-change: transform;
+  }
+
+  /* 清除 YouTube 给默认选中项（通常为 Top）预先画出的灰色卡片。 */
+  tp-yt-paper-listbox#menu.dropdown-content
+  tp-yt-paper-item:is(.iron-selected, [aria-selected="true"], [focused]) {
+    background-color: transparent !important;
+    box-shadow: none !important;
+  }
+
+  tp-yt-paper-listbox#menu.dropdown-content tp-yt-paper-item::before {
+    opacity: 0 !important;
+    box-shadow: none !important;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    ytd-comments ytd-comments-header-renderer
+    yt-dropdown-menu tp-yt-paper-button#label.dropdown-trigger:hover {
+      transform: scale(1.045);
+    }
+
+    tp-yt-paper-listbox#menu.dropdown-content tp-yt-paper-item:hover {
+      z-index: 2;
+      transform: translateY(-2px) scale(1.015);
+      background-color: var(--yt-spec-badge-chip-background, rgba(0, 0, 0, 0.05)) !important;
+      box-shadow: none !important;
+      filter: drop-shadow(0 7px 14px rgba(15, 23, 42, 0.16));
+    }
+
+    html[dark] tp-yt-paper-listbox#menu.dropdown-content tp-yt-paper-item:hover {
+      filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.38));
+    }
+  }
+
+  ytd-comments ytd-comments-header-renderer
+  yt-dropdown-menu tp-yt-paper-button#label.dropdown-trigger:active {
+    transform: scale(0.975);
+    transition-duration: 80ms !important;
+  }
+
+  tp-yt-paper-listbox#menu.dropdown-content tp-yt-paper-item:active {
+    transform: translateY(0) scale(0.96);
+    transition-duration: 90ms !important;
+  }
+
+  /* 使用轻量的透明度 + 位移动画替换评论排序菜单原生的生硬展开效果。 */
+  @keyframes yt-apple-comment-sort-menu-in {
+    from {
+      opacity: 0;
+      transform: translate3d(0, -6px, 0) scale(0.985);
+    }
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+  }
+
+  :is(
+    yt-dropdown-menu[opened],
+    tp-yt-paper-menu-button[opened],
+    tp-yt-iron-dropdown[opened]
+  ) tp-yt-paper-listbox#menu.dropdown-content {
+    transform-origin: top center;
+    animation: yt-apple-comment-sort-menu-in 190ms cubic-bezier(0.16, 1, 0.3, 1) both !important;
+    will-change: transform, opacity;
+    backface-visibility: hidden;
+  }
+
+  /*
+   * Light-theme ambient mode. YouTube only enables its live cinematics layer in
+   * dark theme, so the companion userscript inserts a low-resolution live canvas
+   * into the player container when the page is light.
+   */
+  html:not([dark]) body:has(ytd-watch-flexy:not([hidden]))
+    ytd-watch-flexy:not([hidden]) #player-container-outer {
+    overflow: visible !important;
+    isolation: isolate !important;
+  }
+
+  html:not([dark]) #yt-light-ambient {
+    display: block !important;
+    position: absolute !important;
+    inset: -24px -30px -34px !important;
+    z-index: -1 !important;
+    overflow: hidden !important;
+    border-radius: 34px !important;
+    opacity: 0.18 !important;
+    filter: blur(34px) saturate(1.55) contrast(1.08) !important;
+    transform: translateZ(0) scale(1.035) !important;
+    transform-origin: center center !important;
+    pointer-events: none !important;
+    user-select: none !important;
+    will-change: filter, opacity, transform;
+  }
+
+  html:not([dark]) #yt-light-ambient > canvas {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    opacity: 0.92 !important;
+  }
+
+  html:not([dark]) #yt-light-ambient:not([data-ready="true"]) {
+    opacity: 0 !important;
+  }
+
+  html[dark] #yt-light-ambient,
+  html:has(:fullscreen) #yt-light-ambient,
+  html:has(:-webkit-full-screen) #yt-light-ambient,
+  html:has(ytd-watch-flexy[fullscreen]:not([hidden])) #yt-light-ambient,
+  html:has(ytd-watch-flexy[fullscreen_]:not([hidden])) #yt-light-ambient {
+    display: none !important;
+  }
+
+  /* Player end-screen recommendations: animate each video card independently. */
+  .ytp-fullscreen-grid-stills-container {
+    overflow: visible !important;
+  }
+
+  .ytp-fullscreen-grid-stills-container > *,
+  .ytp-videowall-still {
+    z-index: 0;
+    border-radius: 14px !important;
+    translate: 0 0;
+    scale: 1;
+    transform-origin: center center;
+    transition:
+      translate var(--yt-apple-motion-spring),
+      scale var(--yt-apple-motion-spring),
+      filter var(--yt-apple-motion),
+      box-shadow var(--yt-apple-motion) !important;
+    will-change: translate, scale;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .ytp-fullscreen-grid-stills-container > *:is(:hover, :focus-within),
+    .ytp-videowall-still:is(:hover, :focus-within) {
+      z-index: 12;
+      translate: 0 -5px;
+      scale: 1.035;
+      filter: brightness(1.04) saturate(1.04);
+      box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.18),
+        0 14px 30px rgba(0, 0, 0, 0.42) !important;
+    }
+  }
+
+  .ytp-fullscreen-grid-stills-container > *:active,
+  .ytp-videowall-still:active {
+    translate: 0 -1px;
+    scale: 0.985;
+    transition-duration: 90ms !important;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ytp-fullscreen-grid-stills-container > *,
+    .ytp-videowall-still {
+      translate: none !important;
+      scale: none !important;
+      transition: none !important;
+    }
+  }
+
+  /* Fullscreen: return the whole browser chrome area to the video. */
+  :is(
+    html:has(:fullscreen),
+    html:has(:-webkit-full-screen),
+    html:has(ytd-watch-flexy[fullscreen]:not([hidden])),
+    html:has(ytd-watch-flexy[fullscreen_]:not([hidden]))
+  ) body ytd-app :is(
+    #masthead-container,
+    #frosted-glass,
+    ytd-masthead#masthead,
+    ytd-feed-filter-chip-bar-renderer,
+    #guide,
+    #mini-guide
+  ),
+  :is(
+    html:has(:fullscreen),
+    html:has(:-webkit-full-screen),
+    html:has(ytd-watch-flexy[fullscreen]:not([hidden])),
+    html:has(ytd-watch-flexy[fullscreen_]:not([hidden]))
+  ) body :is(
+    .ytSearchboxComponentSuggestionsContainer,
+    #frosted-glass.ytd-app,
+    #frosted-glass:has(+ #masthead-container)
+  ) {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transform: translateY(-100%) !important;
+    transition: none !important;
+  }
+
+  /* 系统要求减少动画时，保留卡片配色但关闭位移动效。 */
+  @media (prefers-reduced-motion: reduce) {
+    ytd-masthead yt-icon-button#guide-button,
+    ytd-masthead button[aria-label="Search"],
+    ytd-masthead .ytSearchboxComponentSearchButton,
+    ytd-masthead button[aria-label="Search with your voice"],
+    ytd-masthead button[aria-label="Create"],
+    ytd-masthead button[aria-label="Notifications"],
+    ytd-masthead button[aria-label="Account menu"],
+    ytd-masthead button[aria-label="Account menu"] #img,
+    ytd-masthead ytd-topbar-logo-renderer#logo,
+    yt-chip-cloud-chip-renderer,
+    ytd-guide-entry-renderer,
+    ytd-mini-guide-entry-renderer,
+    :is(
+      ytd-rich-item-renderer,
+      ytd-grid-video-renderer,
+      ytd-video-renderer,
+      ytd-compact-video-renderer
+    ),
+    :is(
+      ytd-rich-item-renderer,
+      ytd-grid-video-renderer,
+      ytd-video-renderer,
+      ytd-compact-video-renderer
+    ) :is(yt-thumbnail-view-model, ytd-thumbnail) img,
+    ytd-masthead yt-searchbox,
+    ytd-watch-metadata ytd-video-owner-renderer #avatar,
+    ytd-watch-metadata ytd-video-owner-renderer #sponsor-button,
+    ytd-watch-metadata ytd-video-owner-renderer #membership-button,
+    ytd-watch-metadata #bottom-row > *,
+    ytd-watch-metadata #subscribe-button,
+    ytd-watch-metadata #actions :is(yt-button-view-model, ytd-button-renderer, yt-icon-button),
+    like-button-view-model,
+    dislike-button-view-model,
+    ytd-watch-flexy #secondary :is(yt-lockup-view-model, ytd-compact-video-renderer),
+    ytd-watch-flexy #secondary :is(yt-lockup-view-model, ytd-compact-video-renderer) :is(yt-thumbnail-view-model, ytd-thumbnail) img,
+    ytd-comments :is(ytd-comment-view-model, ytd-comment-renderer, ytd-comment-simplebox-renderer),
+    ytd-comments :is(ytd-comment-view-model, ytd-comment-renderer, ytd-comment-simplebox-renderer) #author-thumbnail,
+    ytd-comments :is(ytd-comment-engagement-bar, ytd-comment-action-buttons-renderer) :is(#like-button, #dislike-button),
+    ytd-comments ytd-comments-header-renderer yt-dropdown-menu tp-yt-paper-button#label.dropdown-trigger,
+    tp-yt-paper-listbox#menu.dropdown-content tp-yt-paper-item,
+    ytd-live-chat-frame#chat,
+    yt-live-chat-header-renderer :is(
+      yt-icon-button,
+      tp-yt-paper-button,
+      yt-button-shape,
+      button,
+      [role="button"]
+    ),
+    yt-live-chat-message-input-renderer :is(
+      yt-icon-button,
+      yt-button-shape,
+      button,
+      [role="button"],
+      #input-container
+    ),
+    yt-live-chat-item-list-renderer :is(
+      yt-live-chat-text-message-renderer,
+      yt-live-chat-paid-message-renderer,
+      yt-live-chat-membership-item-renderer,
+      yt-live-chat-paid-sticker-renderer
+    ) {
+      transform: none !important;
+      translate: none !important;
+      transition: none !important;
+    }
+
+    /* 卡片不上浮时预览浮层也必须原地不动。ID 选择器的优先级高于上面
+       带 :has 的悬停同步规则，确保这里能盖过它。 */
+    ytd-video-preview#video-preview,
+    ytd-app ytd-video-preview {
+      translate: none !important;
+      scale: none !important;
+      transition: none !important;
+    }
+  }
+}
+
+/* Inactive v2.20.15 channel experiment retained only as rollback history. */
+@-moz-document url("https://www.youtube.com/__disabled_custom_channel_surface_v2_20_15__") {
+  yt-lockup-view-model {
+    position: relative !important;
+    z-index: 0;
+    isolation: isolate;
+    translate: 0 0;
+    border-radius: 16px;
+    transition:
+      translate var(--yt-apple-motion-spring),
+      filter var(--yt-apple-motion),
+      z-index 0s linear 220ms;
+    will-change: translate;
+  }
+
+  yt-lockup-view-model
+    :is(
+      yt-thumbnail-view-model img,
+      ytd-thumbnail img,
+      a#thumbnail img,
+      .yt-core-image
+    ) {
+    border-radius: 14px !important;
+    transform: scale(1);
+    transition:
+      transform 520ms cubic-bezier(0.2, 0.75, 0.25, 1),
+      filter var(--yt-apple-motion);
+    will-change: transform;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    yt-lockup-view-model:hover {
+      z-index: 8;
+      translate: 0 var(--yt-apple-card-lift);
+      filter: drop-shadow(0 12px 22px rgba(15, 23, 42, 0.16));
+      transition-delay: 0s;
+    }
+
+    yt-lockup-view-model:hover
+      :is(
+        yt-thumbnail-view-model img,
+        ytd-thumbnail img,
+        a#thumbnail img,
+        .yt-core-image
+      ) {
+      transform: scale(var(--yt-apple-thumb-zoom));
+      filter: saturate(1.025) contrast(1.01);
+    }
+
+    html[dark] yt-lockup-view-model:hover {
+      filter: drop-shadow(0 14px 26px rgba(0, 0, 0, 0.38));
+    }
+
+    /* Keep YouTube's detached hover-preview layer aligned with the lifted card. */
+    ytd-app:has(yt-lockup-view-model:hover) ytd-video-preview {
+      translate: 0 var(--yt-apple-card-lift) !important;
+      scale: var(--yt-apple-thumb-zoom) !important;
+    }
+  }
+
+  /* Buttons retain their native YouTube outline and pill/circle geometry. */
+  :is(
+      ytd-page-header-renderer button,
+      yt-page-header-renderer button,
+      #channel-header-container button,
+      ytd-c4-tabbed-header-renderer #subscribe-button button,
+      ytd-channel-header-renderer #subscribe-button button,
+      :is(ytd-horizontal-list-renderer, yt-horizontal-list-renderer) #left-arrow,
+      :is(ytd-horizontal-list-renderer, yt-horizontal-list-renderer) #right-arrow,
+      ytd-rich-item-renderer #menu yt-icon-button,
+      ytd-grid-video-renderer #menu yt-icon-button,
+      ytd-video-renderer #menu yt-icon-button,
+      yt-lockup-view-model :is(
+        #menu yt-icon-button,
+        .yt-lockup-metadata-view-model__menu-button,
+        button[aria-label*="Action menu"],
+        button[aria-label*="More actions"]
+      )
+    ) {
+    position: relative !important;
+    z-index: 1;
+    transform: translateY(0) scale(1);
+    transition:
+      transform var(--yt-apple-motion-spring),
+      filter var(--yt-apple-motion),
+      opacity 160ms ease;
+    will-change: transform;
+  }
+
+  /* Channel navigation tabs get a subtle card surface only while hovered. */
+  :is(
+      ytd-c4-tabbed-header-renderer tp-yt-paper-tab,
+      #tabsContent tp-yt-paper-tab,
+      yt-tab-shape,
+      #tabsContent [role="tab"],
+      ytd-expandable-tab-renderer
+    ) {
+    position: relative !important;
+    z-index: 1;
+    border-radius: 10px !important;
+    background: transparent;
+    transform: translateY(0) scale(1);
+    transition:
+      transform var(--yt-apple-motion-spring),
+      background-color var(--yt-apple-motion),
+      box-shadow var(--yt-apple-motion);
+    will-change: transform;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    :is(
+        ytd-page-header-renderer button,
+        yt-page-header-renderer button,
+        #channel-header-container button,
+        ytd-c4-tabbed-header-renderer #subscribe-button button,
+        ytd-channel-header-renderer #subscribe-button button,
+      :is(ytd-horizontal-list-renderer, yt-horizontal-list-renderer) #left-arrow,
+      :is(ytd-horizontal-list-renderer, yt-horizontal-list-renderer) #right-arrow,
+        ytd-rich-item-renderer #menu yt-icon-button,
+        ytd-grid-video-renderer #menu yt-icon-button,
+        ytd-video-renderer #menu yt-icon-button,
+      yt-lockup-view-model :is(
+        #menu yt-icon-button,
+        .yt-lockup-metadata-view-model__menu-button,
+        button[aria-label*="Action menu"],
+        button[aria-label*="More actions"]
+      )
+      ):hover {
+      z-index: 6;
+      transform: translateY(-2px) scale(1.055);
+      filter: drop-shadow(0 7px 12px rgba(0, 0, 0, 0.16));
+    }
+
+    :is(
+        ytd-c4-tabbed-header-renderer tp-yt-paper-tab,
+        #tabsContent tp-yt-paper-tab,
+      yt-tab-shape,
+        #tabsContent [role="tab"],
+        ytd-expandable-tab-renderer
+      ):hover {
+      z-index: 6;
+      background-color: var(--yt-apple-card-bg-strong);
+      transform: translateY(-2px) scale(1.04);
+      box-shadow: 0 7px 18px rgba(0, 0, 0, 0.12);
+    }
+  }
+
+  :is(
+      ytd-page-header-renderer button,
+      yt-page-header-renderer button,
+      #channel-header-container button,
+      ytd-c4-tabbed-header-renderer #subscribe-button button,
+      ytd-channel-header-renderer #subscribe-button button,
+      :is(ytd-horizontal-list-renderer, yt-horizontal-list-renderer) #left-arrow,
+      :is(ytd-horizontal-list-renderer, yt-horizontal-list-renderer) #right-arrow,
+      ytd-rich-item-renderer #menu yt-icon-button,
+      ytd-grid-video-renderer #menu yt-icon-button,
+      ytd-video-renderer #menu yt-icon-button,
+      yt-lockup-view-model :is(
+        #menu yt-icon-button,
+        .yt-lockup-metadata-view-model__menu-button,
+        button[aria-label*="Action menu"],
+        button[aria-label*="More actions"]
+      ),
+      ytd-c4-tabbed-header-renderer tp-yt-paper-tab,
+      #tabsContent tp-yt-paper-tab,
+      yt-tab-shape,
+      #tabsContent [role="tab"],
+      ytd-expandable-tab-renderer
+    ):active {
+    transform: translateY(0) scale(0.96);
+    filter: none;
+  }
+
+  html[dark]
+    :is(
+      ytd-page-header-renderer button,
+      yt-page-header-renderer button,
+      #channel-header-container button,
+      :is(ytd-horizontal-list-renderer, yt-horizontal-list-renderer) #left-arrow,
+      :is(ytd-horizontal-list-renderer, yt-horizontal-list-renderer) #right-arrow,
+      ytd-rich-item-renderer #menu yt-icon-button,
+      ytd-grid-video-renderer #menu yt-icon-button,
+      ytd-video-renderer #menu yt-icon-button,
+      yt-lockup-view-model :is(
+        #menu yt-icon-button,
+        .yt-lockup-metadata-view-model__menu-button,
+        button[aria-label*="Action menu"],
+        button[aria-label*="More actions"]
+      )
+    ):hover {
+    filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.38));
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    :is(
+        yt-lockup-view-model,
+        ytd-rich-item-renderer,
+        ytd-grid-video-renderer,
+        ytd-video-renderer,
+        ytd-page-header-renderer button,
+        yt-page-header-renderer button,
+        #channel-header-container button,
+      :is(ytd-horizontal-list-renderer, yt-horizontal-list-renderer) #left-arrow,
+      :is(ytd-horizontal-list-renderer, yt-horizontal-list-renderer) #right-arrow,
+        #tabsContent tp-yt-paper-tab,
+      yt-tab-shape,
+        #tabsContent [role="tab"],
+        ytd-expandable-tab-renderer
+      ) {
+      translate: 0 0 !important;
+      transform: none !important;
+      transition-duration: 1ms !important;
+    }
+  }
+}
+
+/* Channel pages v2.20.36: preserve YouTube's native layout and animate only
+   composited visual properties. */
+@-moz-document regexp("^https://www\\.youtube\\.com/(?:@[^/?#]+|channel/[^/?#]+|c/[^/?#]+|user/[^/?#]+)(?:[/?#].*)?$") {
+  :root {
+    --yt-channel-dock-motion: 480ms cubic-bezier(0.16, 1, 0.30, 1);
+    --yt-channel-dock-lift: -4px;
+    --yt-channel-dock-scale: 1.028;
+  }
+
+  /* Channel pages do not enable YouTube's Home-page frosted layer. Paint the
+     same shared masthead glass on its background-only sibling instead. */
+  ytd-app #frosted-glass,
+  #frosted-glass.ytd-app,
+  #frosted-glass:has(+ #masthead-container) {
+    display: none !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  ytd-masthead,
+  ytd-masthead #container {
+    background-color: transparent !important;
+    background-image: none !important;
+  }
+
+  ytd-masthead > #background {
+    display: block !important;
+    opacity: 1 !important;
+    background-color: var(--yt-apple-masthead-glass) !important;
+    background-image: none !important;
+    backdrop-filter: saturate(180%) blur(22px) !important;
+    -webkit-backdrop-filter: saturate(180%) blur(22px) !important;
+    border-bottom: none !important;
+    transition: opacity 320ms cubic-bezier(0.16, 1, 0.30, 1) !important;
+  }
+
+  /* Banner, channel details and tabs already share YouTube's native condensing
+     header. Do not override that parent's fixed position or transform: YouTube
+     can then scroll the banner and profile sheet away while keeping only the
+     tabs docked below the masthead. The companion script performs no channel
+     header geometry tracking. */
+
+  /* Paint the channel tabs on one isolated glass sheet inside the shared,
+     normally scrolling channel-header module. */
+  ytd-tabbed-page-header #tabs-container {
+    position: relative !important;
+    overflow: visible !important;
+    isolation: isolate;
+    background-color: transparent !important;
+    background-image: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border-top: none !important;
+    border-bottom: none !important;
+    box-shadow: none !important;
+  }
+
+  ytd-tabbed-page-header #tabs-container::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    top: 0;
+    right: -100vw;
+    bottom: 0;
+    left: -100vw;
+    pointer-events: none;
+    background-color: var(--yt-apple-masthead-glass);
+    background-image: none;
+    backdrop-filter: saturate(180%) blur(22px);
+    -webkit-backdrop-filter: saturate(180%) blur(22px);
+    opacity: 0;
+    transition: opacity 320ms cubic-bezier(0.16, 1, 0.30, 1);
+    will-change: opacity;
+  }
+
+  /* Once the native tabs dock, reuse their glass sheet for both rows. The
+     extra pixel absorbs fractional layout rounding (for example 56px versus
+     56.4px), eliminating the transparent seam without running a scroll loop. */
+  html[data-yt-channel-tabs-stuck]
+  ytd-tabbed-page-header #tabs-container::before {
+    top: calc(-1 * var(--ytd-masthead-height, 56px) - 1px);
+    opacity: 1;
+  }
+
+  html[data-yt-channel-tabs-stuck] ytd-masthead > #background {
+    opacity: 0 !important;
+  }
+
+  ytd-tabbed-page-header #tabs-inner-container {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  /* The glass sheet replaces YouTube's opaque tab separator. Remove both the
+     regular borders and late-rendered separator pseudo-elements so the line
+     cannot reappear after an SPA update. The selected-tab indicator remains
+     untouched. */
+  ytd-tabbed-page-header,
+  ytd-tabbed-page-header tp-yt-app-header#header,
+  ytd-tabbed-page-header :is(#tabs-container, #tabs-inner-container) {
+    border-bottom: 0 !important;
+    outline: 0 !important;
+    box-shadow: none !important;
+  }
+
+  ytd-tabbed-page-header::after,
+  ytd-tabbed-page-header tp-yt-app-header#header::after,
+  ytd-tabbed-page-header #tabs-container::after,
+  ytd-tabbed-page-header #tabs-inner-container::after {
+    content: none !important;
+    display: none !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+
+  /* YouTube renders the full-width separator as a real zero-height element,
+     not as a border on the tab container. The glass sheet makes this divider
+     redundant; hiding it leaves the selected tab's own short indicator intact. */
+  ytd-tabbed-page-header #tabs-divider {
+    display: none !important;
+    border: 0 !important;
+    height: 0 !important;
+  }
+
+  /* Keep the two content sheets transparent inside the shared header. */
+  ytd-tabbed-page-header :is(#page-header, #page-header-container) {
+    background-color: transparent !important;
+    background-image: none !important;
+    box-shadow: none !important;
+  }
+
+  /* The first horizontal card sits exactly on YouTube's clipping boundary.
+     Move only that boundary 8px left, while the matching padding keeps every
+     card at its native position. The shelf itself uses the same native
+     overflow model as Apple Podcasts: no wheel interception and no snapping. */
+  :is(
+      yt-horizontal-list-renderer,
+      ytd-horizontal-list-renderer,
+      ytd-horizontal-card-list-renderer
+    ) #scroll-container {
+    box-sizing: border-box !important;
+    width: calc(100% + 8px) !important;
+    margin-left: -8px !important;
+    padding-left: 8px !important;
+    overflow-x: auto !important;
+    overflow-y: auto !important;
+    scroll-behavior: auto !important;
+    scroll-snap-type: none !important;
+    overscroll-behavior-x: auto !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
+
+  /* Video shelves initially render only one page of six cards. The companion
+     userscript expands their continuation once and marks the renderer. Keep
+     every appended card in normal flow so the shelf behaves exactly like the
+     already-working Posts shelf: one native, freely scrollable strip. */
+  :is(
+      yt-horizontal-list-renderer,
+      ytd-horizontal-list-renderer,
+      ytd-horizontal-card-list-renderer
+    )[data-yt-apple-preloading-strip] #items {
+    transform: translateX(0) !important;
+    transition: none !important;
+  }
+
+  :is(
+      yt-horizontal-list-renderer,
+      ytd-horizontal-list-renderer,
+      ytd-horizontal-card-list-renderer
+    ) #scroll-container::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+
+  /* Keep YouTube's original header height and description flow. Move only the
+     Play-all control to the description's left edge, in the existing space
+     directly above it. */
+  ytd-shelf-renderer .grid-subheader:has(#play-button:not(:empty)) {
+    position: relative !important;
+  }
+
+  ytd-shelf-renderer .grid-subheader #play-button:not(:empty) {
+    position: absolute !important;
+    top: -10px !important;
+    right: auto !important;
+    bottom: auto !important;
+    left: 0 !important;
+    margin: 0 !important;
+  }
+
+
+  /* The modern lockup element is shared by videos, channels and other shelves.
+     Requiring a watch link prevents channel headers and Shorts shelves from being
+     mistaken for video cards. No display, size, position or spacing is changed. */
+  yt-lockup-view-model:has(
+    :is(a[href^="/watch"], a[href*="youtube.com/watch"])
+  ):not(:is(ytd-rich-item-renderer, ytd-grid-video-renderer, ytd-video-renderer) *) {
+    position: relative !important;
+    z-index: 0;
+    translate: 0 0 !important;
+    filter: none !important;
+    transition: translate var(--yt-channel-dock-motion) !important;
+    will-change: translate;
+  }
+
+  /* The whole card is the trigger. The outer lockup moves its thumbnail and
+     body together; the thumbnail alone owns magnification. */
+  yt-lockup-view-model:has(
+    :is(a[href^="/watch"], a[href*="youtube.com/watch"])
+  ):not(:is(ytd-rich-item-renderer, ytd-grid-video-renderer, ytd-video-renderer) *)
+  :is(yt-thumbnail-view-model, ytd-thumbnail) {
+    position: relative;
+    z-index: 0;
+    translate: 0 0;
+    scale: 1;
+    transform-origin: center;
+    transition: scale var(--yt-channel-dock-motion) !important;
+    will-change: scale;
+  }
+
+  yt-lockup-view-model:has(
+    :is(a[href^="/watch"], a[href*="youtube.com/watch"])
+  ):not(:is(ytd-rich-item-renderer, ytd-grid-video-renderer, ytd-video-renderer) *)
+  :is(yt-thumbnail-view-model, ytd-thumbnail) img {
+    transform: none !important;
+    filter: none !important;
+    transition: none !important;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    yt-lockup-view-model:has(
+      :is(a[href^="/watch"], a[href*="youtube.com/watch"])
+    ):not(:is(ytd-rich-item-renderer, ytd-grid-video-renderer, ytd-video-renderer) *):is(
+      :hover,
+      :focus-within
+    ) {
+      z-index: 8;
+      translate: 0 var(--yt-channel-dock-lift) !important;
+    }
+
+    yt-lockup-view-model:has(
+      :is(a[href^="/watch"], a[href*="youtube.com/watch"])
+    ):not(:is(ytd-rich-item-renderer, ytd-grid-video-renderer, ytd-video-renderer) *):is(
+      :hover,
+      :focus-within
+    ) :is(yt-thumbnail-view-model, ytd-thumbnail) {
+      z-index: 8;
+      translate: 0 0;
+      scale: var(--yt-channel-dock-scale);
+      filter: none !important;
+    }
+
+    /* Keep YouTube's detached preview aligned when any part of the source card
+       is hovered, including its title and metadata. */
+    ytd-app:has(
+      yt-lockup-view-model:is(:hover, :focus-within)
+      :is(a[href^="/watch"], a[href*="youtube.com/watch"])
+    ) ytd-video-preview {
+      z-index: 900 !important;
+      translate: 0 var(--yt-channel-dock-lift) !important;
+      scale: 1 !important;
+      transition: translate var(--yt-channel-dock-motion) !important;
+    }
+
+    ytd-app:has(
+      yt-lockup-view-model:is(:hover, :focus-within)
+      :is(a[href^="/watch"], a[href*="youtube.com/watch"])
+    ) ytd-video-preview #media-container {
+      scale: var(--yt-channel-dock-scale) !important;
+      transform-origin: center !important;
+      transition: scale var(--yt-channel-dock-motion) !important;
+    }
+
+    /* Playlist previews are born about 1.7% larger than their source thumbnail.
+       Compensate for that native oversize so the final 1.0105 preview scale
+       exactly matches the thumbnail's 1.028 Dock scale instead of jumping wider
+       when playback replaces the static cover. */
+    ytd-app:has(
+      yt-lockup-view-model:is(:hover, :focus-within)
+      a[href^="/playlist?list="]
+    ) ytd-video-preview #media-container {
+      scale: 1.0105 !important;
+      transform-origin: center !important;
+      transition: scale var(--yt-channel-dock-motion) !important;
+    }
+  }
+
+  /* Once playback has started, its own fallback thumbnail can never cover the
+     video surface. The slight player overscan also closes sub-pixel edge gaps. */
+  ytd-video-preview[playing] #thumbnail-container {
+    z-index: 0 !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
+  ytd-video-preview[playing] ytd-player {
+    position: relative !important;
+    z-index: 2 !important;
+    scale: 1.012 !important;
+    transform-origin: center !important;
+  }
+
+  /* The global 1.012 player overscan is useful for ordinary cards, but on a
+     playlist it creates a second zoom exactly when playback begins. */
+  ytd-app:has(
+    yt-lockup-view-model:is(:hover, :focus-within)
+    a[href^="/playlist?list="]
+  ) ytd-video-preview[playing] ytd-player {
+    scale: 1 !important;
+  }
+
+  /* Header actions, carousel arrows and per-video menus keep their native
+     surface/outline; their feedback is transform plus a shape-following shadow. */
+  :is(
+      ytd-page-header-renderer button,
+      yt-page-header-renderer button,
+      #channel-header-container button,
+      ytd-c4-tabbed-header-renderer #subscribe-button button,
+      ytd-channel-header-renderer #subscribe-button button,
+      :is(
+        ytd-horizontal-list-renderer,
+        yt-horizontal-list-renderer,
+        ytd-horizontal-card-list-renderer
+      ) #left-arrow,
+      :is(
+        ytd-horizontal-list-renderer,
+        yt-horizontal-list-renderer,
+        ytd-horizontal-card-list-renderer
+      ) #right-arrow,
+      ytd-rich-item-renderer #menu yt-icon-button,
+      ytd-grid-video-renderer #menu yt-icon-button,
+      ytd-video-renderer #menu yt-icon-button,
+      yt-lockup-view-model :is(
+        #menu yt-icon-button,
+        .yt-lockup-metadata-view-model__menu-button,
+        button[aria-label*="Action menu"],
+        button[aria-label*="More actions"]
+      )
+    ) {
+    transform: translateY(0) scale(1);
+    transform-origin: center;
+    transition:
+      transform var(--yt-channel-dock-motion),
+      filter var(--yt-apple-motion),
+      opacity 160ms ease !important;
+    will-change: transform;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    :is(
+        ytd-page-header-renderer button,
+        yt-page-header-renderer button,
+        #channel-header-container button,
+        ytd-c4-tabbed-header-renderer #subscribe-button button,
+        ytd-channel-header-renderer #subscribe-button button,
+        :is(
+          ytd-horizontal-list-renderer,
+          yt-horizontal-list-renderer,
+          ytd-horizontal-card-list-renderer
+        ) #left-arrow,
+        :is(
+          ytd-horizontal-list-renderer,
+          yt-horizontal-list-renderer,
+          ytd-horizontal-card-list-renderer
+        ) #right-arrow,
+        ytd-rich-item-renderer #menu yt-icon-button,
+        ytd-grid-video-renderer #menu yt-icon-button,
+        ytd-video-renderer #menu yt-icon-button,
+        yt-lockup-view-model :is(
+          #menu yt-icon-button,
+          .yt-lockup-metadata-view-model__menu-button,
+          button[aria-label*="Action menu"],
+          button[aria-label*="More actions"]
+        )
+      ):hover {
+      z-index: 6;
+      transform: translateY(-2px) scale(1.055);
+      filter: drop-shadow(0 7px 12px rgba(0, 0, 0, 0.16));
+    }
+  }
+
+  /* Channel tabs/search: animation only. No custom background, border or shadow. */
+  :is(
+      ytd-c4-tabbed-header-renderer tp-yt-paper-tab,
+      #tabsContent tp-yt-paper-tab,
+      yt-tab-shape,
+      #tabsContent [role="tab"],
+      ytd-expandable-tab-renderer
+    ) {
+    transform: translateY(0) scale(1);
+    transform-origin: center;
+    transition: transform var(--yt-channel-dock-motion) !important;
+    will-change: transform;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    :is(
+        ytd-c4-tabbed-header-renderer tp-yt-paper-tab,
+        #tabsContent tp-yt-paper-tab,
+        yt-tab-shape,
+        #tabsContent [role="tab"],
+        ytd-expandable-tab-renderer
+      ):hover {
+      transform: translateY(-2px) scale(1.04);
+    }
+  }
+
+  :is(
+      ytd-c4-tabbed-header-renderer tp-yt-paper-tab,
+      #tabsContent tp-yt-paper-tab,
+      yt-tab-shape,
+      #tabsContent [role="tab"],
+      ytd-expandable-tab-renderer
+    ):active {
+    transform: translateY(0) scale(0.96);
+  }
+
+  /* Related/featured channel avatars use the same restrained motion as comment
+     avatars. The image stays circular and no shelf/card geometry is rewritten. */
+  :is(
+      ytd-grid-channel-renderer #avatar,
+      ytd-channel-renderer #avatar,
+      yt-lockup-view-model:has(
+        :is(yt-avatar-shape, yt-avatar-shape-view-model)
+      ) :is(yt-avatar-shape, yt-avatar-shape-view-model):not(:has(
+        :is(yt-avatar-shape, yt-avatar-shape-view-model)
+      ))
+    ) {
+    border-radius: 50%;
+    transform: translateY(0) scale(1);
+    transform-origin: center;
+    transition:
+      transform var(--yt-channel-dock-motion),
+      filter var(--yt-apple-motion) !important;
+    will-change: transform;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    :is(
+        ytd-grid-channel-renderer #avatar,
+        ytd-channel-renderer #avatar,
+        yt-lockup-view-model:has(
+          :is(yt-avatar-shape, yt-avatar-shape-view-model)
+        ) :is(yt-avatar-shape, yt-avatar-shape-view-model):not(:has(
+          :is(yt-avatar-shape, yt-avatar-shape-view-model)
+        ))
+      ):hover {
+      transform: translateY(-3px) scale(1.11);
+      filter: drop-shadow(0 9px 16px rgba(15, 23, 42, 0.20));
+    }
+
+    html[dark] :is(
+        ytd-grid-channel-renderer #avatar,
+        ytd-channel-renderer #avatar,
+        yt-lockup-view-model:has(
+          :is(yt-avatar-shape, yt-avatar-shape-view-model)
+        ) :is(yt-avatar-shape, yt-avatar-shape-view-model):not(:has(
+          :is(yt-avatar-shape, yt-avatar-shape-view-model)
+        ))
+      ):hover {
+      filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.42));
+    }
+  }
+
+  :is(
+      ytd-grid-channel-renderer #avatar,
+      ytd-channel-renderer #avatar,
+      yt-lockup-view-model:has(
+        :is(yt-avatar-shape, yt-avatar-shape-view-model)
+      ) :is(yt-avatar-shape, yt-avatar-shape-view-model):not(:has(
+        :is(yt-avatar-shape, yt-avatar-shape-view-model)
+      ))
+    ):active {
+    transform: translateY(-1px) scale(1.04);
+  }
+
+  /* Some channel shelves render avatars as a plain linked <img> rather than
+     #avatar/yt-avatar-shape. Keep the structural wrappers still and animate the
+     final bitmap so every renderer variant receives exactly one transform. */
+  :is(
+      ytd-grid-channel-renderer #avatar,
+      ytd-channel-renderer #avatar,
+      yt-lockup-view-model:has(
+        :is(yt-avatar-shape, yt-avatar-shape-view-model)
+      ) :is(yt-avatar-shape, yt-avatar-shape-view-model)
+    ) {
+    transform: none !important;
+    filter: none !important;
+  }
+
+  :is(
+      ytd-grid-channel-renderer #avatar img,
+      ytd-channel-renderer #avatar img,
+      yt-lockup-view-model :is(yt-avatar-shape, yt-avatar-shape-view-model) img,
+      :is(
+        ytd-horizontal-list-renderer,
+        yt-horizontal-list-renderer,
+        ytd-horizontal-card-list-renderer,
+        ytd-shelf-renderer
+      ) :is(
+        a[href^="/@"],
+        a[href^="/channel/"],
+        a[href^="/c/"],
+        a[href^="/user/"]
+      ) img
+    ) {
+    border-radius: 50% !important;
+    transform: translateY(0) scale(1);
+    transform-origin: center;
+    transition:
+      transform var(--yt-channel-dock-motion),
+      filter var(--yt-apple-motion) !important;
+    will-change: transform;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    :is(
+        ytd-grid-channel-renderer #avatar img,
+        ytd-channel-renderer #avatar img,
+        yt-lockup-view-model :is(yt-avatar-shape, yt-avatar-shape-view-model) img,
+        :is(
+          ytd-horizontal-list-renderer,
+          yt-horizontal-list-renderer,
+          ytd-horizontal-card-list-renderer,
+          ytd-shelf-renderer
+        ) :is(
+          a[href^="/@"],
+          a[href^="/channel/"],
+          a[href^="/c/"],
+          a[href^="/user/"]
+        ) img
+      ):hover {
+      transform: translateY(-3px) scale(1.11);
+      filter: drop-shadow(0 9px 16px rgba(15, 23, 42, 0.20));
+    }
+
+    html[dark] :is(
+        ytd-grid-channel-renderer #avatar img,
+        ytd-channel-renderer #avatar img,
+        yt-lockup-view-model :is(yt-avatar-shape, yt-avatar-shape-view-model) img,
+        :is(
+          ytd-horizontal-list-renderer,
+          yt-horizontal-list-renderer,
+          ytd-horizontal-card-list-renderer,
+          ytd-shelf-renderer
+        ) :is(
+          a[href^="/@"],
+          a[href^="/channel/"],
+          a[href^="/c/"],
+          a[href^="/user/"]
+        ) img
+      ):hover {
+      filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.42));
+    }
+  }
+
+  /* Current channel shelf: animate the circular yt-img-shadow inside
+     a#channel-info, leaving the channel name and subscriber text stationary. */
+  :is(
+      ytd-horizontal-list-renderer,
+      yt-horizontal-list-renderer,
+      ytd-horizontal-card-list-renderer,
+      ytd-shelf-renderer
+    ) :is(
+      a[href^="/@"],
+      a[href^="/channel/"],
+      a[href^="/c/"],
+      a[href^="/user/"]
+    ) > yt-img-shadow {
+    border-radius: 50%;
+    transform: translateY(0) scale(1) !important;
+    transform-origin: center;
+    transition:
+      transform var(--yt-channel-dock-motion),
+      filter var(--yt-apple-motion) !important;
+    will-change: transform;
+  }
+
+  :is(
+      ytd-horizontal-list-renderer,
+      yt-horizontal-list-renderer,
+      ytd-horizontal-card-list-renderer,
+      ytd-shelf-renderer
+    ) :is(
+      a[href^="/@"],
+      a[href^="/channel/"],
+      a[href^="/c/"],
+      a[href^="/user/"]
+    ) > yt-img-shadow img {
+    transform: none !important;
+    filter: none !important;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    :is(
+        ytd-horizontal-list-renderer,
+        yt-horizontal-list-renderer,
+        ytd-horizontal-card-list-renderer,
+        ytd-shelf-renderer
+      ) :is(
+        a[href^="/@"],
+        a[href^="/channel/"],
+        a[href^="/c/"],
+        a[href^="/user/"]
+      ) > yt-img-shadow:hover {
+      z-index: 8;
+      transform: translateY(-3px) scale(1.11) !important;
+      filter: drop-shadow(0 9px 16px rgba(15, 23, 42, 0.20)) !important;
+    }
+
+    html[dark] :is(
+        ytd-horizontal-list-renderer,
+        yt-horizontal-list-renderer,
+        ytd-horizontal-card-list-renderer,
+        ytd-shelf-renderer
+      ) :is(
+        a[href^="/@"],
+        a[href^="/channel/"],
+        a[href^="/c/"],
+        a[href^="/user/"]
+      ) > yt-img-shadow:hover {
+      filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.42)) !important;
+    }
+  }
+
+  :is(
+      ytd-horizontal-list-renderer,
+      yt-horizontal-list-renderer,
+      ytd-horizontal-card-list-renderer,
+      ytd-shelf-renderer
+    ) :is(
+      a[href^="/@"],
+      a[href^="/channel/"],
+      a[href^="/c/"],
+      a[href^="/user/"]
+    ) > yt-img-shadow:active {
+    transform: translateY(-1px) scale(1.04) !important;
+  }
+
+  /* Community/Post cards: keep the native surface and add only a gentle lift. */
+  :is(
+      ytd-backstage-post-thread-renderer,
+      ytd-backstage-post-renderer:not(ytd-backstage-post-thread-renderer *),
+      ytd-post-renderer,
+      yt-post-view-model
+    ):not(ytd-rich-item-renderer *) {
+    translate: 0 0;
+    filter: none !important;
+    transition: translate var(--yt-channel-dock-motion) !important;
+    will-change: translate;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    :is(
+        ytd-backstage-post-thread-renderer,
+        ytd-backstage-post-renderer:not(ytd-backstage-post-thread-renderer *),
+        ytd-post-renderer,
+        yt-post-view-model
+      ):not(ytd-rich-item-renderer *):is(:hover, :focus-within) {
+      z-index: 8;
+      translate: 0 -2px;
+      filter: none !important;
+    }
+
+    html[dark] :is(
+        ytd-backstage-post-thread-renderer,
+        ytd-backstage-post-renderer:not(ytd-backstage-post-thread-renderer *),
+        ytd-post-renderer,
+        yt-post-view-model
+      ):not(ytd-rich-item-renderer *):is(:hover, :focus-within) {
+      filter: none !important;
+    }
+  }
+
+  :is(
+      ytd-backstage-post-thread-renderer,
+      ytd-backstage-post-renderer:not(ytd-backstage-post-thread-renderer *),
+      ytd-post-renderer,
+      yt-post-view-model
+    ):not(ytd-rich-item-renderer *):active {
+    translate: 0 -1px;
+  }
+
+  /* Shorts use the same Dock motion as regular video cards: the whole card is
+     the trigger, its text moves with it, and only the thumbnail magnifies. */
+  :is(
+      ytd-reel-item-renderer,
+      ytd-rich-grid-slim-media,
+      yt-shorts-lockup-view-model,
+      ytm-shorts-lockup-view-model-v2,
+      ytd-rich-item-renderer:has(
+        :is(a[href^="/shorts/"], a[href*="youtube.com/shorts/"])
+      ),
+      yt-lockup-view-model:has(
+        :is(a[href^="/shorts/"], a[href*="youtube.com/shorts/"])
+      )
+    ):not(
+      :is(
+        ytd-reel-item-renderer,
+        ytd-rich-grid-slim-media,
+        yt-shorts-lockup-view-model,
+        ytm-shorts-lockup-view-model-v2,
+        ytd-rich-item-renderer
+      ) *
+    ) {
+    position: relative !important;
+    z-index: 0;
+    translate: 0 0 !important;
+    filter: none !important;
+    transition: translate var(--yt-channel-dock-motion) !important;
+    will-change: translate;
+  }
+
+  :is(
+      ytd-reel-item-renderer,
+      ytd-rich-grid-slim-media,
+      yt-shorts-lockup-view-model,
+      ytm-shorts-lockup-view-model-v2,
+      ytd-rich-item-renderer:has(
+        :is(a[href^="/shorts/"], a[href*="youtube.com/shorts/"])
+      ),
+      yt-lockup-view-model:has(
+        :is(a[href^="/shorts/"], a[href*="youtube.com/shorts/"])
+      )
+    ):not(
+      :is(
+        ytd-reel-item-renderer,
+        ytd-rich-grid-slim-media,
+        yt-shorts-lockup-view-model,
+        ytm-shorts-lockup-view-model-v2,
+        ytd-rich-item-renderer
+      ) *
+    )
+    :is(yt-thumbnail-view-model, ytd-thumbnail) {
+    position: relative;
+    z-index: 0;
+    translate: 0 0;
+    scale: 1;
+    transform-origin: center;
+    transition: scale var(--yt-channel-dock-motion) !important;
+    will-change: scale;
+  }
+
+  :is(
+      ytd-reel-item-renderer,
+      ytd-rich-grid-slim-media,
+      yt-shorts-lockup-view-model,
+      ytm-shorts-lockup-view-model-v2,
+      ytd-rich-item-renderer:has(
+        :is(a[href^="/shorts/"], a[href*="youtube.com/shorts/"])
+      ),
+      yt-lockup-view-model:has(
+        :is(a[href^="/shorts/"], a[href*="youtube.com/shorts/"])
+      )
+    ):not(
+      :is(
+        ytd-reel-item-renderer,
+        ytd-rich-grid-slim-media,
+        yt-shorts-lockup-view-model,
+        ytm-shorts-lockup-view-model-v2,
+        ytd-rich-item-renderer
+      ) *
+    ) :is(yt-thumbnail-view-model, ytd-thumbnail) img {
+    transform: none !important;
+    filter: none !important;
+    transition: none !important;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    :is(
+        ytd-reel-item-renderer,
+        ytd-rich-grid-slim-media,
+        yt-shorts-lockup-view-model,
+        ytm-shorts-lockup-view-model-v2,
+        ytd-rich-item-renderer:has(
+          :is(a[href^="/shorts/"], a[href*="youtube.com/shorts/"])
+        ),
+        yt-lockup-view-model:has(
+          :is(a[href^="/shorts/"], a[href*="youtube.com/shorts/"])
+        )
+      ):not(
+        :is(
+          ytd-reel-item-renderer,
+          ytd-rich-grid-slim-media,
+          yt-shorts-lockup-view-model,
+          ytm-shorts-lockup-view-model-v2,
+          ytd-rich-item-renderer
+        ) *
+      ):is(:hover, :focus-within) {
+      z-index: 8;
+      translate: 0 var(--yt-channel-dock-lift) !important;
+      filter: none !important;
+    }
+
+    :is(
+        ytd-reel-item-renderer,
+        ytd-rich-grid-slim-media,
+        yt-shorts-lockup-view-model,
+        ytm-shorts-lockup-view-model-v2,
+        ytd-rich-item-renderer:has(
+          :is(a[href^="/shorts/"], a[href*="youtube.com/shorts/"])
+        ),
+        yt-lockup-view-model:has(
+          :is(a[href^="/shorts/"], a[href*="youtube.com/shorts/"])
+        )
+      ):not(
+        :is(
+          ytd-reel-item-renderer,
+          ytd-rich-grid-slim-media,
+          yt-shorts-lockup-view-model,
+          ytm-shorts-lockup-view-model-v2,
+          ytd-rich-item-renderer
+        ) *
+      ):is(:hover, :focus-within)
+      :is(yt-thumbnail-view-model, ytd-thumbnail) {
+      z-index: 8;
+      translate: 0 0;
+      scale: var(--yt-channel-dock-scale);
+      filter: none !important;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    :is(
+        ytd-backstage-post-thread-renderer,
+        ytd-backstage-post-renderer,
+        ytd-post-renderer,
+        yt-post-view-model,
+        ytd-reel-item-renderer,
+        ytd-rich-grid-slim-media,
+      yt-shorts-lockup-view-model,
+      ytm-shorts-lockup-view-model-v2
+      ) {
+      translate: 0 0 !important;
+      transform: none !important;
+      transition-duration: 1ms !important;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    :is(
+        yt-lockup-view-model,
+        ytd-page-header-renderer button,
+        yt-page-header-renderer button,
+        #channel-header-container button,
+        ytd-c4-tabbed-header-renderer tp-yt-paper-tab,
+        #tabsContent tp-yt-paper-tab,
+        yt-tab-shape,
+        #tabsContent [role="tab"],
+        ytd-expandable-tab-renderer,
+        ytd-grid-channel-renderer #avatar,
+        ytd-channel-renderer #avatar,
+        yt-avatar-shape,
+        yt-avatar-shape-view-model
+      ) {
+      translate: 0 0 !important;
+      transform: none !important;
+      transition-duration: 1ms !important;
+    }
+  }
+}
+
+/*
+ * Inactive legacy Home override retained only as rollback history.
+ * Its URL intentionally never matches the real Home page.
+ */
+@-moz-document url("https://www.youtube.com/__disabled_custom_home_surface__") {
+  html:not([dark]) body ytd-app {
+    --yt-home-unified-glass: rgba(255, 255, 255, 0.78);
+    --yt-home-sidebar-solid:
+      var(--yt-spec-general-background-a, #f9f9f9);
+  }
+
+  html[dark] body ytd-app {
+    --yt-home-unified-glass: rgba(15, 15, 17, 0.76);
+    --yt-home-sidebar-solid:
+      var(--yt-spec-general-background-a, #0f0f0f);
+  }
+
+  /* One full-width glass sheet for the masthead, chips and the Home-button area. */
+  html body ytd-app::before {
+    content: "" !important;
+    display: block !important;
+    position: fixed !important;
+    inset: 0 0 auto 0 !important;
+    width: 100vw !important;
+    height: calc(var(--ytd-masthead-height, 56px) + 80px) !important;
+    z-index: 99890 !important;
+    background-color: var(--yt-home-unified-glass) !important;
+    background-image: none !important;
+    backdrop-filter: saturate(180%) blur(22px) !important;
+    -webkit-backdrop-filter: saturate(180%) blur(22px) !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    -webkit-mask-image:
+      linear-gradient(
+        to bottom,
+        #000 0,
+        #000 calc(100% - 24px),
+        transparent 100%
+      ) !important;
+    mask-image:
+      linear-gradient(
+        to bottom,
+        #000 0,
+        #000 calc(100% - 24px),
+        transparent 100%
+      ) !important;
+    pointer-events: none !important;
+  }
+
+  html body ytd-app #masthead-container {
+    display: block !important;
+    position: fixed !important;
+    inset: 0 0 auto 0 !important;
+    width: 100% !important;
+    min-height: var(--ytd-masthead-height, 56px) !important;
+    z-index: 100000 !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    transform: none !important;
+    translate: none !important;
+    overflow: visible !important;
+  }
+
+  html body ytd-app ytd-masthead#masthead {
+    display: block !important;
+    min-height: var(--ytd-masthead-height, 56px) !important;
+    z-index: 100001 !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    transform: none !important;
+    translate: none !important;
+  }
+
+  html body ytd-app ytd-masthead#masthead > #background {
+    display: block !important;
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    min-height: var(--ytd-masthead-height, 56px) !important;
+    opacity: 1 !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border-bottom: none !important;
+    transition: none !important;
+    animation: none !important;
+    pointer-events: none !important;
+  }
+
+  html body ytd-app ytd-masthead#masthead :is(#start, #center, #end) {
+    position: relative !important;
+    z-index: 100002 !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+
+  html body ytd-app ytd-masthead#masthead
+    :is(#center, yt-searchbox, .ytSearchboxComponentHost) {
+    position: relative !important;
+    z-index: 100100 !important;
+  }
+
+  html body .ytSearchboxComponentSuggestionsContainer {
+    z-index: 100200 !important;
+  }
+
+  /* The masthead and chips only carry content; the shared sheet paints the material. */
+  html body ytd-app ytd-feed-filter-chip-bar-renderer,
+  html body ytd-app ytd-feed-filter-chip-bar-renderer #chips-wrapper {
+    --ytd-chip-cloud-background: transparent !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border-bottom: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Keep inner chip containers clear so YouTube's surface is painted only once. */
+  html body ytd-app ytd-feed-filter-chip-bar-renderer
+    :is(yt-chip-cloud-renderer, #scroll-container, iron-selector#chips) {
+    background-color: transparent !important;
+    background-image: none !important;
+  }
+
+  /* Remove residual native separators between the two transparent content rows. */
+  html body ytd-app :is(
+    ytd-masthead#masthead,
+    ytd-masthead#masthead #container,
+    ytd-masthead#masthead > #background,
+    ytd-feed-filter-chip-bar-renderer,
+    ytd-feed-filter-chip-bar-renderer #chips-wrapper,
+    ytd-feed-filter-chip-bar-renderer yt-chip-cloud-renderer
+  ),
+  html body ytd-app :is(
+    ytd-masthead#masthead #container,
+    ytd-feed-filter-chip-bar-renderer,
+    ytd-feed-filter-chip-bar-renderer #chips-wrapper
+  )::before,
+  html body ytd-app :is(
+    ytd-masthead#masthead #container,
+    ytd-feed-filter-chip-bar-renderer,
+    ytd-feed-filter-chip-bar-renderer #chips-wrapper
+  )::after {
+    border-top: 0 !important;
+    border-bottom: 0 !important;
+    outline: 0 !important;
+    box-shadow: none !important;
+  }
+
+  /* Let the shared glass continue beneath the left Home-button zone. */
+  html body ytd-app :is(#mini-guide, #guide, #guide-content),
+  html body ytd-app ytd-mini-guide-renderer,
+  html body ytd-app ytd-guide-renderer {
+    z-index: 99950 !important;
+  }
+
+  html body ytd-app ytd-mini-guide-renderer,
+  html body ytd-app ytd-guide-renderer #guide-content {
+    z-index: 99950 !important;
+    background:
+      linear-gradient(
+        to bottom,
+        transparent 0,
+        transparent 44px,
+        color-mix(
+          in srgb,
+          var(--yt-home-sidebar-solid) 12%,
+          transparent
+        ) 56px,
+        color-mix(
+          in srgb,
+          var(--yt-home-sidebar-solid) 35%,
+          transparent
+        ) 68px,
+        color-mix(
+          in srgb,
+          var(--yt-home-sidebar-solid) 62%,
+          transparent
+        ) 82px,
+        color-mix(
+          in srgb,
+          var(--yt-home-sidebar-solid) 84%,
+          transparent
+        ) 96px,
+        var(--yt-home-sidebar-solid) 112px,
+        var(--yt-home-sidebar-solid) 100%
+      ) !important;
+  }
+
+  /* Keep the Home control and its label above the shared frosted sheet. */
+  html body ytd-app
+    :is(ytd-mini-guide-entry-renderer, ytd-guide-entry-renderer):has(a#endpoint[href="/"]) {
+    position: relative !important;
+    z-index: 99952 !important;
+    isolation: isolate !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+
+  html body ytd-app
+    :is(ytd-mini-guide-entry-renderer, ytd-guide-entry-renderer)
+    a#endpoint[href="/"] {
+    position: relative !important;
+    z-index: 1 !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+}

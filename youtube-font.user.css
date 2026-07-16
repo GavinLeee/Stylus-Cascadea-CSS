@@ -1,0 +1,45 @@
+/* ==UserStyle==
+@name           Youtube
+@namespace      GavinLeee-Stylus-Cascadea-youtube-font
+@version        1.0.0
+@description    Converted from the local Stylus style “Youtube”.
+@updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/youtube-font.user.css
+@downloadURL    https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/youtube-font.user.css
+==/UserStyle== */
+
+@-moz-document domain("youtube.com") {
+  html,
+  body,
+  ytd-app,
+  yt-formatted-string,
+  ytd-video-renderer,
+  ytd-rich-grid-media,
+  ytd-comment-thread-renderer,
+  ytd-watch-metadata,
+  ytd-channel-name,
+  #video-title,
+  #content-text,
+  #title,
+  #description,
+  input,
+  textarea,
+  button {
+    font-family:
+      "Anthropic Sans Text",
+      "Anthropic Sans",
+      "Noto Sans SC",
+      "Noto Sans CJK SC",
+      "Noto Sans JP",
+      "Noto Sans CJK JP",
+      "Segoe UI Emoji",
+      sans-serif !important;
+  }
+
+  yt-icon,
+  yt-icon-shape,
+  svg,
+  path,
+  iron-icon {
+    font-family: initial !important;
+  }
+}
