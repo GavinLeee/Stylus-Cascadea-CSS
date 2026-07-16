@@ -1,14 +1,21 @@
 /* ==UserStyle==
 @name           Global
 @namespace      GavinLeee-Stylus-Cascadea-global
-@version        1.0.0
-@description    Converted from the local Stylus style “Global”.
+@version        1.1.0
+@description    在所有网站统一使用 Anthropic Sans 与 Noto Sans 字体
+@match          http://*/*
+@match          https://*/*
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/global.user.css
 @downloadURL    https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/global.user.css
 ==/UserStyle== */
 
+/*
+ * 覆盖所有普通网页元素，包括现代网站常用的 div 与 span。
+ * !important 用来压过大多数网站在子元素上单独设置的字体。
+ */
 html,
-body {
+body,
+body :where(*):not(code):not(code *):not(pre):not(pre *):not(kbd):not(samp):not(var):not(math):not(math *):not(svg):not(svg *):not([class^="fa"]):not([class*=" fa-"]):not([class^="icon-"]):not([class*=" icon-"]):not([class*="material-icons"]):not([class*="material-symbols"]):not([class*="glyphicon"]):not([class*="octicon"]) {
   font-family:
     "Anthropic Sans Text",
     "Anthropic Sans",
@@ -20,37 +27,19 @@ body {
     sans-serif !important;
 }
 
-body :where(
-  p,
-  a,
-  li,
-  td,
-  th,
-  button,
-  input,
-  textarea,
-  select,
-  option,
-  label,
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6,
-  article,
-  section,
-  header,
-  footer,
-  nav
-):not(code):not(pre):not(kbd):not(samp):not(svg):not(math) {
+/* 保留代码元素的等宽字体。 */
+:where(
+  code,
+  code *,
+  pre,
+  pre *,
+  kbd,
+  samp
+) {
   font-family:
-    "Anthropic Sans Text",
-    "Anthropic Sans",
-    "Noto Sans SC",
-    "Noto Sans CJK SC",
-    "Noto Sans JP",
-    "Noto Sans CJK JP",
-    "Segoe UI Emoji",
-    sans-serif !important;
+    "SFMono-Regular",
+    Consolas,
+    "Liberation Mono",
+    Menlo,
+    monospace !important;
 }
