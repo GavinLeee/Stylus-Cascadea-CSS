@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           YouTube Apple 克制卡片与动效
 @namespace      youtube-apple-card-motion
-@version        2.20.38
+@version        2.20.39
 @description    顶栏、分类栏、左侧导航和视频卡片的克制 Apple 风格悬浮动效
 @author         Codex
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/youtube-apple.user.css
@@ -56,7 +56,6 @@
        比原生纯白底（对未选中约 15:1）克制得多，同时保证可读性。 */
     --yt-apple-chip-selected-bg: rgba(255, 255, 255, 0.22);
     --yt-apple-chip-selected-bg-hover: rgba(255, 255, 255, 0.28);
-    --yt-apple-chip-selected-stroke: rgba(255, 255, 255, 0.22);
     --yt-apple-chip-selected-fg: rgba(255, 255, 255, 0.96);
   }
 
@@ -212,11 +211,12 @@
     transition-duration: 90ms !important;
   }
 
+  /* 只留柔和投影。原本第一段是 0 0 0 1px 的描边环，画在 button 这层透明壳
+     的边框盒上，看起来就是选中胶囊的一圈外边框 —— 选中态已经靠填充色区分，
+     不需要再描边。 */
   yt-chip-cloud-chip-renderer.iron-selected button,
   yt-chip-cloud-chip-renderer[selected] button {
-    box-shadow:
-      0 0 0 1px var(--yt-apple-card-stroke),
-      0 3px 9px rgba(0, 0, 0, 0.10) !important;
+    box-shadow: 0 3px 9px rgba(0, 0, 0, 0.10) !important;
   }
 
   /* 深色模式下 YouTube 原生把选中胶囊反色成接近纯白的实色块（#F1F1F1 底
@@ -235,7 +235,6 @@
   html[dark] yt-chip-cloud-chip-renderer:is(.iron-selected, [selected])
     :is(.ytChipShapeChip, button:not(:has(.ytChipShapeChip))) {
     background-color: var(--yt-apple-chip-selected-bg) !important;
-    border-color: var(--yt-apple-chip-selected-stroke) !important;
   }
 
   html[dark] yt-chip-cloud-chip-renderer:is(.iron-selected, [selected])
@@ -259,7 +258,6 @@
     html[dark] yt-chip-cloud-chip-renderer:is(.iron-selected, [selected]):hover
       :is(.ytChipShapeChip, button:not(:has(.ytChipShapeChip))) {
       background-color: var(--yt-apple-chip-selected-bg-hover) !important;
-      border-color: var(--yt-apple-chip-selected-stroke) !important;
     }
   }
 
