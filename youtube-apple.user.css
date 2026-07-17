@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           YouTube Apple 克制卡片与动效
 @namespace      youtube-apple-card-motion
-@version        2.20.38
+@version        2.20.39
 @description    顶栏、分类栏、左侧导航和视频卡片的克制 Apple 风格悬浮动效
 @author         Codex
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/youtube-apple.user.css
@@ -741,6 +741,26 @@
 
   html[dark] {
     --yt-apple-masthead-glass: rgba(38, 38, 40, 0.60);
+  }
+
+  /*
+   * 首页 / 搜索页等：只把 YouTube 原生玻璃层的材质换成我们的，几何、显隐和
+   * 滚动逻辑全部留给 YouTube 自己管。实测两类页面用的是不同的层：
+   *   首页    #frosted-glass          112px（罩住顶栏 56 + 分类胶囊栏 56），
+   *                                   原生 rgba(15,15,15,0.8) + blur(48px)
+   *   搜索页  ytd-masthead > #background  56px，
+   *                                   原生 rgba(255,255,255,0.9) + blur(48px)
+   * 两者互斥：首页 #background 是 display:none，搜索页 #frosted-glass 是
+   * display:none，所以同时覆盖两个层不会叠加成双层玻璃。
+   * 观看页和频道页各自的规则选择器更具体，会盖过这里：观看页仍然关掉
+   * #frosted-glass 自己画 #background，频道页把 #frosted-glass 整个隐藏。
+   */
+  #frosted-glass,
+  ytd-masthead > #background {
+    background-color: var(--yt-apple-masthead-glass) !important;
+    background-image: none !important;
+    backdrop-filter: var(--yt-apple-masthead-blur) !important;
+    -webkit-backdrop-filter: var(--yt-apple-masthead-blur) !important;
   }
 
   /* 关闭会因 YouTube 灰度版本而变化的原生玻璃层，统一由 masthead 背景承载材质。 */
