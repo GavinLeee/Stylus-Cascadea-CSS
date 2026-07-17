@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           小红书 Apple 风格左栏与卡片悬浮动效
 @namespace      rednote-apple-card-motion
-@version        1.2.1
+@version        1.3.0
 @description    为小红书网页版左侧导航按钮和图文卡片添加克制的 Apple 风格卡片悬浮动效，视觉语言对齐 X（Twitter）的克制卡片方案
 @match          https://www.xiaohongshu.com/*
 @match          https://xiaohongshu.com/*
@@ -80,6 +80,20 @@
       0 16px 40px rgba(38, 51, 77, 0.14);
 
     --rn-card-radius: 16px;
+
+    /* 磨砂玻璃底板（顶栏吸顶态、侧栏），配方与 Apple Podcasts Web 侧栏 /
+       YouTube 顶栏一致：saturate(220%) blur(16px) + 半透明底。实测确认
+       .ai-header-container 吸顶后是 position:fixed，身后是真实滚动着的
+       信息流卡片，玻璃能透出内容，不是纯色平涂。 */
+    --rn-glass: rgba(245, 245, 247, 0.55);
+    --rn-glass-blur: saturate(220%) blur(16px);
+
+    /* 上浮层玻璃（搜索框、搜索按钮等浮在底板玻璃之上的控件），配方对齐
+       YouTube 搜索框：模糊更重、不透明度只微增，靠"更糊"而不是"更厚"
+       和底板拉开层次。 */
+    --rn-raised-glass: rgba(246, 246, 246, 0.60);
+    --rn-raised-glass-hover: rgba(246, 246, 246, 0.72);
+    --rn-raised-blur: saturate(200%) blur(60px);
   }
 
   @media (prefers-color-scheme: dark) {
@@ -95,6 +109,10 @@
       --rn-card-shadow-hover:
         0 2px 5px rgba(0, 0, 0, 0.28),
         0 18px 44px rgba(0, 0, 0, 0.40);
+
+      --rn-glass: rgba(38, 38, 40, 0.60);
+      --rn-raised-glass: rgba(40, 40, 40, 0.60);
+      --rn-raised-glass-hover: rgba(52, 52, 52, 0.72);
     }
   }
 
@@ -105,17 +123,35 @@
     overflow: visible !important;
   }
 
+  /*
+   * 顶栏磨砂玻璃：只有滚动到吸顶态（.ai-header-container 变成
+   * position:fixed，实测原生底色 rgb(25,25,30)）才会真的画出这层背景；
+   * 页面顶部时它是 display:none，搜索框由页面流中的另一个组件承载，
+   * 不受这条规则影响。isolation:isolate 不会挡住 backdrop-filter 采样
+   * ——实测过，滚动后玻璃能正常透出下方滚动的信息流卡片。
+   */
+  .ai-header-container {
+    background-color: var(--rn-glass) !important;
+    backdrop-filter: var(--rn-glass-blur) !important;
+    -webkit-backdrop-filter: var(--rn-glass-blur) !important;
+  }
+
   /* The native note overlay is z-index:20; keep it above our raised header. */
   .note-detail-mask {
     z-index: calc(var(--rn-header-z) + 10) !important;
     isolation: isolate;
   }
 
+  /* 搜索框/搜索按钮走上浮层玻璃（--rn-raised-*），比顶栏底板更糊、更实，
+     和 YouTube 搜索框相对顶栏的层次关系一致。原来的实色 --rn-panel-hover
+     面板换成半透明玻璃 + backdrop-filter，其余投影/位移/圆角不变。 */
   .ai-header-container .search-area-in-header .input-box {
     box-sizing: border-box !important;
     border: none !important;
     border-radius: 999px !important;
-    background: var(--rn-panel-hover) !important;
+    background: var(--rn-raised-glass) !important;
+    backdrop-filter: var(--rn-raised-blur) !important;
+    -webkit-backdrop-filter: var(--rn-raised-blur) !important;
     box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05),
       0 8px 24px rgba(38, 51, 77, 0.09) !important;
     transition: transform 220ms var(--rn-ease),
@@ -129,6 +165,7 @@
   .ai-header-container .search-area-in-header .input-box:focus-within,
   .ai-header-container.explore-expanded .search-area-in-header .input-box:hover,
   .ai-header-container.explore-expanded .search-area-in-header .input-box:focus-within {
+    background: var(--rn-raised-glass-hover) !important;
     border-color: var(--rn-border-hover) !important;
     box-shadow: var(--rn-card-shadow-hover) !important;
     transform: translateY(-2px) scale(1.01) !important;
@@ -141,7 +178,9 @@
     z-index: 1;
     border: none !important;
     border-radius: 999px !important;
-    background: var(--rn-panel-hover) !important;
+    background: var(--rn-raised-glass) !important;
+    backdrop-filter: var(--rn-raised-blur) !important;
+    -webkit-backdrop-filter: var(--rn-raised-blur) !important;
     box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06),
       0 6px 16px rgba(38, 51, 77, 0.10) !important;
     transition: transform 220ms var(--rn-ease),
@@ -154,6 +193,7 @@
   .ai-header-container .search-area-in-header .input-button .search-icon:hover,
   .ai-header-container .min-width-search-icon:hover,
   .ai-header-container.explore-expanded .input-button .search-icon:hover {
+    background: var(--rn-raised-glass-hover) !important;
     border-color: var(--rn-border-hover) !important;
     box-shadow: var(--rn-card-shadow-hover) !important;
     transform: translateY(-2px) scale(1.08);
@@ -208,6 +248,37 @@
   .side-bar {
     z-index: 100 !important;
     overflow: visible !important;
+    background-color: transparent !important;
+  }
+
+  /*
+   * 侧栏磨砂玻璃，材质与顶栏底板同一份变量。玻璃画在只作背景、无子节点的
+   * 伪元素上而不是 .side-bar 自己身上——导航胶囊（li / bottom-menu-component /
+   * information-wrapper）都带 transform（见下方 2B 段等价规则），和顶栏当年
+   * 判定 backdrop-filter 该放哪一层是同一个道理：伪元素没有子节点，胶囊
+   * 悬浮时的重新分层不会扰动玻璃取样。.side-bar 已经是 position:fixed +
+   * z-index:100 的层叠上下文，伪元素 z-index:-1 只会沉到它自己内容之下。
+   *
+   * 如实说明：实测把 .side-bar 染透明后确认，它身后不是像 YouTube 抽屉那样
+   * 会滚动的信息流卡片，而是 .main-content 铺的一整片纯色底——侧栏这一列
+   * 原生就不画任何内容。所以这层玻璃不会像顶栏那样透出可辨认的图案，视觉上
+   * 只是同一份半透明玻璃色 + 模糊，模糊在纯色上不会产生任何可见变化。仍按
+   * 要求实现，保证和顶栏材质、Podcasts 侧栏一致；.information-container
+   * 原生纯色底需要一并清透明，否则会挡住玻璃下半部分。
+   */
+  .side-bar::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: 0;
+    pointer-events: none;
+    background-color: var(--rn-glass);
+    backdrop-filter: var(--rn-glass-blur);
+    -webkit-backdrop-filter: var(--rn-glass-blur);
+  }
+
+  .side-bar .information-container {
+    background-color: transparent !important;
   }
 
   /* Add horizontal breathing room inside the native scroll mask. */
