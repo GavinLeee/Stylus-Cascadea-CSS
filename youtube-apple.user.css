@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           YouTube Apple 克制卡片与动效
 @namespace      youtube-apple-card-motion
-@version        2.20.44
+@version        2.20.45
 @description    顶栏、分类栏、左侧导航和视频卡片的克制 Apple 风格悬浮动效
 @author         Codex
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/youtube-apple.user.css
@@ -816,11 +816,32 @@
    * 透明的，不会盖住玻璃。#contentContainer 这个 id 在频道页的
    * tp-yt-app-header 里也有一个同名节点，所以必须带 drawer 前缀限定。
    */
+  /*
+   * 玻璃画在只作背景、无子节点的伪元素上，不要画在 #contentContainer 自己身上
+   * ——这正是上面第 650 行那条注释里顶栏踩过的同一个坑的另一种形态。
+   * #contentContainer 装着全部导航项，而每个 ytd-guide-entry-renderer 都常驻
+   * transform: translateZ(0) + will-change: transform（见 2B 段），悬停时又加上
+   * z-index:4 和 transform。把 backdrop-filter 和这些合成层放在同一个元素上，
+   * 悬停触发重新分层时会连带扰动玻璃的取样，整片侧栏底色随之跳变。
+   * 伪元素没有子节点，取样不受导航项分层影响。
+   * #contentContainer 自身带 transform（抽屉滑动动画），已经是层叠上下文，
+   * 所以 z-index:-1 只会沉到它自己的内容之下，不会掉到抽屉外面去。
+   */
   tp-yt-app-drawer#guide #contentContainer {
-    background-color: var(--yt-apple-masthead-glass) !important;
+    background-color: transparent !important;
     background-image: none !important;
-    backdrop-filter: var(--yt-apple-masthead-blur) !important;
-    -webkit-backdrop-filter: var(--yt-apple-masthead-blur) !important;
+  }
+
+  tp-yt-app-drawer#guide #contentContainer::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: 0;
+    pointer-events: none;
+    background-color: var(--yt-apple-masthead-glass);
+    background-image: none;
+    backdrop-filter: var(--yt-apple-masthead-blur);
+    -webkit-backdrop-filter: var(--yt-apple-masthead-blur);
   }
 
   /* #guide-content 是抽屉内的一层实色白底（原生 rgb(255,255,255)），不清掉会
