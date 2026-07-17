@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           YouTube Apple 克制卡片与动效
 @namespace      youtube-apple-card-motion
-@version        2.20.37
+@version        2.20.38
 @description    顶栏、分类栏、左侧导航和视频卡片的克制 Apple 风格悬浮动效
 @author         Codex
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/youtube-apple.user.css
@@ -31,6 +31,10 @@
     /* 封面悬停放大倍数。预览浮层也用同一个值缩放，正好盖住放大后的
        封面图，边缘不会露出下层图片。 */
     --yt-apple-thumb-zoom: 1.018;
+    /* 顶栏玻璃的模糊参数，浅色/深色共用；底色见下方 --yt-apple-masthead-glass。
+       取自 Apple Podcasts Web 左侧导航栏 nav.navigation 的实测值
+       （2026-07，devtools 计算样式）：saturate(2.2) blur(16px)。 */
+    --yt-apple-masthead-blur: saturate(220%) blur(16px);
   }
 
   html[dark] {
@@ -728,12 +732,15 @@
     z-index: 99900 !important;
   }
 
+  /* 顶栏玻璃底色，对齐 Apple Podcasts Web 左侧导航栏的材质（实测 nav.navigation
+     的计算样式）。比原先更透（0.82 → 0.55）、更薄的模糊配更高饱和，靠背景本身
+     透上来出色，而不是靠一层厚白/厚黑压住。 */
   html:not([dark]) {
-    --yt-apple-masthead-glass: rgba(255, 255, 255, 0.82);
+    --yt-apple-masthead-glass: rgba(245, 245, 247, 0.55);
   }
 
   html[dark] {
-    --yt-apple-masthead-glass: rgba(24, 24, 26, 0.80);
+    --yt-apple-masthead-glass: rgba(38, 38, 40, 0.60);
   }
 
   /* 关闭会因 YouTube 灰度版本而变化的原生玻璃层，统一由 masthead 背景承载材质。 */
@@ -760,8 +767,8 @@
     opacity: 1 !important;
     background-color: var(--yt-apple-masthead-glass);
     background-image: none !important;
-    backdrop-filter: saturate(180%) blur(22px);
-    -webkit-backdrop-filter: saturate(180%) blur(22px);
+    backdrop-filter: var(--yt-apple-masthead-blur);
+    -webkit-backdrop-filter: var(--yt-apple-masthead-blur);
     border-bottom: none !important;
   }
 
@@ -783,8 +790,8 @@
   html[data-yt-scroll-aware][data-yt-scrolled]
   body:has(ytd-watch-flexy:not([hidden])) ytd-masthead > #background {
     background-color: var(--yt-apple-masthead-glass) !important;
-    backdrop-filter: saturate(180%) blur(22px) !important;
-    -webkit-backdrop-filter: saturate(180%) blur(22px) !important;
+    backdrop-filter: var(--yt-apple-masthead-blur) !important;
+    -webkit-backdrop-filter: var(--yt-apple-masthead-blur) !important;
     transition:
       background-color 220ms cubic-bezier(0.2, 0.75, 0.25, 1),
       backdrop-filter 220ms cubic-bezier(0.2, 0.75, 0.25, 1),
@@ -1962,8 +1969,8 @@
     opacity: 1 !important;
     background-color: var(--yt-apple-masthead-glass) !important;
     background-image: none !important;
-    backdrop-filter: saturate(180%) blur(22px) !important;
-    -webkit-backdrop-filter: saturate(180%) blur(22px) !important;
+    backdrop-filter: var(--yt-apple-masthead-blur) !important;
+    -webkit-backdrop-filter: var(--yt-apple-masthead-blur) !important;
     border-bottom: none !important;
     transition: opacity 320ms cubic-bezier(0.16, 1, 0.30, 1) !important;
   }
@@ -2024,8 +2031,8 @@
     pointer-events: none;
     background-color: var(--yt-apple-masthead-glass);
     background-image: none;
-    backdrop-filter: saturate(180%) blur(22px);
-    -webkit-backdrop-filter: saturate(180%) blur(22px);
+    backdrop-filter: var(--yt-apple-masthead-blur);
+    -webkit-backdrop-filter: var(--yt-apple-masthead-blur);
     opacity: 0;
     transition: opacity 320ms cubic-bezier(0.16, 1, 0.30, 1);
     will-change: opacity;
