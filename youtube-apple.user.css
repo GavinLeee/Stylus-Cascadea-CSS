@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           YouTube Apple 克制卡片与动效
 @namespace      youtube-apple-card-motion
-@version        2.20.36
+@version        2.20.37
 @description    顶栏、分类栏、左侧导航和视频卡片的克制 Apple 风格悬浮动效
 @author         Codex
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/youtube-apple.user.css
@@ -1973,6 +1973,30 @@
      can then scroll the banner and profile sheet away while keeping only the
      tabs docked below the masthead. The companion script performs no channel
      header geometry tracking. */
+
+  /* Lift the tab row's whole subtree above the profile sheet so the docked
+     glass covers the header instead of the other way round.
+
+     Measured stacking inside tp-yt-app-header (which turns position:fixed with
+     a transform once the header condenses):
+       div#contentContainer            relative, z:auto   (no stacking context)
+         div#page-header-container     relative, z:auto   (no stacking context)
+           div#page-header             relative, z:1      <- banner + profile
+         tp-yt-app-toolbar             relative, z:auto, stacking context via
+                                       its own transform  <- tabs + glass sheet
+     #page-header sits in the positive-z layer and tp-yt-app-toolbar in the
+     auto/0 layer, so the profile sheet paints over the tabs' glass. The sheet
+     lives inside the toolbar's own stacking context, so no z-index on
+     #tabs-container can escape it -- the toolbar itself has to be raised.
+
+     Without this, once the tabs dock the masthead hands its glass over to the
+     tabs' sheet (see data-yt-channel-tabs-stuck below) and goes fully
+     transparent. On viewports wide enough that the profile sheet is still
+     crossing the masthead strip at that moment, it shows through the top bar
+     unblurred. */
+  ytd-tabbed-page-header tp-yt-app-toolbar {
+    z-index: 2 !important;
+  }
 
   /* Paint the channel tabs on one isolated glass sheet inside the shared,
      normally scrolling channel-header module. */
