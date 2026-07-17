@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           YouTube Apple 克制卡片与动效
 @namespace      youtube-apple-card-motion
-@version        2.20.46
+@version        2.20.47
 @description    顶栏、分类栏、左侧导航和视频卡片的克制 Apple 风格悬浮动效
 @author         Codex
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/youtube-apple.user.css
@@ -857,8 +857,17 @@
    * 用 visibility 而不是 display:none：#header 占着顶栏那 56px 的高度，
    * 撤掉盒子会让下面的导航项整体上移钻到顶栏底下（实测首个导航项 y=68，
    * 隐藏后仍为 68）。
+   *
+   * 必须用 > 限定为 #guide-content 的直接子节点：抽屉里 id="header" 的节点有
+   * 三个 —— 除了这个汉堡+logo 行，Subscriptions 和 You 两个分组各自也套着一层
+   * div#header（实测祖先链：.arrow-icon < yt-icon < tp-yt-paper-item <
+   * a#endpoint < #header-entry < div#header < ytd-guide-collapsible-section-
+   * entry-renderer）。写成后代选择器会把两个分组标题整行一起隐藏；它们的文字
+   * 因为下方标题规则里有 visibility: visible 而幸存，箭头和悬停卡片背景则没有
+   * 这道豁免，于是一起消失。分组的那两个 header 挂在 collapsible-section 下，
+   * 不是 #guide-content 的直接子节点，用 > 就能干净地区分开。
    */
-  tp-yt-app-drawer#guide #contentContainer #header {
+  tp-yt-app-drawer#guide #guide-content > #header {
     visibility: hidden !important;
   }
 
