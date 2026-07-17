@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           YouTube Apple 克制卡片与动效
 @namespace      youtube-apple-card-motion
-@version        2.20.42
+@version        2.20.43
 @description    顶栏、分类栏、左侧导航和视频卡片的克制 Apple 风格悬浮动效
 @author         Codex
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/youtube-apple.user.css
@@ -730,11 +730,37 @@
     isolation: isolate;
   }
 
-  /* 首页顶栏下方的分类胶囊栏也保持在视频预览层之上。 */
+  /*
+   * 分类胶囊栏的层级要同时满足两头，实测三者的最近层叠上下文都是 body，
+   * z-index 可以直接比：
+   *   > 100   压过被上面规则封顶在 z-index:100 的悬停预览浮层
+   *   < 2030  待在左侧导航抽屉 tp-yt-app-drawer#guide（原生 2030）之下
+   * 这里原本写的是 99900，只顾了上界，结果窄窗口展开抽屉时胶囊会骑到导航项
+   * 上面。YouTube 原生给 #chips-wrapper 的 2019 正好落在区间里，显式写出以免
+   * 依赖原生值。
+   */
   ytd-feed-filter-chip-bar-renderer,
   ytd-feed-filter-chip-bar-renderer #chips-wrapper,
   yt-chip-cloud-renderer {
-    z-index: 99900 !important;
+    z-index: 2019 !important;
+  }
+
+  ytd-feed-filter-chip-bar-renderer {
+    transition: opacity 200ms cubic-bezier(0.2, 0.75, 0.25, 1);
+  }
+
+  /*
+   * 抽屉是玻璃，压在它下面的胶囊会透出来。这里不是"让它沉下去"就完事：胶囊
+   * 横跨 x 72~985、y 56~112，抽屉内容占 x 0~240，两者正好重叠在导航栏最上面
+   * 几行的位置 —— 一排药丸状控件糊在导航项之间，比视频封面扎眼得多。
+   * 窄窗口展开抽屉是模态态，胶囊本来也点不到，直接淡出。
+   * :not([persistent]) 不能省：宽窗口下侧栏常驻且 opened 恒为 true，少了它会
+   * 把宽窗口的胶囊栏也一起藏掉。
+   */
+  body:has(tp-yt-app-drawer#guide[opened]:not([persistent]))
+  ytd-feed-filter-chip-bar-renderer {
+    opacity: 0 !important;
+    pointer-events: none !important;
   }
 
   /* 顶栏玻璃底色，对齐 Apple Podcasts Web 左侧导航栏的材质（实测 nav.navigation
