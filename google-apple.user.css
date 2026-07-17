@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           Google Apple 克制卡片与动效
 @namespace      google-apple-card-motion
-@version        1.5.18
+@version        1.5.19
 @description    为 Google 搜索结果与顶部控件添加克制的 Apple 风格动效和磨砂玻璃
 @author         Codex
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/google-apple.user.css
@@ -1008,6 +1008,18 @@
     translate: 0 -1px;
     box-shadow: var(--g-apple-card-shadow-pressed) !important;
     transition-duration: 90ms !important;
+  }
+
+  /* ---------- 7.7 站点图标透明背景 ---------- */
+  /*
+   * XNo5Ab 是部分站点信息卡使用的图标。Google 会给透明图标铺白底，
+   * 在深色页面形成突兀的方块；仅清除装饰层，不改变图片内容与尺寸。
+   */
+  #rso img.XNo5Ab {
+    background: transparent !important;
+    background-color: transparent !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
   }
 
   /* ---------- 8. 键盘焦点 ---------- */
