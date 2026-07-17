@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           YouTube Apple 克制卡片与动效
 @namespace      youtube-apple-card-motion
-@version        2.20.43
+@version        2.20.44
 @description    顶栏、分类栏、左侧导航和视频卡片的克制 Apple 风格悬浮动效
 @author         Codex
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/youtube-apple.user.css
@@ -745,22 +745,32 @@
     z-index: 2019 !important;
   }
 
-  ytd-feed-filter-chip-bar-renderer {
-    transition: opacity 200ms cubic-bezier(0.2, 0.75, 0.25, 1);
+  /*
+   * 抽屉是玻璃，压在它下面的胶囊会透出来（胶囊横跨 x 72~985、y 56~112，抽屉
+   * 内容占 x 0~240，正好重叠在导航栏最上面几行）。整条淡出太生硬，改成跟着
+   * 抽屉一起右移，像是被推开。
+   *
+   * 位移量用 YouTube 自己的变量算，不写死：抽屉宽 240 − mini guide 宽 72
+   * = 168px，正好让胶囊栏左缘和抽屉右缘齐平（胶囊栏起点本来就在 mini guide
+   * 之后）。时序也对齐抽屉实测的 transform 200ms ease，否则两者会脱节。
+   *
+   * 位移必须作用在 #chips-wrapper 上：它才是 position:fixed 的那层，而外层
+   * ytd-feed-filter-chip-bar-renderer 是 static —— 给外层加 transform 会让它
+   * 变成 fixed 子元素的包含块，反而搅乱定位。
+   *
+   * :not([persistent]) 不能省：宽窗口下侧栏常驻且 opened 恒为 true，少了它
+   * 宽窗口的胶囊栏也会跟着平移。
+   */
+  ytd-feed-filter-chip-bar-renderer #chips-wrapper {
+    transition: transform 200ms ease;
+    will-change: transform;
   }
 
-  /*
-   * 抽屉是玻璃，压在它下面的胶囊会透出来。这里不是"让它沉下去"就完事：胶囊
-   * 横跨 x 72~985、y 56~112，抽屉内容占 x 0~240，两者正好重叠在导航栏最上面
-   * 几行的位置 —— 一排药丸状控件糊在导航项之间，比视频封面扎眼得多。
-   * 窄窗口展开抽屉是模态态，胶囊本来也点不到，直接淡出。
-   * :not([persistent]) 不能省：宽窗口下侧栏常驻且 opened 恒为 true，少了它会
-   * 把宽窗口的胶囊栏也一起藏掉。
-   */
   body:has(tp-yt-app-drawer#guide[opened]:not([persistent]))
-  ytd-feed-filter-chip-bar-renderer {
-    opacity: 0 !important;
-    pointer-events: none !important;
+  ytd-feed-filter-chip-bar-renderer #chips-wrapper {
+    transform: translateX(
+      calc(var(--app-drawer-width, 240px) - var(--ytd-mini-guide-width, 72px))
+    );
   }
 
   /* 顶栏玻璃底色，对齐 Apple Podcasts Web 左侧导航栏的材质（实测 nav.navigation
@@ -818,6 +828,20 @@
   tp-yt-app-drawer#guide #contentContainer #guide-content {
     background-color: transparent !important;
     background-image: none !important;
+  }
+
+  /*
+   * 抽屉自带的 #header 里有一套汉堡（yt-icon-button#guide-button）和 YouTube
+   * logo（ytd-topbar-logo-renderer），和顶栏那对完全重复、位置也几乎重合。
+   * 顶栏 z-index 100000 压在抽屉之上本来会挡住它们，但顶栏是 0.55 的通透玻璃
+   * ——它们会透上来和顶栏那对叠成重影。顶栏的那对是常驻可用的，留它们即可。
+   *
+   * 用 visibility 而不是 display:none：#header 占着顶栏那 56px 的高度，
+   * 撤掉盒子会让下面的导航项整体上移钻到顶栏底下（实测首个导航项 y=68，
+   * 隐藏后仍为 68）。
+   */
+  tp-yt-app-drawer#guide #contentContainer #header {
+    visibility: hidden !important;
   }
 
   /*
