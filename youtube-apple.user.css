@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           YouTube Apple 克制卡片与动效
 @namespace      youtube-apple-card-motion
-@version        2.20.39
+@version        2.20.40
 @description    顶栏、分类栏、左侧导航和视频卡片的克制 Apple 风格悬浮动效
 @author         Codex
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/youtube-apple.user.css
@@ -2065,6 +2065,35 @@
   ytd-tabbed-page-header #tabs-container::before {
     top: calc(-1 * var(--ytd-masthead-height, 56px) - 1px);
     opacity: 1;
+  }
+
+  /* Retire the profile sheet once the tabs dock.
+
+     tp-yt-app-header condenses by translating itself up, but Polymer clamps
+     that translate the moment the tab row reaches the masthead and never moves
+     it again. Whatever profile content does not fit above that point simply
+     stops there. Measured at 1920x1080, where the wide layout gives the
+     headline a 196px tall avatar row:
+
+       scrollY 450   translate -423, tabs docked, headline bottom  52
+       scrollY 900   translate -423, tabs docked, headline bottom  52
+
+     so its last 52px sit inside the masthead strip permanently. This is
+     YouTube's own behaviour -- their opaque masthead just hides the remainder.
+     Our glass is transparent enough to show it, as a blurred sliver that never
+     scrolls away. At 1280px and below the headline is short enough to clear
+     the strip on its own, which is why this only shows on wide viewports.
+
+     Fading it out on the dock is enough: by then the whole profile is meant to
+     be gone. Everything above still scrolls under the glass normally. */
+  html[data-yt-channel-tabs-stuck] ytd-tabbed-page-header #page-header {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transition: opacity 200ms cubic-bezier(0.2, 0.75, 0.25, 1) !important;
+  }
+
+  ytd-tabbed-page-header #page-header {
+    transition: opacity 200ms cubic-bezier(0.2, 0.75, 0.25, 1);
   }
 
   html[data-yt-channel-tabs-stuck] ytd-masthead > #background {
