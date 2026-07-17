@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           Google Apple 克制卡片与动效
 @namespace      google-apple-card-motion
-@version        1.5.17
+@version        1.5.18
 @description    为 Google 搜索结果与顶部控件添加克制的 Apple 风格动效和磨砂玻璃
 @author         Codex
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/google-apple.user.css
@@ -967,6 +967,49 @@
     }
   }
 
+  /* ---------- 7.6 问答条目、横向结果卡片与图片轮播 ---------- */
+  /*
+   * 直接在真实可点击元素上绘制背景与阴影，不创建覆盖层，避免影响链接命中区域。
+   * 三类组件统一使用轻微上浮；不缩放内容，防止文字重绘与相邻卡片互相挤压。
+   */
+  #rso :is(
+    div.L3Ezfd,
+    a.ZbQNgf,
+    div.MimRQe
+  ) {
+    box-sizing: border-box !important;
+    border-radius: var(--g-apple-result-radius) !important;
+    translate: 0 0;
+    transition:
+      translate var(--g-apple-motion-spring),
+      background-color var(--g-apple-motion),
+      box-shadow var(--g-apple-motion),
+      filter var(--g-apple-motion) !important;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    #rso :is(
+      div.L3Ezfd,
+      a.ZbQNgf,
+      div.MimRQe
+    ):is(:hover, :focus-visible, :focus-within) {
+      translate: 0 var(--g-apple-card-lift);
+      background-color: var(--g-apple-card-bg) !important;
+      box-shadow: var(--g-apple-card-shadow-soft) !important;
+      filter: brightness(1.015);
+    }
+  }
+
+  #rso :is(
+    div.L3Ezfd,
+    a.ZbQNgf,
+    div.MimRQe
+  ):active {
+    translate: 0 -1px;
+    box-shadow: var(--g-apple-card-shadow-pressed) !important;
+    transition-duration: 90ms !important;
+  }
+
   /* ---------- 8. 键盘焦点 ---------- */
   #rso a:focus-visible,
   #hdtb :is(a, button, [role="button"]):focus-visible,
@@ -991,6 +1034,9 @@
     div.b3puKe,
     div.b2Rnsc,
     a.NDNGvf,
+    div.L3Ezfd,
+    a.ZbQNgf,
+    div.MimRQe,
     :is(li.Ndm2cf, li.h7wxwc)::before,
     :is(li.Ndm2cf, li.h7wxwc) img,
     button.UTNPFf,
