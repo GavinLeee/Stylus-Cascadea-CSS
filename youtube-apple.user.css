@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           YouTube Apple 克制卡片与动效
 @namespace      youtube-apple-card-motion
-@version        2.20.48
+@version        2.20.49
 @description    顶栏、分类栏、左侧导航和视频卡片的克制 Apple 风格悬浮动效
 @author         Codex
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/youtube-apple.user.css
@@ -829,19 +829,11 @@
     background-image: none !important;
   }
 
-  /* 向上补齐顶栏那 56px：#contentContainer 从 y=56 起，而上方那一列已经被
-     #frosted-glass 的 clip-path 让了出来（见上），必须由这里接上，否则导航栏
-     上方会缺一块玻璃。补齐后 x 0~导航栏宽 从 y=0 到底部是一整片连续玻璃，
-     不存在横向接缝，也就没有模糊跨界渗色的边可渗。
-     #contentContainer 的 overflow 是 visible（实测），伪元素可以探出它的盒子。 */
   tp-yt-app-drawer#guide #contentContainer::before {
     content: "";
     position: absolute;
     z-index: -1;
-    top: calc(-1 * var(--ytd-masthead-height, 56px));
-    right: 0;
-    bottom: 0;
-    left: 0;
+    inset: 0;
     pointer-events: none;
     background-color: var(--yt-apple-masthead-glass);
     background-image: none;
@@ -892,29 +884,32 @@
   }
 
   /*
-   * 顶栏玻璃整列避开左侧导航栏，导航栏自己的玻璃向上补齐顶栏那 56px
-   * （见下方 #contentContainer::before 的 top）。x 0~导航栏宽 因此是一整片
-   * 连续玻璃，中间没有任何横向接缝。
+   * 把左侧导航栏背后那块从顶栏玻璃里裁掉，否则那里会叠出两层玻璃。
    *
-   * 背景：只有首页 / Shorts 这类带分类胶囊栏的页面，YouTube 才用 112px 高的
-   * #frosted-glass（顶栏 56 + 分类栏 56）且横跨整个宽度；订阅、历史等页用的是
-   * 56px 的 ytd-masthead > #background，和导航栏（y>=56）刚好错开。这就是色差
-   * 只在点 Home / Shorts 后出现的原因。
+   * 实测（1600px 深色）：
+   *   首页 / Shorts（有分类胶囊栏）
+   *     #frosted-glass          y 0，高 112（顶栏 56 + 分类栏 56），宽 1585 整宽
+   *     导航栏 #contentContainer y 56，高 964，宽 240，且画在玻璃之上
+   *     -> x 0~240、y 56~112 重叠 56px，玻璃 × 2，合成 #222224
+   *   订阅 / 历史等（无分类胶囊栏）
+   *     #frosted-glass          display:none
+   *     ytd-masthead > #background  y 0，高 56
+   *     -> 和导航栏（y>=56）刚好不重叠，玻璃 × 1，合成 #1D1D1E
+   * 差 5 个灰阶，而且正好落在导航栏与顶栏的交界处，是最显眼的位置。这也正是
+   * 为什么只有点 Home / Shorts 才会出现 —— 只有这类页面有分类栏、玻璃才是 112px。
    *
-   * 光把 y>56 那段裁掉不够（2.20.46 的做法）：导航栏的 backdrop-filter 会采样
-   * 到自身边界之外，blur(16px) 的核向上够得到 40~50px，把紧邻上方那片顶栏玻璃
-   * 的颜色渗进导航栏顶部 —— Home 正好坐在 y 68~110，就泡在渗色区里。
-   * 在真实环境里把 #frosted-glass 临时染红验证过：只裁 y>56 时导航栏顶部是一片
-   * 自上而下消退的暗红渐变；整列裁掉后导航栏完全不沾红色，边界干净停在 x=240。
-   *
-   * 导航栏展开时才裁；收成 mini guide 时它只有 72px 宽且不吃我们的玻璃。
+   * 裁法：顶栏那 56px 仍整宽保留，56px 以下只留导航栏右侧。尺寸取自 YouTube
+   * 自己的变量。导航栏展开时才裁；收成 mini guide 时它只有 72px 宽且不吃我们的
+   * 玻璃，没有重叠问题。
    */
   body:has(tp-yt-app-drawer#guide[opened]) #frosted-glass {
     clip-path: polygon(
-      var(--app-drawer-width, 240px) 0,
+      0 0,
       100% 0,
       100% 100%,
-      var(--app-drawer-width, 240px) 100%
+      var(--app-drawer-width, 240px) 100%,
+      var(--app-drawer-width, 240px) var(--ytd-masthead-height, 56px),
+      0 var(--ytd-masthead-height, 56px)
     );
   }
 
