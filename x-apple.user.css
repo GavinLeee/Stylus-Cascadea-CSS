@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           X Apple 克制卡片与悬浮动效
 @namespace      x-apple-restrained-cards
-@version        1.7.15
+@version        1.7.16
 @description    为 X 的右栏模块、推文信息流和左侧导航添加克制的 Apple 风格卡片与悬浮动画
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/x-apple.user.css
 ==/UserStyle== */
@@ -15,7 +15,12 @@
     --x-apple-tweet-hover: rgba(245, 245, 247, 0.97);
     --x-apple-nav-hover: rgba(245, 245, 247, 0.97);
     --x-apple-topbar: rgba(255, 255, 255, 0.85);   /* 实测自 X 原生 For you/Following 栏 */
-    --x-apple-tweet-divider: rgb(239, 243, 244);   /* 实测自推文区域原生分割线颜色 */
+    /* 推文分隔线与卡片外边框同色：X 原生分隔线是不透明实色，在深色背景上
+       比卡片的半透明发丝边框显眼得多，两者并置时分隔线会先跳出来抢视线。
+       改为引用 --x-apple-border（即右栏卡片外边框色），整站发丝线统一。
+       必须在浅色与深色两处各自引用一次：自定义属性在声明处求值，
+       若只写在 :root，深色的 --x-apple-border 覆盖在 body 上，这里会被锁死成浅色值。 */
+    --x-apple-tweet-divider: var(--x-apple-border);
     --x-apple-border: rgba(15, 23, 42, 0.085);
     --x-apple-border-hover: rgba(15, 23, 42, 0.13);
     --x-apple-outline-hover: rgba(15, 23, 42, 0.09);
@@ -50,7 +55,7 @@
     --x-apple-tweet-hover: #111215;
     --x-apple-nav-hover: #111215;
     --x-apple-topbar: rgba(0, 0, 0, 0.65);         /* X 深色主题原生顶栏 */
-    --x-apple-tweet-divider: rgb(56, 68, 77);      /* X 深色(Dim)主题官方分割线色，非本次实测 */
+    --x-apple-tweet-divider: var(--x-apple-border);   /* 同浅色：跟随本块的 --x-apple-border */
     --x-apple-border: rgba(255, 255, 255, 0.095);
     --x-apple-border-hover: rgba(255, 255, 255, 0.16);
     --x-apple-outline-hover: rgba(255, 255, 255, 0.09);
@@ -317,14 +322,9 @@
 
   /* 右栏顶栏：与左侧 For you/Following 栏严格对齐并使用相同材质（均为实测值）。
      搜索外层已被上面的规则提到 top:0.5px（为了胶囊居中），
-     故 top:-0.5px 把顶栏顶边拉回视口 y=0；
-     总高 54px（含 1px 底边线）与原生标签栏一致；
+     故 top:-0.5px 把顶栏顶边拉回视口 y=0；总高 54px 与原生标签栏一致。
      材质照抄原生：rgba(255,255,255,0.85) + blur(12px)（深色对应 --x-apple-topbar）。
-     底部分隔线颜色与推文区域原生分割线一致（--x-apple-tweet-divider，实测取自 DOM）；
-     粗细用标准 1px 发丝线——X 原生分割线计算宽度为 0.98px，
-     是浏览器按当前屏幕 DPR 做像素对齐后的渲染产物，直接照抄该小数值
-     在不同 DPR 屏幕下会跑偏（实测曾被四舍五入到 0.49px，细了一半），
-     故改用与原生视觉等价、跨屏幕一致的 1px。
+     不画底边线：顶栏本身的磨砂与背景已有足够分界，再加一条横线只是噪点。
      伪元素不参与点击，也不改变原生布局。 */
   div.r-6gpygo:has(input[data-testid="SearchBox_Search_Input"])::before {
     content: "";
@@ -335,7 +335,6 @@
     height: 54px;
     left: -3rem;
     width: 100vw;
-    border-bottom: 1px solid var(--x-apple-tweet-divider);
     background-color: var(--x-apple-topbar);
     -webkit-backdrop-filter: blur(12px);
     backdrop-filter: blur(12px);
