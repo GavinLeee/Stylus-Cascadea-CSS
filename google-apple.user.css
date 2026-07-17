@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           Google Apple 克制卡片与动效
 @namespace      google-apple-card-motion
-@version        1.5.19
+@version        1.5.20
 @description    为 Google 搜索结果与顶部控件添加克制的 Apple 风格动效和磨砂玻璃
 @author         Codex
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/google-apple.user.css
@@ -215,8 +215,8 @@
   }
 
   body:has(#search) form[role="search"] .RNNXgb:focus-within {
-    outline: 3px solid var(--g-apple-focus);
-    outline-offset: 2px;
+    outline: none !important;
+    outline-offset: 0 !important;
   }
 
   /*
@@ -716,6 +716,29 @@
     background: var(--g-apple-card-bg-strong) !important;
     background-color: var(--g-apple-card-bg-strong) !important;
     background-image: none !important;
+  }
+
+  /*
+   * 展开状态由 .A8SBwf.emcav 标记。建议层使用绝对定位，不会撑开 A8SBwf，
+   * 因此由 RNNXgb 绘制上半框、UUbT9 绘制下半框，拼成连续的整窗焦点边框。
+   */
+  body:has(#search) form[role="search"] .A8SBwf.emcav .RNNXgb {
+    box-sizing: border-box !important;
+    border: 3px solid var(--g-apple-focus) !important;
+    border-bottom: 0 !important;
+    border-radius: 28px 28px 0 0 !important;
+    outline: none !important;
+    outline-offset: 0 !important;
+  }
+
+  body:has(#search) form[role="search"] .A8SBwf.emcav :is(
+    .UUbT9,
+    .aajZCb:not(.UUbT9 .aajZCb)
+  ) {
+    box-sizing: border-box !important;
+    border: 3px solid var(--g-apple-focus) !important;
+    border-top: 0 !important;
+    border-radius: 0 0 26px 26px !important;
   }
 
   /* 展开层内部保持透明，让磨砂材质能够透出；悬停行仍由 Google 自己高亮。 */
