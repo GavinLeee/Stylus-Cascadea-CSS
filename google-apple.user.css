@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           Google Apple 克制卡片与动效
 @namespace      google-apple-card-motion
-@version        1.5.20
+@version        1.5.21
 @description    为 Google 搜索结果与顶部控件添加克制的 Apple 风格动效和磨砂玻璃
 @author         Codex
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/google-apple.user.css
@@ -43,6 +43,8 @@
     --g-apple-motion-spring: 280ms cubic-bezier(0.18, 0.89, 0.32, 1.18);
     --g-apple-card-lift: -3px;
     --g-apple-result-radius: 16px;
+    /* 百分比随图标尺寸缩放，26/28px 图标约合 6px，接近 Apple 应用图标比例。 */
+    --g-apple-favicon-radius: 22%;
   }
 
   /* Google 深色模式通常同时带有这些标记；保留多种写法以兼容改版。 */
@@ -1043,6 +1045,22 @@
     background-color: transparent !important;
     border-color: transparent !important;
     box-shadow: none !important;
+  }
+
+  /* ---------- 7.8 站点图标圆角遮罩 ---------- */
+  /*
+   * Google 原生给 img.XNo5Ab 的是 border-radius: 50%（圆形）。但 1.2 节的
+   * “#rso .MjjYud:has(h3) img { border-radius: inherit }”会一并命中站点图标，
+   * 而图标父级 div 的圆角是 0，inherit 即解析为 0；该选择器带 #rso（含 ID）
+   * 权重高于 Google 自己的 .XNo5Ab 规则，于是结果卡里的图标被压成了直角方块。
+   * 这里按需求改写成圆角矩形遮罩：border-radius 会裁剪 <img> 的位图内容，
+   * 相当于一层遮罩，不改变尺寸与布局，也保留 1.2 节的悬停缩放。
+   *
+   * 只限定在 #rso 结果卡内——卡外的同类图标没被 inherit 波及，仍是 Google
+   * 原生的圆形，按需求“本身是圆形则无需添加”，不去动它们。
+   */
+  #rso .MjjYud:has(h3) img.XNo5Ab {
+    border-radius: var(--g-apple-favicon-radius) !important;
   }
 
   /* ---------- 8. 键盘焦点 ---------- */
