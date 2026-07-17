@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           X Apple 克制卡片与悬浮动效
 @namespace      x-apple-restrained-cards
-@version        1.7.14
+@version        1.7.15
 @description    为 X 的右栏模块、推文信息流和左侧导航添加克制的 Apple 风格卡片与悬浮动画
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/x-apple.user.css
 ==/UserStyle== */
@@ -117,6 +117,32 @@
     background-color: var(--x-apple-tweet-hover) !important;
     box-shadow: var(--x-apple-shadow-hover) !important;
     translate: 0 -3px;
+  }
+
+  /*
+   * 串联推文之间不画分隔线：竖向连接线已表示这条推文与下一条属于
+   * 同一段对话，横线会把对话切断。
+   *
+   * 实测（个人页 /with_replies 与推文详情页，Lights Out 主题）：
+   * 向下的连接线是头像列里 width:2px 的 flex 填充块，恰为
+   * [data-testid="Tweet-User-Avatar"] 的下一个兄弟节点，底边与 article
+   * 底边严格齐平（gap = 0），故"article 内含此元素"即等价于"连向下一条"。
+   * 回复自身头像上方另有一个高 8px 的向上短桩，它不是头像的兄弟节点，
+   * 不会被本选择器命中；链尾推文只有短桩没有连接线，分隔线因此保留。
+   *
+   * 两处易踩的坑，均已实测排除：
+   * 1. 只写 [data-testid="Tweet-User-Avatar"] + div 会在首页误命中一个
+   *    229x20 的非连接线容器（该推文分隔线会无故消失），必须带宽度约束。
+   * 2. 线条颜色类 r-1bnu78o 是 background-color: rgb(51,54,57)，
+   *    属深色主题专属，浅色主题下会换成别的类；故只取几何类
+   *    r-m5arl1（width: 2px），跨主题稳定。
+   *
+   * :not(:hover) 保证悬停卡片的阴影不被本规则吃掉（本选择器权重高于上面的悬停规则）。
+   */
+  main article[data-testid="tweet"]:has(
+    [data-testid="Tweet-User-Avatar"] + div.r-m5arl1
+  ):not(:hover) {
+    box-shadow: none !important;
   }
 
   /*
