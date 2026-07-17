@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           小红书 Apple 风格左栏与卡片悬浮动效
 @namespace      rednote-apple-card-motion
-@version        1.3.0
+@version        1.4.0
 @description    为小红书网页版左侧导航按钮和图文卡片添加克制的 Apple 风格卡片悬浮动效，视觉语言对齐 X（Twitter）的克制卡片方案
 @match          https://www.xiaohongshu.com/*
 @match          https://xiaohongshu.com/*
@@ -142,6 +142,13 @@
     isolation: isolate;
   }
 
+  /* .input-box 和 .ai-header-container 之间只隔着这层包裹容器，实测原生
+     background 为透明、backdrop-filter 为 blur(0px)（无害的空操作），本身
+     不挡玻璃，这里显式声明只是为了不依赖它"恰好透明"这一点。 */
+  .ai-header-container .search-area-in-header {
+    background-color: transparent !important;
+  }
+
   /* 搜索框/搜索按钮走上浮层玻璃（--rn-raised-*），比顶栏底板更糊、更实，
      和 YouTube 搜索框相对顶栏的层次关系一致。原来的实色 --rn-panel-hover
      面板换成半透明玻璃 + backdrop-filter，其余投影/位移/圆角不变。 */
@@ -199,8 +206,30 @@
     transform: translateY(-2px) scale(1.08);
   }
 
-  /* Keep the expanded search container's native connected-panel styling.
-     Only its internal action buttons receive custom motion. */
+  /*
+   * 搜索框展开的建议下拉窗（.ai-dropdown-panel，原生实色 rgb(41,41,46)）。
+   * 实测它是 position:absolute、不在 .ai-header-container 内部，独立采样
+   * 身后内容——注入玻璃后能正常透出下方信息流卡片的颜色，不是纯色平涂。
+   * 走上浮层配方，和搜索框本体同一视觉层次。
+   */
+  .ai-dropdown-panel {
+    background-color: var(--rn-raised-glass) !important;
+    backdrop-filter: var(--rn-raised-blur) !important;
+    -webkit-backdrop-filter: var(--rn-raised-blur) !important;
+  }
+
+  /*
+   * .textarea-container 是 .input-box 内部的子节点（多行/AI 搜索展开态下
+   * 出现），原生带一层自己的实色底（实测 rgb(41,41,46) ≈ #29292E），会整块
+   * 盖住 .input-box 已经画好的玻璃——.input-box 的背景没坏，只是被这层子节点
+   * 挡住了。清成透明，让玻璃从子节点间透出来。
+   */
+  .ai-header-container .textarea-container {
+    background-color: transparent !important;
+  }
+
+  /* Only its internal action buttons receive custom motion; layout/shape
+     stays native. */
   .ai-header-container .textarea-container :is(
     .ai-input-action-btn,
     .submit-button-wrapper
@@ -279,6 +308,46 @@
 
   .side-bar .information-container {
     background-color: transparent !important;
+  }
+
+  /*
+   * 搜索结果页顶部两行：.search-layout__top（笔记/用户/问点点 标签）和
+   * .search-layout__middle（综合/日本/马来西亚... 筛选胶囊，原生嵌套在
+   * .reds-sticky-box.tag-search-sticky-ai 里，类名自带"sticky"字样，说明
+   * 原生设计就是给它预留了吸顶能力，只是当前是 position:static 没启用；
+   * 本文件不新增吸顶行为，只解决玻璃材质和层级问题）。
+   *
+   * 两行都是 .search-layout 的直接子节点、原生 position:static——
+   * .search-layout__top 原生 z-index:auto，.reds-sticky 原生虽写了
+   * z-index:5 但同样因为 static 定位不生效。而下方 .feeds-container
+   * section.note-item 悬浮时是 z-index:20 !important（见下方 3. 段）+
+   * ::before 伪元素 inset:-8px 向外扩一圈画阴影，真实悬浮时（translateY(-4px)
+   * scale(1.03) 一起作用）实测顶排卡片的有效视觉範围会越过这两行的下边界
+   * 几像素，阴影模糊半径更是会溢出更多——两行不作层级提升的话会被悬浮卡片
+   * 的阴影/圆角背景盖住一角。提到 --rn-header-z（同一个变量，和顶栏
+   * .ai-header-container 共用"压过悬浮卡片"的语义）即可稳定盖住。
+   *
+   * 玻璃画在无子节点的伪元素上，不直接放在这两行自己身上：里面的标签/筛选
+   * 胶囊本身也有独立的悬浮位移（用户交互态），伪元素隔离能避免玻璃取样被
+   * 内部子节点的合成层扰动——和顶栏、侧栏这两处同一个道理。
+   */
+  .search-layout__top,
+  .search-layout__middle {
+    position: relative;
+    z-index: var(--rn-header-z) !important;
+    isolation: isolate;
+  }
+
+  .search-layout__top::before,
+  .search-layout__middle::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: 0;
+    pointer-events: none;
+    background-color: var(--rn-glass);
+    backdrop-filter: var(--rn-glass-blur);
+    -webkit-backdrop-filter: var(--rn-glass-blur);
   }
 
   /* Add horizontal breathing room inside the native scroll mask. */
