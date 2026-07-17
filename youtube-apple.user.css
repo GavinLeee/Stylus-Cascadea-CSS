@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           YouTube Apple 克制卡片与动效
 @namespace      youtube-apple-card-motion
-@version        2.20.40
+@version        2.20.41
 @description    顶栏、分类栏、左侧导航和视频卡片的克制 Apple 风格悬浮动效
 @author         Codex
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/youtube-apple.user.css
@@ -35,6 +35,11 @@
        取自 Apple Podcasts Web 左侧导航栏 nav.navigation 的实测值
        （2026-07，devtools 计算样式）：saturate(2.2) blur(16px)。 */
     --yt-apple-masthead-blur: saturate(220%) blur(16px);
+    /* 上浮层（搜索框、搜索建议浮层）的模糊参数。同样实测自 Apple Podcasts
+       Web，取的是浮在内容之上的 .chrome-volume__slider：blur(60px) saturate(2)。
+       Apple 的分层是靠"更糊"而不是"更厚"拉开的 —— 相对底板模糊从 16px 提到
+       60px，不透明度几乎不动（0.55 → 0.6）。 */
+    --yt-apple-raised-blur: saturate(200%) blur(60px);
   }
 
   html[dark] {
@@ -737,10 +742,14 @@
      透上来出色，而不是靠一层厚白/厚黑压住。 */
   html:not([dark]) {
     --yt-apple-masthead-glass: rgba(245, 245, 247, 0.55);
+    --yt-apple-raised-glass: rgba(246, 246, 246, 0.60);
+    --yt-apple-raised-glass-hover: rgba(246, 246, 246, 0.72);
   }
 
   html[dark] {
     --yt-apple-masthead-glass: rgba(38, 38, 40, 0.60);
+    --yt-apple-raised-glass: rgba(40, 40, 40, 0.60);
+    --yt-apple-raised-glass-hover: rgba(52, 52, 52, 0.72);
   }
 
   /*
@@ -827,31 +836,31 @@
   ytd-masthead yt-searchbox .ytSearchboxComponentInputBox,
   ytd-masthead yt-searchbox .ytSearchboxComponentSearchButton,
   ytd-masthead button[aria-label="Search"] {
-    backdrop-filter: saturate(185%) blur(30px) !important;
-    -webkit-backdrop-filter: saturate(185%) blur(30px) !important;
+    backdrop-filter: var(--yt-apple-raised-blur) !important;
+    -webkit-backdrop-filter: var(--yt-apple-raised-blur) !important;
   }
 
   html:not([dark]) ytd-masthead yt-searchbox .ytSearchboxComponentInputBox,
   html:not([dark]) ytd-masthead yt-searchbox .ytSearchboxComponentSearchButton,
   html:not([dark]) ytd-masthead button[aria-label="Search"] {
-    background-color: rgba(255, 255, 255, 0.88) !important;
+    background-color: var(--yt-apple-raised-glass) !important;
   }
 
   html[dark] ytd-masthead yt-searchbox .ytSearchboxComponentInputBox,
   html[dark] ytd-masthead yt-searchbox .ytSearchboxComponentSearchButton,
   html[dark] ytd-masthead button[aria-label="Search"] {
-    background-color: rgba(52, 52, 56, 0.84) !important;
+    background-color: var(--yt-apple-raised-glass) !important;
   }
 
   @media (hover: hover) and (pointer: fine) {
     html:not([dark]) ytd-masthead yt-searchbox .ytSearchboxComponentSearchButton:hover,
     html:not([dark]) ytd-masthead button[aria-label="Search"]:hover {
-      background-color: rgba(255, 255, 255, 0.96) !important;
+      background-color: var(--yt-apple-raised-glass-hover) !important;
     }
 
     html[dark] ytd-masthead yt-searchbox .ytSearchboxComponentSearchButton:hover,
     html[dark] ytd-masthead button[aria-label="Search"]:hover {
-      background-color: rgba(68, 68, 72, 0.92) !important;
+      background-color: var(--yt-apple-raised-glass-hover) !important;
     }
   }
 
@@ -862,16 +871,13 @@
    * 清成透明，避免盖住玻璃。选中/悬停行的高亮保留。
    */
   .ytSearchboxComponentSuggestionsContainer {
-    backdrop-filter: saturate(185%) blur(30px) !important;
-    -webkit-backdrop-filter: saturate(185%) blur(30px) !important;
+    backdrop-filter: var(--yt-apple-raised-blur) !important;
+    -webkit-backdrop-filter: var(--yt-apple-raised-blur) !important;
   }
 
-  html:not([dark]) .ytSearchboxComponentSuggestionsContainer {
-    background-color: rgba(255, 255, 255, 0.90) !important;
-  }
-
+  html:not([dark]) .ytSearchboxComponentSuggestionsContainer,
   html[dark] .ytSearchboxComponentSuggestionsContainer {
-    background-color: rgba(30, 30, 34, 0.88) !important;
+    background-color: var(--yt-apple-raised-glass) !important;
   }
 
   .ytSearchboxComponentSuggestionsContainer
