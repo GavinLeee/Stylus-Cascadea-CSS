@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           YouTube Apple 克制卡片与动效
 @namespace      youtube-apple-card-motion
-@version        2.20.41
+@version        2.20.42
 @description    顶栏、分类栏、左侧导航和视频卡片的克制 Apple 风格悬浮动效
 @author         Codex
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/youtube-apple.user.css
@@ -770,6 +770,40 @@
     background-image: none !important;
     backdrop-filter: var(--yt-apple-masthead-blur) !important;
     -webkit-backdrop-filter: var(--yt-apple-masthead-blur) !important;
+  }
+
+  /*
+   * 左侧导航抽屉：材质对齐顶栏底板（同一对变量，不是搜索框那层上浮玻璃 ——
+   * 抽屉是贴边的整片侧栏，对应 Podcasts 的侧栏而不是浮层）。
+   * 实测承载背景的是 #contentContainer（240px 宽那层，原生 rgb(255,255,255)
+   * 实色），不是 tp-yt-app-drawer 自己；drawer 与 ytd-guide-renderer 都已经是
+   * 透明的，不会盖住玻璃。#contentContainer 这个 id 在频道页的
+   * tp-yt-app-header 里也有一个同名节点，所以必须带 drawer 前缀限定。
+   */
+  tp-yt-app-drawer#guide #contentContainer {
+    background-color: var(--yt-apple-masthead-glass) !important;
+    background-image: none !important;
+    backdrop-filter: var(--yt-apple-masthead-blur) !important;
+    -webkit-backdrop-filter: var(--yt-apple-masthead-blur) !important;
+  }
+
+  /* #guide-content 是抽屉内的一层实色白底（原生 rgb(255,255,255)），不清掉会
+     把上面那层玻璃整个盖住。ytd-guide-renderer 本身已经是透明的。 */
+  tp-yt-app-drawer#guide #contentContainer #guide-content {
+    background-color: transparent !important;
+    background-image: none !important;
+  }
+
+  /*
+   * 遮罩必须一并清掉，否则材质不可能和顶栏一致：#scrim 是铺满视口的
+   * rgba(0,0,0,0.5)，DOM 顺序在 #contentContainer 之前，也就是画在抽屉底下，
+   * 而 backdrop-filter 取样的正是身后这一层。留着的话玻璃会把 50% 黑一起糊
+   * 进来 —— 以中灰页面估算，合成约 #A3A3A3，而顶栏是 #C0C0C0，差一档明显的
+   * 脏灰。清成透明后，抽屉和顶栏取样的都是页面内容本身。
+   * 元素本身保留，点击空白处关闭抽屉的行为不受影响。
+   */
+  tp-yt-app-drawer#guide #scrim {
+    background-color: transparent !important;
   }
 
   /* 关闭会因 YouTube 灰度版本而变化的原生玻璃层，统一由 masthead 背景承载材质。 */
