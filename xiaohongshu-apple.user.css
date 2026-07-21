@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           小红书 Apple 风格左栏与卡片悬浮动效
 @namespace      rednote-apple-card-motion
-@version        1.7.1
+@version        1.8.0
 @description    为小红书网页版左侧导航按钮和图文卡片添加克制的 Apple 风格卡片悬浮动效，视觉语言对齐 X（Twitter）的克制卡片方案
 @match          https://www.xiaohongshu.com/*
 @match          https://xiaohongshu.com/*
@@ -77,6 +77,12 @@
     --rn-subnav-gap: 12px;
     /* 搜索框展开时顶栏(175)和内容 padding-top(178)之间站点自己留的缝。 */
     --rn-subnav-expanded-gap: 3px;
+    /* 顶栏两种形态的高度，实测：塌陷 116，搜索框展开 175。
+       展开高度实测是定值——往输入框里灌 4 倍长文本，顶栏仍是 175，
+       不随内容增长，所以可以安全地写成常量。
+       钉住的筛选行要靠这两个值跟着顶栏走。 */
+    --rn-header-h: 116px;
+    --rn-header-h-expanded: 175px;
 
     /* 悬浮时的玻璃质感背景 / 边框，浅色模式 */
     --rn-panel-hover: rgba(246, 247, 248, 0.92);
@@ -582,6 +588,40 @@
 
   .search-layout__top::before {
     bottom: calc(-1 * var(--rn-subnav-gap));
+  }
+
+  /*
+   * 钉住后，顶栏和筛选行虽然严丝合缝（实测顶栏 0~116、筛选行 116~164，
+   * 间距 0，无边框无阴影），交界处仍有一条可见的分割线：两块玻璃各自独立
+   * 采样、各自把模糊钳在自己的盒子边缘，接缝两侧的模糊结果对不上。
+   * 这是"两块玻璃"的固有现象，靠对齐几何解决不了，只能合成一块。
+   *
+   * 做法：钉住时让筛选行的玻璃向上延伸盖满顶栏区域，成为唯一一块玻璃，
+   * 同时关掉顶栏自己的那块。顶栏 z-index 30 高于筛选行所在的 25，所以
+   * 顶栏的内容（搜索框）照常画在这块玻璃之上，只是不再自带背景。
+   * 钉住信号用站点自己加的 .reds-sticky-box.sticky 类（实测）。
+   */
+  .reds-sticky-box.sticky .reds-sticky::before {
+    top: calc(-1 * var(--rn-header-h));
+  }
+
+  body:has(.reds-sticky-box.sticky) .ai-header-container::before {
+    display: none;
+  }
+
+  /*
+   * 展开搜索框时顶栏从 116 长到 175，而钉住的筛选行仍固定在 top:116，
+   * 正好被撑高的顶栏盖住——看起来就是导航行不见了。让它跟着下移到顶栏
+   * 新的下沿，玻璃的上延量同步加大，整块玻璃仍是连续的。
+   */
+  body:has(.ai-header-container.header-container-large)
+  .reds-sticky-box.sticky .reds-sticky {
+    top: var(--rn-header-h-expanded) !important;
+  }
+
+  body:has(.ai-header-container.header-container-large)
+  .reds-sticky-box.sticky .reds-sticky::before {
+    top: calc(-1 * var(--rn-header-h-expanded));
   }
 
   /*
