@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           YouTube Apple 克制卡片与动效
 @namespace      youtube-apple-card-motion
-@version        2.20.36
+@version        2.20.49
 @description    顶栏、分类栏、左侧导航和视频卡片的克制 Apple 风格悬浮动效
 @author         Codex
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/youtube-apple.user.css
@@ -31,6 +31,15 @@
     /* 封面悬停放大倍数。预览浮层也用同一个值缩放，正好盖住放大后的
        封面图，边缘不会露出下层图片。 */
     --yt-apple-thumb-zoom: 1.018;
+    /* 顶栏玻璃的模糊参数，浅色/深色共用；底色见下方 --yt-apple-masthead-glass。
+       取自 Apple Podcasts Web 左侧导航栏 nav.navigation 的实测值
+       （2026-07，devtools 计算样式）：saturate(2.2) blur(16px)。 */
+    --yt-apple-masthead-blur: saturate(220%) blur(16px);
+    /* 上浮层（搜索框、搜索建议浮层）的模糊参数。同样实测自 Apple Podcasts
+       Web，取的是浮在内容之上的 .chrome-volume__slider：blur(60px) saturate(2)。
+       Apple 的分层是靠"更糊"而不是"更厚"拉开的 —— 相对底板模糊从 16px 提到
+       60px，不透明度几乎不动（0.55 → 0.6）。 */
+    --yt-apple-raised-blur: saturate(200%) blur(60px);
   }
 
   html[dark] {
@@ -721,19 +730,187 @@
     isolation: isolate;
   }
 
-  /* 首页顶栏下方的分类胶囊栏也保持在视频预览层之上。 */
+  /*
+   * 分类胶囊栏的层级要同时满足两头，实测三者的最近层叠上下文都是 body，
+   * z-index 可以直接比：
+   *   > 100   压过被上面规则封顶在 z-index:100 的悬停预览浮层
+   *   < 2030  待在左侧导航抽屉 tp-yt-app-drawer#guide（原生 2030）之下
+   * 这里原本写的是 99900，只顾了上界，结果窄窗口展开抽屉时胶囊会骑到导航项
+   * 上面。YouTube 原生给 #chips-wrapper 的 2019 正好落在区间里，显式写出以免
+   * 依赖原生值。
+   */
   ytd-feed-filter-chip-bar-renderer,
   ytd-feed-filter-chip-bar-renderer #chips-wrapper,
   yt-chip-cloud-renderer {
-    z-index: 99900 !important;
+    z-index: 2019 !important;
   }
 
+  /*
+   * 抽屉是玻璃，压在它下面的胶囊会透出来（胶囊横跨 x 72~985、y 56~112，抽屉
+   * 内容占 x 0~240，正好重叠在导航栏最上面几行）。整条淡出太生硬，改成跟着
+   * 抽屉一起右移，像是被推开。
+   *
+   * 位移量用 YouTube 自己的变量算，不写死：抽屉宽 240 − mini guide 宽 72
+   * = 168px，正好让胶囊栏左缘和抽屉右缘齐平（胶囊栏起点本来就在 mini guide
+   * 之后）。时序也对齐抽屉实测的 transform 200ms ease，否则两者会脱节。
+   *
+   * 位移必须作用在 #chips-wrapper 上：它才是 position:fixed 的那层，而外层
+   * ytd-feed-filter-chip-bar-renderer 是 static —— 给外层加 transform 会让它
+   * 变成 fixed 子元素的包含块，反而搅乱定位。
+   *
+   * :not([persistent]) 不能省：宽窗口下侧栏常驻且 opened 恒为 true，少了它
+   * 宽窗口的胶囊栏也会跟着平移。
+   */
+  ytd-feed-filter-chip-bar-renderer #chips-wrapper {
+    transition: transform 200ms ease;
+    will-change: transform;
+  }
+
+  body:has(tp-yt-app-drawer#guide[opened]:not([persistent]))
+  ytd-feed-filter-chip-bar-renderer #chips-wrapper {
+    transform: translateX(
+      calc(var(--app-drawer-width, 240px) - var(--ytd-mini-guide-width, 72px))
+    );
+  }
+
+  /* 顶栏玻璃底色，对齐 Apple Podcasts Web 左侧导航栏的材质（实测 nav.navigation
+     的计算样式）。比原先更透（0.82 → 0.55）、更薄的模糊配更高饱和，靠背景本身
+     透上来出色，而不是靠一层厚白/厚黑压住。 */
   html:not([dark]) {
-    --yt-apple-masthead-glass: rgba(255, 255, 255, 0.82);
+    --yt-apple-masthead-glass: rgba(245, 245, 247, 0.55);
+    --yt-apple-raised-glass: rgba(246, 246, 246, 0.60);
+    --yt-apple-raised-glass-hover: rgba(246, 246, 246, 0.72);
   }
 
   html[dark] {
-    --yt-apple-masthead-glass: rgba(24, 24, 26, 0.80);
+    --yt-apple-masthead-glass: rgba(38, 38, 40, 0.60);
+    --yt-apple-raised-glass: rgba(40, 40, 40, 0.60);
+    --yt-apple-raised-glass-hover: rgba(52, 52, 52, 0.72);
+  }
+
+  /*
+   * 首页 / 搜索页等：只把 YouTube 原生玻璃层的材质换成我们的，几何、显隐和
+   * 滚动逻辑全部留给 YouTube 自己管。实测两类页面用的是不同的层：
+   *   首页    #frosted-glass          112px（罩住顶栏 56 + 分类胶囊栏 56），
+   *                                   原生 rgba(15,15,15,0.8) + blur(48px)
+   *   搜索页  ytd-masthead > #background  56px，
+   *                                   原生 rgba(255,255,255,0.9) + blur(48px)
+   * 两者互斥：首页 #background 是 display:none，搜索页 #frosted-glass 是
+   * display:none，所以同时覆盖两个层不会叠加成双层玻璃。
+   * 观看页和频道页各自的规则选择器更具体，会盖过这里：观看页仍然关掉
+   * #frosted-glass 自己画 #background，频道页把 #frosted-glass 整个隐藏。
+   */
+  #frosted-glass,
+  ytd-masthead > #background {
+    background-color: var(--yt-apple-masthead-glass) !important;
+    background-image: none !important;
+    backdrop-filter: var(--yt-apple-masthead-blur) !important;
+    -webkit-backdrop-filter: var(--yt-apple-masthead-blur) !important;
+  }
+
+  /*
+   * 左侧导航抽屉：材质对齐顶栏底板（同一对变量，不是搜索框那层上浮玻璃 ——
+   * 抽屉是贴边的整片侧栏，对应 Podcasts 的侧栏而不是浮层）。
+   * 实测承载背景的是 #contentContainer（240px 宽那层，原生 rgb(255,255,255)
+   * 实色），不是 tp-yt-app-drawer 自己；drawer 与 ytd-guide-renderer 都已经是
+   * 透明的，不会盖住玻璃。#contentContainer 这个 id 在频道页的
+   * tp-yt-app-header 里也有一个同名节点，所以必须带 drawer 前缀限定。
+   */
+  /*
+   * 玻璃画在只作背景、无子节点的伪元素上，沿用顶栏那套（见第 650 行注释：
+   * backdrop-filter 放在 #background 而不是 #container，避免和内容挤在同一层）。
+   * #contentContainer 装着全部导航项，各自带 transform 与 will-change，材质
+   * 单独占一层更稳。
+   * #contentContainer 自身带 transform（抽屉滑动动画），已经是层叠上下文，
+   * 所以 z-index:-1 只会沉到它自己的内容之下，不会掉到抽屉外面去。
+   */
+  tp-yt-app-drawer#guide #contentContainer {
+    background-color: transparent !important;
+    background-image: none !important;
+  }
+
+  tp-yt-app-drawer#guide #contentContainer::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: 0;
+    pointer-events: none;
+    background-color: var(--yt-apple-masthead-glass);
+    background-image: none;
+    backdrop-filter: var(--yt-apple-masthead-blur);
+    -webkit-backdrop-filter: var(--yt-apple-masthead-blur);
+  }
+
+  /* #guide-content 是抽屉内的一层实色白底（原生 rgb(255,255,255)），不清掉会
+     把上面那层玻璃整个盖住。ytd-guide-renderer 本身已经是透明的。 */
+  tp-yt-app-drawer#guide #contentContainer #guide-content {
+    background-color: transparent !important;
+    background-image: none !important;
+  }
+
+  /*
+   * 抽屉自带的 #header 里有一套汉堡（yt-icon-button#guide-button）和 YouTube
+   * logo（ytd-topbar-logo-renderer），和顶栏那对完全重复、位置也几乎重合。
+   * 顶栏 z-index 100000 压在抽屉之上本来会挡住它们，但顶栏是 0.55 的通透玻璃
+   * ——它们会透上来和顶栏那对叠成重影。顶栏的那对是常驻可用的，留它们即可。
+   *
+   * 用 visibility 而不是 display:none：#header 占着顶栏那 56px 的高度，
+   * 撤掉盒子会让下面的导航项整体上移钻到顶栏底下（实测首个导航项 y=68，
+   * 隐藏后仍为 68）。
+   *
+   * 必须用 > 限定为 #guide-content 的直接子节点：抽屉里 id="header" 的节点有
+   * 三个 —— 除了这个汉堡+logo 行，Subscriptions 和 You 两个分组各自也套着一层
+   * div#header（实测祖先链：.arrow-icon < yt-icon < tp-yt-paper-item <
+   * a#endpoint < #header-entry < div#header < ytd-guide-collapsible-section-
+   * entry-renderer）。写成后代选择器会把两个分组标题整行一起隐藏；它们的文字
+   * 因为下方标题规则里有 visibility: visible 而幸存，箭头和悬停卡片背景则没有
+   * 这道豁免，于是一起消失。分组的那两个 header 挂在 collapsible-section 下，
+   * 不是 #guide-content 的直接子节点，用 > 就能干净地区分开。
+   */
+  tp-yt-app-drawer#guide #guide-content > #header {
+    visibility: hidden !important;
+  }
+
+  /*
+   * 遮罩必须一并清掉，否则材质不可能和顶栏一致：#scrim 是铺满视口的
+   * rgba(0,0,0,0.5)，DOM 顺序在 #contentContainer 之前，也就是画在抽屉底下，
+   * 而 backdrop-filter 取样的正是身后这一层。留着的话玻璃会把 50% 黑一起糊
+   * 进来 —— 以中灰页面估算，合成约 #A3A3A3，而顶栏是 #C0C0C0，差一档明显的
+   * 脏灰。清成透明后，抽屉和顶栏取样的都是页面内容本身。
+   * 元素本身保留，点击空白处关闭抽屉的行为不受影响。
+   */
+  tp-yt-app-drawer#guide #scrim {
+    background-color: transparent !important;
+  }
+
+  /*
+   * 把左侧导航栏背后那块从顶栏玻璃里裁掉，否则那里会叠出两层玻璃。
+   *
+   * 实测（1600px 深色）：
+   *   首页 / Shorts（有分类胶囊栏）
+   *     #frosted-glass          y 0，高 112（顶栏 56 + 分类栏 56），宽 1585 整宽
+   *     导航栏 #contentContainer y 56，高 964，宽 240，且画在玻璃之上
+   *     -> x 0~240、y 56~112 重叠 56px，玻璃 × 2，合成 #222224
+   *   订阅 / 历史等（无分类胶囊栏）
+   *     #frosted-glass          display:none
+   *     ytd-masthead > #background  y 0，高 56
+   *     -> 和导航栏（y>=56）刚好不重叠，玻璃 × 1，合成 #1D1D1E
+   * 差 5 个灰阶，而且正好落在导航栏与顶栏的交界处，是最显眼的位置。这也正是
+   * 为什么只有点 Home / Shorts 才会出现 —— 只有这类页面有分类栏、玻璃才是 112px。
+   *
+   * 裁法：顶栏那 56px 仍整宽保留，56px 以下只留导航栏右侧。尺寸取自 YouTube
+   * 自己的变量。导航栏展开时才裁；收成 mini guide 时它只有 72px 宽且不吃我们的
+   * 玻璃，没有重叠问题。
+   */
+  body:has(tp-yt-app-drawer#guide[opened]) #frosted-glass {
+    clip-path: polygon(
+      0 0,
+      100% 0,
+      100% 100%,
+      var(--app-drawer-width, 240px) 100%,
+      var(--app-drawer-width, 240px) var(--ytd-masthead-height, 56px),
+      0 var(--ytd-masthead-height, 56px)
+    );
   }
 
   /* 关闭会因 YouTube 灰度版本而变化的原生玻璃层，统一由 masthead 背景承载材质。 */
@@ -760,8 +937,8 @@
     opacity: 1 !important;
     background-color: var(--yt-apple-masthead-glass);
     background-image: none !important;
-    backdrop-filter: saturate(180%) blur(22px);
-    -webkit-backdrop-filter: saturate(180%) blur(22px);
+    backdrop-filter: var(--yt-apple-masthead-blur);
+    -webkit-backdrop-filter: var(--yt-apple-masthead-blur);
     border-bottom: none !important;
   }
 
@@ -783,8 +960,8 @@
   html[data-yt-scroll-aware][data-yt-scrolled]
   body:has(ytd-watch-flexy:not([hidden])) ytd-masthead > #background {
     background-color: var(--yt-apple-masthead-glass) !important;
-    backdrop-filter: saturate(180%) blur(22px) !important;
-    -webkit-backdrop-filter: saturate(180%) blur(22px) !important;
+    backdrop-filter: var(--yt-apple-masthead-blur) !important;
+    -webkit-backdrop-filter: var(--yt-apple-masthead-blur) !important;
     transition:
       background-color 220ms cubic-bezier(0.2, 0.75, 0.25, 1),
       backdrop-filter 220ms cubic-bezier(0.2, 0.75, 0.25, 1),
@@ -800,31 +977,31 @@
   ytd-masthead yt-searchbox .ytSearchboxComponentInputBox,
   ytd-masthead yt-searchbox .ytSearchboxComponentSearchButton,
   ytd-masthead button[aria-label="Search"] {
-    backdrop-filter: saturate(185%) blur(30px) !important;
-    -webkit-backdrop-filter: saturate(185%) blur(30px) !important;
+    backdrop-filter: var(--yt-apple-raised-blur) !important;
+    -webkit-backdrop-filter: var(--yt-apple-raised-blur) !important;
   }
 
   html:not([dark]) ytd-masthead yt-searchbox .ytSearchboxComponentInputBox,
   html:not([dark]) ytd-masthead yt-searchbox .ytSearchboxComponentSearchButton,
   html:not([dark]) ytd-masthead button[aria-label="Search"] {
-    background-color: rgba(255, 255, 255, 0.88) !important;
+    background-color: var(--yt-apple-raised-glass) !important;
   }
 
   html[dark] ytd-masthead yt-searchbox .ytSearchboxComponentInputBox,
   html[dark] ytd-masthead yt-searchbox .ytSearchboxComponentSearchButton,
   html[dark] ytd-masthead button[aria-label="Search"] {
-    background-color: rgba(52, 52, 56, 0.84) !important;
+    background-color: var(--yt-apple-raised-glass) !important;
   }
 
   @media (hover: hover) and (pointer: fine) {
     html:not([dark]) ytd-masthead yt-searchbox .ytSearchboxComponentSearchButton:hover,
     html:not([dark]) ytd-masthead button[aria-label="Search"]:hover {
-      background-color: rgba(255, 255, 255, 0.96) !important;
+      background-color: var(--yt-apple-raised-glass-hover) !important;
     }
 
     html[dark] ytd-masthead yt-searchbox .ytSearchboxComponentSearchButton:hover,
     html[dark] ytd-masthead button[aria-label="Search"]:hover {
-      background-color: rgba(68, 68, 72, 0.92) !important;
+      background-color: var(--yt-apple-raised-glass-hover) !important;
     }
   }
 
@@ -835,16 +1012,13 @@
    * 清成透明，避免盖住玻璃。选中/悬停行的高亮保留。
    */
   .ytSearchboxComponentSuggestionsContainer {
-    backdrop-filter: saturate(185%) blur(30px) !important;
-    -webkit-backdrop-filter: saturate(185%) blur(30px) !important;
+    backdrop-filter: var(--yt-apple-raised-blur) !important;
+    -webkit-backdrop-filter: var(--yt-apple-raised-blur) !important;
   }
 
-  html:not([dark]) .ytSearchboxComponentSuggestionsContainer {
-    background-color: rgba(255, 255, 255, 0.90) !important;
-  }
-
+  html:not([dark]) .ytSearchboxComponentSuggestionsContainer,
   html[dark] .ytSearchboxComponentSuggestionsContainer {
-    background-color: rgba(30, 30, 34, 0.88) !important;
+    background-color: var(--yt-apple-raised-glass) !important;
   }
 
   .ytSearchboxComponentSuggestionsContainer
@@ -1962,8 +2136,8 @@
     opacity: 1 !important;
     background-color: var(--yt-apple-masthead-glass) !important;
     background-image: none !important;
-    backdrop-filter: saturate(180%) blur(22px) !important;
-    -webkit-backdrop-filter: saturate(180%) blur(22px) !important;
+    backdrop-filter: var(--yt-apple-masthead-blur) !important;
+    -webkit-backdrop-filter: var(--yt-apple-masthead-blur) !important;
     border-bottom: none !important;
     transition: opacity 320ms cubic-bezier(0.16, 1, 0.30, 1) !important;
   }
@@ -1973,6 +2147,30 @@
      can then scroll the banner and profile sheet away while keeping only the
      tabs docked below the masthead. The companion script performs no channel
      header geometry tracking. */
+
+  /* Lift the tab row's whole subtree above the profile sheet so the docked
+     glass covers the header instead of the other way round.
+
+     Measured stacking inside tp-yt-app-header (which turns position:fixed with
+     a transform once the header condenses):
+       div#contentContainer            relative, z:auto   (no stacking context)
+         div#page-header-container     relative, z:auto   (no stacking context)
+           div#page-header             relative, z:1      <- banner + profile
+         tp-yt-app-toolbar             relative, z:auto, stacking context via
+                                       its own transform  <- tabs + glass sheet
+     #page-header sits in the positive-z layer and tp-yt-app-toolbar in the
+     auto/0 layer, so the profile sheet paints over the tabs' glass. The sheet
+     lives inside the toolbar's own stacking context, so no z-index on
+     #tabs-container can escape it -- the toolbar itself has to be raised.
+
+     Without this, once the tabs dock the masthead hands its glass over to the
+     tabs' sheet (see data-yt-channel-tabs-stuck below) and goes fully
+     transparent. On viewports wide enough that the profile sheet is still
+     crossing the masthead strip at that moment, it shows through the top bar
+     unblurred. */
+  ytd-tabbed-page-header tp-yt-app-toolbar {
+    z-index: 2 !important;
+  }
 
   /* Paint the channel tabs on one isolated glass sheet inside the shared,
      normally scrolling channel-header module. */
@@ -2000,8 +2198,8 @@
     pointer-events: none;
     background-color: var(--yt-apple-masthead-glass);
     background-image: none;
-    backdrop-filter: saturate(180%) blur(22px);
-    -webkit-backdrop-filter: saturate(180%) blur(22px);
+    backdrop-filter: var(--yt-apple-masthead-blur);
+    -webkit-backdrop-filter: var(--yt-apple-masthead-blur);
     opacity: 0;
     transition: opacity 320ms cubic-bezier(0.16, 1, 0.30, 1);
     will-change: opacity;
@@ -2014,6 +2212,35 @@
   ytd-tabbed-page-header #tabs-container::before {
     top: calc(-1 * var(--ytd-masthead-height, 56px) - 1px);
     opacity: 1;
+  }
+
+  /* Retire the profile sheet once the tabs dock.
+
+     tp-yt-app-header condenses by translating itself up, but Polymer clamps
+     that translate the moment the tab row reaches the masthead and never moves
+     it again. Whatever profile content does not fit above that point simply
+     stops there. Measured at 1920x1080, where the wide layout gives the
+     headline a 196px tall avatar row:
+
+       scrollY 450   translate -423, tabs docked, headline bottom  52
+       scrollY 900   translate -423, tabs docked, headline bottom  52
+
+     so its last 52px sit inside the masthead strip permanently. This is
+     YouTube's own behaviour -- their opaque masthead just hides the remainder.
+     Our glass is transparent enough to show it, as a blurred sliver that never
+     scrolls away. At 1280px and below the headline is short enough to clear
+     the strip on its own, which is why this only shows on wide viewports.
+
+     Fading it out on the dock is enough: by then the whole profile is meant to
+     be gone. Everything above still scrolls under the glass normally. */
+  html[data-yt-channel-tabs-stuck] ytd-tabbed-page-header #page-header {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transition: opacity 200ms cubic-bezier(0.2, 0.75, 0.25, 1) !important;
+  }
+
+  ytd-tabbed-page-header #page-header {
+    transition: opacity 200ms cubic-bezier(0.2, 0.75, 0.25, 1);
   }
 
   html[data-yt-channel-tabs-stuck] ytd-masthead > #background {

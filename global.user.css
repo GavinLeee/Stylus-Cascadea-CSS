@@ -1,18 +1,51 @@
 /* ==UserStyle==
 @name           Global
 @namespace      GavinLeee-Stylus-Cascadea-global
-@version        1.1.1
+@version        1.1.2
 @description    在所有网站统一使用 Anthropic Sans 与 Noto Sans 字体
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/global.user.css
 ==/UserStyle== */
 
 /*
- * 覆盖所有普通网页元素，包括现代网站常用的 div 与 span。
- * !important 用来压过大多数网站在子元素上单独设置的字体。
+ * 在页面根节点和明确的文字元素上统一字体。普通 div、span 从父级继承，
+ * 不再被逐个强制覆盖，以免破坏使用私有类名的图标字体和连字图标。
  */
 html,
 body,
-body :where(*):not(code):not(code *):not(pre):not(pre *):not(kbd):not(samp):not(var):not(math):not(math *):not(svg):not(svg *):not([class^="fa"]):not([class*=" fa-"]):not([class^="icon-"]):not([class*=" icon-"]):not([class*="material-icons"]):not([class*="material-symbols"]):not([class*="glyphicon"]):not([class*="octicon"]) {
+body :where(
+  p,
+  a,
+  li,
+  dt,
+  dd,
+  td,
+  th,
+  caption,
+  button,
+  input,
+  textarea,
+  select,
+  option,
+  label,
+  legend,
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  blockquote,
+  figcaption,
+  summary,
+  address,
+  time,
+  small,
+  strong,
+  em,
+  mark,
+  del,
+  ins
+):not([aria-hidden="true"]):not([role="img"]):not([role="presentation"]):not([class^="fa"]):not([class*=" fa-"]):not([class^="icon-"]):not([class*=" icon-"]):not([class*="material-icons"]):not([class*="material-symbols"]):not([class*="glyphicon"]):not([class*="octicon"]) {
   font-family:
     "Anthropic Sans Text",
     "Anthropic Sans",

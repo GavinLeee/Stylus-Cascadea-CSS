@@ -8,16 +8,27 @@
 
 | 样式表 | 版本 | 生效范围 | 作用 |
 | --- | --- | --- | --- |
-| [`global.user.css`](global.user.css) | 1.1.1 | 所有网站 | 统一字体栈为 Anthropic Sans + Noto Sans，代码元素保留等宽字体 |
+| [`global.user.css`](global.user.css) | 1.1.2 | 所有网站 | 统一字体栈为 Anthropic Sans + Noto Sans，并保留代码与图标字体 |
 | [`bilibili-apple.user.css`](bilibili-apple.user.css) | 8.14.0 | `bilibili.com` 主站 / 动态 / 搜索 / 空间 / 消息 | 首页网格、播放页推荐与播放器圆角、动态视频、动态页 Apple 背景、个人空间卡片、YouTube 风格顶栏玻璃及全站紫色强调色 |
-| [`youtube-apple.user.css`](youtube-apple.user.css) | 2.20.36 | `youtube.com` | 顶栏、分类栏、左侧导航和视频卡片的悬浮动效 |
-| [`x-apple.user.css`](x-apple.user.css) | 1.7.14 | `x.com`、`twitter.com` | 右栏模块、推文信息流和左侧导航的卡片与悬浮动画 |
-| [`google-apple.user.css`](google-apple.user.css) | 1.5.16 | `google.com` 及 8 个地区域名 | 搜索结果与顶部控件的动效和磨砂玻璃 |
-| [`xiaohongshu-apple.user.css`](xiaohongshu-apple.user.css) | 1.0.0 | `xiaohongshu.com` | 左侧导航按钮和图文卡片的悬浮动效，视觉语言对齐 X 的方案 |
-| [`instagram-apple.user.css`](instagram-apple.user.css) | 1.0.0 | `instagram.com` | 左侧导航、快拍 Dock 单点放大、信息流卡片与 Messages 浮钮；材质与位移分层渲染 |
+| [`youtube-apple.user.css`](youtube-apple.user.css) | 2.20.49 | `youtube.com` | 顶栏、分类栏、左侧导航和视频卡片的悬浮动效 |
+| [`x-apple.user.css`](x-apple.user.css) | 1.7.16 | `x.com`、`twitter.com` | 右栏模块、推文信息流和左侧导航的卡片与悬浮动画，串联推文之间不画分隔线 |
+| [`google-apple.user.css`](google-apple.user.css) | 1.5.24 | `google.com` 及 8 个地区域名 | 搜索结果与顶部控件的动效和磨砂玻璃 |
+| [`xiaohongshu-apple.user.css`](xiaohongshu-apple.user.css) | 1.8.1 | `xiaohongshu.com` | 左侧导航按钮和图文卡片的悬浮动效，吸顶搜索框与侧栏磨砂玻璃 |
+| [`instagram-apple.user.css`](instagram-apple.user.css) | 1.0.1 | `instagram.com` | 左侧导航、快拍 Dock 单点放大、信息流卡片与 Messages 浮钮；材质与位移分层渲染 |
 | [`apple-podcasts-cards-effect.user.css`](apple-podcasts-cards-effect.user.css) | 3.9.1 | `podcasts.apple.com` | 新版 Web 端节目卡片、左侧导航和播放器按钮的悬浮动效 |
 
 `global.user.css` 与各站点样式表相互独立，可以只装其中一部分。
+
+## 配套用户脚本
+
+少数效果纯 CSS 做不到，需要脚本补齐。它们和样式表相互独立，装不装都不影响样式表本身。
+
+| 脚本 | 版本 | 生效范围 | 作用 |
+| --- | --- | --- | --- |
+| [`youtube-follow-system-theme.user.js`](youtube-follow-system-theme.user.js) | 1.3.16 | `youtube.com` | 自动跟随系统深浅色、刷新组件，并为浅色播放页补实时环境光 |
+| [`xiaohongshu-panel-close.user.js`](xiaohongshu-panel-close.user.js) | 1.2.0 | `xiaohongshu.com` | 给搜索建议面板补收起动画：被搜索框吸回去（站点是直接从 DOM 移除面板，CSS 无从附着） |
+
+需要 [Tampermonkey](https://www.tampermonkey.net/) 一类的用户脚本管理器，安装方式同样是点开文件后点 **Raw**。
 
 ## 安装
 
@@ -36,7 +47,7 @@ Anthropic Sans Text → Anthropic Sans → Noto Sans SC → Noto Sans CJK SC
 → Noto Sans JP → Noto Sans CJK JP → Segoe UI Emoji → sans-serif
 ```
 
-这些字体需要装在本机才会生效，否则会逐级回退到系统 sans-serif。`code`、`pre`、`kbd`、`samp` 等元素以及图标字体类名（Font Awesome、Material Icons、Octicons 等）已被排除，不受字体覆盖影响。
+这些字体需要装在本机才会生效，否则会逐级回退到系统 sans-serif。Global CSS 只直接覆盖根节点与明确的文字元素，让普通 `div`、`span` 继承字体；`code`、`pre`、`kbd`、`samp` 等代码元素以及 Font Awesome、Material Icons、Octicons 等图标字体均会保留。这样可以避免网站使用未知私有类名时，连字图标被错误显示成 `history`、`bookmarks` 一类的文字。
 
 ## 开发约定
 
