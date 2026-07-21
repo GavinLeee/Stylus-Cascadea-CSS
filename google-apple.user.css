@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           Google Apple 克制卡片与动效
 @namespace      google-apple-card-motion
-@version        1.5.23
+@version        1.5.24
 @description    为 Google 搜索结果与顶部控件添加克制的 Apple 风格动效和磨砂玻璃
 @author         Codex
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/google-apple.user.css
@@ -997,32 +997,32 @@
   /* ---------- 7.6 问答条目、横向结果卡片与图片轮播 ---------- */
   /*
    * L3Ezfd 在新版问答模块中是覆盖于文字上方的交互层，不能在它自身绘制
-   * 半透明背景，否则下方问题文字会透过材质变灰。这里保持覆盖层完全透明，
-   * 不再位移，仅用外部阴影提示选中状态。
+   * 半透明背景、边框或阴影，否则下方问题文字会透过材质变灰。覆盖层本身
+   * 始终透明；位移放在它的直属行容器上，让文字和点击区域一起移动。
    */
   #rso div.L3Ezfd {
     box-sizing: border-box !important;
-    border-radius: var(--g-apple-result-radius) !important;
+    border: 0 !important;
     background-color: transparent !important;
     box-shadow: none !important;
     filter: none !important;
     translate: none !important;
-    transition: box-shadow var(--g-apple-motion) !important;
+    transition: none !important;
+  }
+
+  #rso div:has(> div.L3Ezfd) {
+    translate: 0 0;
+    transition: translate var(--g-apple-motion-spring) !important;
   }
 
   @media (hover: hover) and (pointer: fine) {
-    #rso div.L3Ezfd:is(:hover, :focus-visible, :focus-within) {
-      background-color: transparent !important;
-      box-shadow: var(--g-apple-card-shadow-soft) !important;
-      filter: none !important;
-      translate: none !important;
+    #rso div:has(> div.L3Ezfd):is(:hover, :has(:focus-visible)) {
+      translate: 0 var(--g-apple-card-lift);
     }
   }
 
-  #rso div.L3Ezfd:active {
-    background-color: transparent !important;
-    box-shadow: var(--g-apple-card-shadow-pressed) !important;
-    translate: none !important;
+  #rso div:has(> div.L3Ezfd):active {
+    translate: 0 -1px;
     transition-duration: 90ms !important;
   }
 
@@ -1114,7 +1114,7 @@
     div.b3puKe,
     div.b2Rnsc,
     a.NDNGvf,
-    div.L3Ezfd,
+    #rso div:has(> div.L3Ezfd),
     a.ZbQNgf,
     div.MimRQe,
     :is(li.Ndm2cf, li.h7wxwc)::before,
