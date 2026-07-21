@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           Bilibili Apple 风格统一视频卡片
 @namespace      bilibili-apple-native-theme
-@version        8.14.0
+@version        8.14.1
 @description    首页网格、播放页推荐与播放器圆角、动态视频、动态页 Apple 背景、个人空间卡片、YouTube 风格顶栏玻璃及全站紫色强调色
 @match          https://www.bilibili.com/*
 @match          https://t.bilibili.com/*
@@ -63,6 +63,27 @@
     --video-column-gap: 24px;
     --video-row-gap: 52px;
     --video-card-min-width: 290px;
+
+    /* 首页、动态页及其余吸顶栏共享同一套 YouTube 玻璃参数。 */
+    --bili-header-glass-background: rgba(255, 255, 255, 0.82);
+    --bili-header-glass-filter: saturate(180%) blur(22px);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bili-header-glass-background: rgba(24, 24, 26, 0.80);
+    }
+  }
+
+  :is(
+    html.dark,
+    html.bili-dark,
+    html[data-theme="dark"],
+    html[data-color-mode="dark"],
+    html[data-theme-style="dark"],
+    html[data-darkreader-scheme="dark"]
+  ) {
+    --bili-header-glass-background: rgba(24, 24, 26, 0.80);
   }
 
 
@@ -1976,14 +1997,14 @@
     inset: 0 !important;
     z-index: -1 !important;
     pointer-events: none !important;
-    background-color: rgba(255, 255, 255, 0.82) !important;
-    backdrop-filter: saturate(180%) blur(22px) !important;
-    -webkit-backdrop-filter: saturate(180%) blur(22px) !important;
+    background-color: var(--bili-header-glass-background) !important;
+    backdrop-filter: var(--bili-header-glass-filter) !important;
+    -webkit-backdrop-filter: var(--bili-header-glass-filter) !important;
   }
 
   @media (prefers-color-scheme: dark) {
     .bili-header__bar::before {
-      background-color: rgba(24, 24, 26, 0.80) !important;
+      background-color: var(--bili-header-glass-background) !important;
     }
   }
 
@@ -1995,7 +2016,7 @@
     html[data-theme-style="dark"],
     html[data-darkreader-scheme="dark"]
   ) .bili-header__bar::before {
-    background-color: rgba(24, 24, 26, 0.80) !important;
+    background-color: var(--bili-header-glass-background) !important;
   }
 
   /* 首页顶栏右上角（消息/大会员/动态/收藏/历史）：原生在"顶栏透明、悬浮在banner上"这个
@@ -2043,12 +2064,12 @@
      .header-channel 那层不透明白之上，看起来当然还是纯白。这次直接把毛玻璃画在
      .header-channel 上，.header-channel-fixed 保持透明即可 */
   .header-channel.header-channel {
-    background-color: rgba(255, 255, 255, 0.82) !important;
+    background-color: var(--bili-header-glass-background) !important;
     background-image: none !important;
     border-bottom: 0 !important;
     box-shadow: none !important;
-    backdrop-filter: saturate(180%) blur(22px) !important;
-    -webkit-backdrop-filter: saturate(180%) blur(22px) !important;
+    backdrop-filter: var(--bili-header-glass-filter) !important;
+    -webkit-backdrop-filter: var(--bili-header-glass-filter) !important;
   }
 
   .header-channel-fixed.header-channel-fixed {
@@ -2060,7 +2081,7 @@
 
   @media (prefers-color-scheme: dark) {
     .header-channel.header-channel {
-      background-color: rgba(24, 24, 26, 0.80) !important;
+      background-color: var(--bili-header-glass-background) !important;
       background-image: none !important;
       border-bottom-color: rgba(255, 255, 255, 0.07) !important;
       box-shadow: none !important;
@@ -2075,10 +2096,53 @@
     html[data-theme-style="dark"],
     html[data-darkreader-scheme="dark"]
   ) .header-channel.header-channel {
-    background-color: rgba(24, 24, 26, 0.80) !important;
+    background-color: var(--bili-header-glass-background) !important;
     background-image: none !important;
     border-bottom-color: rgba(255, 255, 255, 0.07) !important;
     box-shadow: none !important;
+  }
+
+  /* 首页滚动后，顶栏与分类条原本各自执行一次 backdrop-filter。即便颜色和边框完全相同，
+     两块独立取样的玻璃仍会在接缝处形成一条明暗边界。slide-down 状态下关闭这两块独立
+     材质，改由分类条的 ::before 从自身顶部向上覆盖 64px，一次性绘制整块玻璃。 */
+  body:has(.bili-feed4 > .header-channel):has(.bili-header__bar.slide-down)
+  .bili-header {
+    overflow: visible !important;
+  }
+
+  body:has(.bili-feed4 > .header-channel):has(.bili-header__bar.slide-down)
+  .bili-header__bar.slide-down::before {
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  body:has(.bili-feed4 > .header-channel):has(.bili-header__bar.slide-down)
+  .bili-feed4 > .header-channel.header-channel {
+    isolation: isolate !important;
+    overflow: visible !important;
+    background: transparent !important;
+    background-image: none !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  body:has(.bili-feed4 > .header-channel):has(.bili-header__bar.slide-down)
+  .bili-feed4 > .header-channel.header-channel::before {
+    content: "" !important;
+    position: absolute !important;
+    inset: -64px 0 0 !important;
+    z-index: -1 !important;
+    pointer-events: none !important;
+    background: var(--bili-header-glass-background) !important;
+    background-image: none !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    backdrop-filter: var(--bili-header-glass-filter) !important;
+    -webkit-backdrop-filter: var(--bili-header-glass-filter) !important;
   }
 
   /* 分类标签（番剧/国创/综艺...）：原生是块块实色浅灰底，压在毛玻璃顶栏上显得像贴上去的
@@ -2279,17 +2343,17 @@
      （主页/动态/投稿/合集和系列 + 搜索框那一条，原生 position:sticky），
      所以毛玻璃效果要加在这一条上，才是用户滚动时实际会看到的"顶栏" */
   .nav-bar.space-navbar {
-    background-color: rgba(255, 255, 255, 0.82) !important;
+    background-color: var(--bili-header-glass-background) !important;
     background-image: none !important;
     border-bottom: 0 !important;
     box-shadow: none !important;
-    backdrop-filter: saturate(180%) blur(22px) !important;
-    -webkit-backdrop-filter: saturate(180%) blur(22px) !important;
+    backdrop-filter: var(--bili-header-glass-filter) !important;
+    -webkit-backdrop-filter: var(--bili-header-glass-filter) !important;
   }
 
   @media (prefers-color-scheme: dark) {
     .nav-bar.space-navbar {
-      background-color: rgba(24, 24, 26, 0.80) !important;
+      background-color: var(--bili-header-glass-background) !important;
       background-image: none !important;
       border-bottom-color: rgba(255, 255, 255, 0.07) !important;
       box-shadow: none !important;
@@ -2304,7 +2368,7 @@
     html[data-theme-style="dark"],
     html[data-darkreader-scheme="dark"]
   ) .nav-bar.space-navbar {
-    background-color: rgba(24, 24, 26, 0.80) !important;
+    background-color: var(--bili-header-glass-background) !important;
     background-image: none !important;
     border-bottom-color: rgba(255, 255, 255, 0.07) !important;
     box-shadow: none !important;
@@ -2370,19 +2434,18 @@
     .bili-header.fixed-header > .bili-header__bar.mini-header,
     .bili-header__bar,
     .bili-header .bili-header__bar,
-    #bili-header-container .bili-header__bar,
-    .z-top-container
+    #bili-header-container .bili-header__bar
   )::before {
     content: "" !important;
     position: absolute !important;
     inset: 0 !important;
     z-index: -1 !important;
     pointer-events: none !important;
-    background-color: rgba(255, 255, 255, 0.82) !important;
+    background-color: var(--bili-header-glass-background) !important;
     border-bottom: 0 !important;
     box-shadow: none !important;
-    backdrop-filter: saturate(180%) blur(22px) !important;
-    -webkit-backdrop-filter: saturate(180%) blur(22px) !important;
+    backdrop-filter: var(--bili-header-glass-filter) !important;
+    -webkit-backdrop-filter: var(--bili-header-glass-filter) !important;
   }
 
   /* 外层容器保持透明，避免覆盖内层磨砂玻璃 */
@@ -2433,10 +2496,9 @@
       .bili-header.fixed-header > .bili-header__bar.mini-header,
       .bili-header__bar,
       .bili-header .bili-header__bar,
-      #bili-header-container .bili-header__bar,
-      .z-top-container
+      #bili-header-container .bili-header__bar
     )::before {
-      background-color: rgba(24, 24, 26, 0.80) !important;
+      background-color: var(--bili-header-glass-background) !important;
       border-bottom: 0 !important;
       box-shadow: none !important;
     }
@@ -2477,10 +2539,9 @@
     .bili-header.fixed-header > .bili-header__bar.mini-header,
     .bili-header__bar,
     .bili-header .bili-header__bar,
-    #bili-header-container .bili-header__bar,
-    .z-top-container
+    #bili-header-container .bili-header__bar
   )::before {
-    background-color: rgba(24, 24, 26, 0.80) !important;
+    background-color: var(--bili-header-glass-background) !important;
     border-bottom: 0 !important;
     box-shadow: none !important;
   }
