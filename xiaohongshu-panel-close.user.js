@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         小红书 搜索建议面板收起动画
 // @namespace    rednote-panel-close-animation
-// @version      1.0.0
+// @version      1.1.0
 // @description  为小红书搜索框的建议下拉面板补一个收起淡出动画（站点原生是直接从 DOM 移除，纯 CSS 做不到）
 // @updateURL    https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/xiaohongshu-panel-close.user.js
 // @downloadURL  https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/xiaohongshu-panel-close.user.js
@@ -28,7 +28,8 @@
  * 切换，不覆盖节点移除。所以这件事纯 CSS 做不了，只能靠脚本。
  *
  * 做法：监听移除，把刚被移除的那个节点原样塞回父节点，加一个 closing 类播完
- * 淡出+轻微上移，再自己删掉。这个节点此时已经脱离了站点框架（Vue 认为它没了、
+ * 出场动画再自己删掉。出场是原生入场的严格逆向（见下方 keyframes 注释），
+ * 所以收起看起来就是展开倒放。这个节点此时已经脱离了站点框架（Vue 认为它没了、
  * 不会再管它），塞回去只是当一张"遗照"用，不参与任何交互（pointer-events:
  * none），所以不会干扰重新展开。实测开→关→重开：面板总数始终是 1，无残留、
  * 观察器也不会重复触发。
@@ -55,9 +56,14 @@
     const style = document.createElement('style');
     style.id = 'rn-panel-close-style';
     style.textContent = `
+      /* 严格是原生入场动画的逆向。原生（fadeIn-6869a472，实测自站点样式表）：
+             0%   { opacity: 0; transform: translateY(-10px); }
+             100% { opacity: 1; transform: translateY(0px); }
+         配 0.2s ease-in-out。这里把两帧对调，时长与缓动照抄，
+         于是收起看起来就是展开倒放。 */
       @keyframes rn-panel-close-out {
-        from { opacity: 1; transform: translateY(0); }
-        to   { opacity: 0; transform: translateY(-8px); }
+        from { opacity: 1; transform: translateY(0px); }
+        to   { opacity: 0; transform: translateY(-10px); }
       }
       .${CLOSING_CLASS} {
         pointer-events: none !important;
