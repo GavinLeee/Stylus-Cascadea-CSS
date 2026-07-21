@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           小红书 Apple 风格左栏与卡片悬浮动效
 @namespace      rednote-apple-card-motion
-@version        1.5.0
+@version        1.5.1
 @description    为小红书网页版左侧导航按钮和图文卡片添加克制的 Apple 风格卡片悬浮动效，视觉语言对齐 X（Twitter）的克制卡片方案
 @match          https://www.xiaohongshu.com/*
 @match          https://xiaohongshu.com/*
@@ -204,8 +204,13 @@
     -webkit-backdrop-filter: none !important;
     box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05),
       0 8px 24px rgba(38, 51, 77, 0.09) !important;
+    /* border-radius 也纳入过渡：展开/收起时搜索框要在胶囊(999px)和圆角
+       矩形(24px 24px 0 0)之间morph。200ms ease-in-out 对齐原生展开动画
+       fadeIn 的 0.2s ease-in-out，两者同步。
+       收起动画的说明见下方 .ai-dropdown-panel 那段注释。 */
     transition: transform 220ms var(--rn-ease),
-      border-color 180ms ease, box-shadow 220ms var(--rn-ease) !important;
+      border-color 180ms ease, box-shadow 220ms var(--rn-ease),
+      border-radius 200ms ease-in-out !important;
     transform: translateY(0) scale(1) !important;
     transform-origin: center center;
     will-change: transform;
@@ -288,9 +293,20 @@
 
   /*
    * 搜索框展开的建议下拉窗（.ai-dropdown-panel，原生实色 rgb(41,41,46)）。
-   * 实测它是 position:absolute、不在 .ai-header-container 内部，独立采样
-   * 身后内容——注入玻璃后能正常透出下方信息流卡片的颜色，不是纯色平涂。
-   * 走上浮层配方，和搜索框本体同一视觉层次。
+   * 走上浮层配方，和搜索框本体同一视觉层次、同一份底色，两者拼成一块连续
+   * 的圆角矩形。
+   * 它是 .input-box 的后代（链路见上），所以上面那两层必须把 backdrop-filter
+   * 让给伪元素，否则这里的玻璃采样不到页面、只剩平涂色。
+   *
+   * 关于收起动画：做不了面板本身的淡出，这是站点结构决定的硬限制。
+   * 实测用 MutationObserver 跟踪过一次收起：面板不是被隐藏，而是直接从 DOM
+   * 里移除（约 t=56ms 就没了）。元素一旦不在 DOM 里，CSS 的 transition /
+   * animation 就没有附着对象，@starting-style + allow-discrete 那套也只覆盖
+   * display 切换、不覆盖节点移除。要真做面板淡出只能上 JS（延迟移除或
+   * FLIP），本仓库是纯 CSS 样式表，不引入脚本。
+   * 能做的是搜索框自己的形变：上面给 .input-box 的 border-radius 加了
+   * 200ms 过渡，收起时它会平滑地从圆角矩形收回胶囊，和原生展开动画
+   * fadeIn 的 0.2s ease-in-out 同步。
    */
   .ai-dropdown-panel {
     background-color: var(--rn-raised-glass) !important;
