@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           Google Apple 克制卡片与动效
 @namespace      google-apple-card-motion
-@version        1.5.21
+@version        1.5.22
 @description    为 Google 搜索结果与顶部控件添加克制的 Apple 风格动效和磨砂玻璃
 @author         Codex
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/google-apple.user.css
@@ -20,17 +20,17 @@
 
   /* ---------- 颜色与动效参数 ---------- */
   :root {
-    --g-apple-card-bg: rgba(255, 255, 255, 0.82);
-    --g-apple-card-bg-strong: rgba(247, 247, 249, 0.96);
-    --g-apple-card-stroke: rgba(15, 23, 42, 0.10);
+    --g-apple-card-bg: rgba(255, 255, 255, 0.70);
+    --g-apple-card-bg-strong: rgba(247, 247, 249, 0.90);
+    --g-apple-card-stroke: rgba(15, 23, 42, 0.06);
     --g-apple-card-shadow:
-      0 12px 30px rgba(15, 23, 42, 0.11),
-      0 2px 8px rgba(15, 23, 42, 0.06);
+      0 10px 26px rgba(15, 23, 42, 0.08),
+      0 2px 6px rgba(15, 23, 42, 0.045);
     --g-apple-card-shadow-soft:
-      0 7px 18px rgba(15, 23, 42, 0.09),
-      0 1px 5px rgba(15, 23, 42, 0.05);
+      0 5px 14px rgba(15, 23, 42, 0.065),
+      0 1px 4px rgba(15, 23, 42, 0.035);
     --g-apple-card-shadow-pressed:
-      0 3px 10px rgba(15, 23, 42, 0.08);
+      0 2px 8px rgba(15, 23, 42, 0.065);
     --g-apple-focus: rgba(120, 86, 255, 0.48);
     --g-apple-glass-topbar: rgba(255, 255, 255, 0.68);
     --g-apple-searchform-bg: var(--g-apple-glass-topbar);
@@ -52,17 +52,17 @@
   html[data-darkmode="true"],
   body[dark],
   body[data-dt="1"] {
-    --g-apple-card-bg: rgba(42, 42, 45, 0.86);
-    --g-apple-card-bg-strong: rgba(48, 48, 52, 0.97);
-    --g-apple-card-stroke: rgba(255, 255, 255, 0.12);
+    --g-apple-card-bg: rgba(42, 42, 45, 0.74);
+    --g-apple-card-bg-strong: rgba(48, 48, 52, 0.90);
+    --g-apple-card-stroke: rgba(255, 255, 255, 0.08);
     --g-apple-card-shadow:
-      0 14px 34px rgba(0, 0, 0, 0.36),
-      0 2px 8px rgba(0, 0, 0, 0.24);
+      0 12px 30px rgba(0, 0, 0, 0.28),
+      0 2px 7px rgba(0, 0, 0, 0.18);
     --g-apple-card-shadow-soft:
-      0 8px 20px rgba(0, 0, 0, 0.30),
-      0 1px 5px rgba(0, 0, 0, 0.22);
+      0 7px 18px rgba(0, 0, 0, 0.22),
+      0 1px 4px rgba(0, 0, 0, 0.16);
     --g-apple-card-shadow-pressed:
-      0 3px 10px rgba(0, 0, 0, 0.24);
+      0 2px 8px rgba(0, 0, 0, 0.20);
     --g-apple-focus: rgba(165, 141, 255, 0.58);
     --g-apple-glass-topbar: rgba(22, 22, 24, 0.62);
     --g-apple-searchform-bg: #1a1c21;
@@ -75,17 +75,17 @@
 
   @media (prefers-color-scheme: dark) {
     :root {
-      --g-apple-card-bg: rgba(42, 42, 45, 0.86);
-      --g-apple-card-bg-strong: rgba(48, 48, 52, 0.97);
-      --g-apple-card-stroke: rgba(255, 255, 255, 0.12);
+      --g-apple-card-bg: rgba(42, 42, 45, 0.74);
+      --g-apple-card-bg-strong: rgba(48, 48, 52, 0.90);
+      --g-apple-card-stroke: rgba(255, 255, 255, 0.08);
       --g-apple-card-shadow:
-        0 14px 34px rgba(0, 0, 0, 0.36),
-        0 2px 8px rgba(0, 0, 0, 0.24);
+        0 12px 30px rgba(0, 0, 0, 0.28),
+        0 2px 7px rgba(0, 0, 0, 0.18);
       --g-apple-card-shadow-soft:
-        0 8px 20px rgba(0, 0, 0, 0.30),
-        0 1px 5px rgba(0, 0, 0, 0.22);
+        0 7px 18px rgba(0, 0, 0, 0.22),
+        0 1px 4px rgba(0, 0, 0, 0.16);
       --g-apple-card-shadow-pressed:
-        0 3px 10px rgba(0, 0, 0, 0.24);
+        0 2px 8px rgba(0, 0, 0, 0.20);
       --g-apple-focus: rgba(165, 141, 255, 0.58);
       --g-apple-glass-topbar: rgba(22, 22, 24, 0.62);
       --g-apple-searchform-bg: #1a1c21;
@@ -116,12 +116,15 @@
     will-change: translate;
   }
 
-  /* 用伪元素绘制卡片，不改变 Google 原有内容宽度和间距。 */
+  /*
+   * 用负层级伪元素绘制卡片，材质始终位于当前结果文字之后。
+   * 垂直方向不再向外扩张，避免浮起的卡片背景压住相邻结果的文字。
+   */
   #rso > .MjjYud:has(h3)::before,
   #rso > div > .MjjYud:has(h3)::before {
     content: "";
     position: absolute;
-    inset: -10px -16px;
+    inset: 0 -14px;
     z-index: -1;
     pointer-events: none;
     border: 1px solid transparent;
@@ -796,7 +799,6 @@
     div.b2Rnsc:is(:hover, :focus-within) {
       z-index: 5;
       translate: 0 -4px;
-      filter: brightness(1.035);
       box-shadow: var(--g-apple-card-shadow) !important;
     }
 
@@ -806,7 +808,7 @@
     .NDNGvf:is(:hover, :focus-within) {
       z-index: 20 !important;
       transform: translateY(-6px) scale(1.015) !important;
-      filter: brightness(1.045) !important;
+      filter: none !important;
       background-color: var(--g-apple-card-bg-strong) !important;
       box-shadow: var(--g-apple-card-shadow) !important;
     }
@@ -1021,7 +1023,7 @@
       translate: 0 var(--g-apple-card-lift);
       background-color: var(--g-apple-card-bg) !important;
       box-shadow: var(--g-apple-card-shadow-soft) !important;
-      filter: brightness(1.015);
+      filter: none;
     }
   }
 
