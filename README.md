@@ -19,6 +19,17 @@
 
 `global.user.css` 与各站点样式表相互独立，可以只装其中一部分。
 
+## 配套用户脚本
+
+少数效果纯 CSS 做不到，需要脚本补齐。它们和样式表相互独立，装不装都不影响样式表本身。
+
+| 脚本 | 版本 | 生效范围 | 作用 |
+| --- | --- | --- | --- |
+| [`youtube-follow-system-theme.user.js`](youtube-follow-system-theme.user.js) | 1.3.16 | `youtube.com` | 自动跟随系统深浅色、刷新组件，并为浅色播放页补实时环境光 |
+| [`xiaohongshu-panel-close.user.js`](xiaohongshu-panel-close.user.js) | 1.0.0 | `xiaohongshu.com` | 给搜索建议面板补收起淡出动画（站点是直接从 DOM 移除面板，CSS 无从附着） |
+
+需要 [Tampermonkey](https://www.tampermonkey.net/) 一类的用户脚本管理器，安装方式同样是点开文件后点 **Raw**。
+
 ## 安装
 
 1. 安装 Stylus 扩展（[Chrome](https://chromewebstore.google.com/detail/stylus/clngdbkpkpeebahjckkjfobafhncgmne) / [Firefox](https://addons.mozilla.org/firefox/addon/styl-us/) / [Edge](https://microsoftedge.microsoft.com/addons/detail/stylus/fjnbnpbmkenffdnngjfgmeleoegfcffe)）。
