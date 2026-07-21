@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           小红书 Apple 风格左栏与卡片悬浮动效
 @namespace      rednote-apple-card-motion
-@version        1.4.0
+@version        1.4.1
 @description    为小红书网页版左侧导航按钮和图文卡片添加克制的 Apple 风格卡片悬浮动效，视觉语言对齐 X（Twitter）的克制卡片方案
 @match          https://www.xiaohongshu.com/*
 @match          https://xiaohongshu.com/*
@@ -288,12 +288,20 @@
    * 悬浮时的重新分层不会扰动玻璃取样。.side-bar 已经是 position:fixed +
    * z-index:100 的层叠上下文，伪元素 z-index:-1 只会沉到它自己内容之下。
    *
-   * 如实说明：实测把 .side-bar 染透明后确认，它身后不是像 YouTube 抽屉那样
-   * 会滚动的信息流卡片，而是 .main-content 铺的一整片纯色底——侧栏这一列
-   * 原生就不画任何内容。所以这层玻璃不会像顶栏那样透出可辨认的图案，视觉上
-   * 只是同一份半透明玻璃色 + 模糊，模糊在纯色上不会产生任何可见变化。仍按
-   * 要求实现，保证和顶栏材质、Podcasts 侧栏一致；.information-container
-   * 原生纯色底需要一并清透明，否则会挡住玻璃下半部分。
+   * 如实说明（已在无痕页面对着原生样式表逐条复核，不要再重复排查）：侧栏身后
+   * 不是像 YouTube 抽屉那样会滚动的信息流卡片，而是一整片纯色底，原生这一列
+   * 不画任何内容。三条原生规则决定了这一点：
+   *   .side-bar[data-v-8b2c1374]{background-color:var(--bg0-lighter);
+   *     position:fixed;z-index:13;width:164px;height:100vh}   ← 不透明的就是它
+   *   .information-container[data-v-2516d3ef]{position:absolute;bottom:0;
+   *     background-color:var(--bg0-lighter)}                  ← 底部第二层实底
+   *   .main-content.with-side-bar{padding-left:164px}          ← 内容列被顶开，
+   *     AI 版这个值正好等于侧栏宽度、旧版 246.67px 正好等于侧栏右边缘，
+   *     两种布局下信息流都不会从侧栏底下穿过。
+   * 顶栏能看出磨砂是因为它 fixed 浮在内容列上方、卡片真的从身后滚过去；侧栏
+   * 身后只有平色，模糊一片平色不会产生任何可见变化。所以这里材质照搬顶栏那份
+   * 变量保证一致，"是块玻璃面板"这件事改由右缘那条 hairline 来交代——这也是
+   * Apple 自己的侧栏（Podcasts / Music）在纯色窗口底上的做法。
    */
   .side-bar::before {
     content: "";
@@ -304,6 +312,13 @@
     background-color: var(--rn-glass);
     backdrop-filter: var(--rn-glass-blur);
     -webkit-backdrop-filter: var(--rn-glass-blur);
+    /* 玻璃右缘的 hairline。用 inset box-shadow 而不是 border-right，免得和
+       inset:0 撑开的盒模型互相牵扯；伪元素的 inset 是相对 .side-bar 的 padding
+       box 解析的，而侧栏原生无边框，所以这 1px 正好落在侧栏 border box 的右缘、
+       压在上面那 164px 留白的分界线上，两种布局下都紧贴内容列。z-index:-1 让它
+       沉在导航胶囊之下，但胶囊被 padding-inline 挡在 12px 以内、够不到右缘，
+       悬浮时不会把这条线盖掉。 */
+    box-shadow: inset -1px 0 0 var(--rn-border);
   }
 
   .side-bar .information-container {
