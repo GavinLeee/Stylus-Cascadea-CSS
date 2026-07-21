@@ -142,11 +142,18 @@
     isolation: isolate;
   }
 
-  /* .input-box 和 .ai-header-container 之间只隔着这层包裹容器，实测原生
-     background 为透明、backdrop-filter 为 blur(0px)（无害的空操作），本身
-     不挡玻璃，这里显式声明只是为了不依赖它"恰好透明"这一点。 */
+  /*
+   * .input-box 和 .ai-header-container 之间隔着这层包裹容器。它的类名
+   * .with-gradient-background 就是字面意思：原生带一条 background-image
+   * 渐变（linear-gradient，从实色 rgb(25,25,30) 渐变到透明），横向铺满整个
+   * 顶栏宽度。搜索框本身只占中间一段，两侧留白处露出的就是这条渐变——所以
+   * 顶栏玻璃虽然生效了，搜索框左右两块看起来仍是实色。
+   * background-color 原生本来就是透明的，光清它不够，必须一并清掉
+   * background-image。
+   */
   .ai-header-container .search-area-in-header {
     background-color: transparent !important;
+    background-image: none !important;
   }
 
   /* 搜索框/搜索按钮走上浮层玻璃（--rn-raised-*），比顶栏底板更糊、更实，
