@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           小红书 Apple 风格左栏与卡片悬浮动效
 @namespace      rednote-apple-card-motion
-@version        1.6.1
+@version        1.7.0
 @description    为小红书网页版左侧导航按钮和图文卡片添加克制的 Apple 风格卡片悬浮动效，视觉语言对齐 X（Twitter）的克制卡片方案
 @match          https://www.xiaohongshu.com/*
 @match          https://xiaohongshu.com/*
@@ -75,6 +75,8 @@
     --rn-content-inset: 32px;
     /* .search-layout__top 自带的 margin-bottom，两行之间的缝。 */
     --rn-subnav-gap: 12px;
+    /* 搜索框展开时顶栏(175)和内容 padding-top(178)之间站点自己留的缝。 */
+    --rn-subnav-expanded-gap: 3px;
 
     /* 悬浮时的玻璃质感背景 / 边框，浅色模式 */
     --rn-panel-hover: rgba(246, 247, 248, 0.92);
@@ -333,6 +335,56 @@
   }
 
   /*
+   * 面板里的两类条目：
+   *   .history-item  历史记录胶囊（实测 124×30，padding 6px 12px）
+   *   .sug-item      联想词 / 猜你想搜的整行
+   * 历史胶囊是独立的小块，给完整的卡片悬浮；联想行是通栏文字行，画卡片
+   * 会显得笨重，只给一点点右移，够表达"可点"即可。
+   * 两者都在展开面板内部，面板本身是上浮层玻璃，所以这里的悬浮底色用
+   * --rn-panel-hover（不透明面板），叠在玻璃上才看得出来。
+   */
+  .ai-dropdown-panel .history-item {
+    position: relative;
+    z-index: 0;
+    box-sizing: border-box !important;
+    border: 1px solid transparent !important;
+    border-radius: 999px !important;
+    transform: translateY(0) scale(1);
+    transform-origin: center center;
+    transition:
+      transform 220ms var(--rn-ease),
+      background-color 180ms ease,
+      border-color 180ms ease,
+      box-shadow 220ms var(--rn-ease) !important;
+    will-change: transform;
+  }
+
+  .ai-dropdown-panel .sug-item {
+    border-radius: 8px !important;
+    transform: translateX(0);
+    transform-origin: left center;
+    transition:
+      transform 200ms var(--rn-ease),
+      background-color 180ms ease !important;
+    will-change: transform;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .ai-dropdown-panel .history-item:hover {
+      z-index: 5;
+      background-color: var(--rn-panel-hover) !important;
+      border-color: var(--rn-border-hover) !important;
+      box-shadow: var(--rn-nav-shadow-hover) !important;
+      transform: translateY(-2px) scale(1.04);
+    }
+
+    .ai-dropdown-panel .sug-item:hover {
+      background-color: var(--rn-panel-hover) !important;
+      transform: translateX(4px);
+    }
+  }
+
+  /*
    * .textarea-container 是 .input-box 内部的子节点（多行/AI 搜索展开态下
    * 出现），原生带一层自己的实色底（实测 rgb(41,41,46) ≈ #29292E），会整块
    * 盖住 .input-box 已经画好的玻璃——.input-box 的背景没坏，只是被这层子节点
@@ -518,6 +570,19 @@
 
   .search-layout__top::before {
     bottom: calc(-1 * var(--rn-subnav-gap));
+  }
+
+  /*
+   * 搜索框展开时顶栏和导航行之间会裂开一条缝：实测顶栏从 116 长到 175，
+   * 而站点把 .ai-feeds-page 的 padding-top 设成 178——它自己留了 3px，
+   * 于是 175~178 这一条既不属于顶栏也不属于导航行，露出底色。
+   * 塌陷态两边都是 116、严丝合缝，所以不能无条件上移，否则塌陷时两层玻璃
+   * 会重叠 3px，叠出一条更深的暗带。
+   * 展开态顶栏会多一个 header-container-large 类（实测），拿它当开关。
+   */
+  body:has(.ai-header-container.header-container-large)
+  .search-layout__top::before {
+    top: calc(-1 * var(--rn-subnav-expanded-gap));
   }
 
   /*
@@ -777,6 +842,41 @@
   .note-detail-mask .author-wrapper .avatar-click:hover {
     z-index: 12;
     transform: scale(1.14);
+  }
+
+  /*
+   * 笔记正文区 .note-content（实测 400×253，padding 0 20px 20px）。
+   * 只做背景 + 投影的卡片感，不做位移/缩放：这块是长段落文字，一动整段
+   * 都会跟着漂，读起来晃眼；而且它自己带左右 20px 内边距，::before 往外
+   * 扩一点就能把卡片画到文字块外沿，不用碰布局。
+   */
+  .note-detail-mask .note-content {
+    position: relative;
+    z-index: 0;
+  }
+
+  .note-detail-mask .note-content::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: -4px -8px;
+    border-radius: var(--rn-card-radius);
+    background: transparent;
+    box-shadow: none;
+    opacity: 0;
+    pointer-events: none;
+    transition:
+      opacity 200ms ease,
+      background-color 220ms ease,
+      box-shadow 240ms var(--rn-ease);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .note-detail-mask .note-content:hover::before {
+      opacity: 1;
+      background: var(--rn-panel-hover);
+      box-shadow: var(--rn-nav-shadow-hover);
+    }
   }
 
 
