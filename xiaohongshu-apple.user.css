@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           小红书 Apple 风格左栏与卡片悬浮动效
 @namespace      rednote-apple-card-motion
-@version        1.5.2
+@version        1.6.0
 @description    为小红书网页版左侧导航按钮和图文卡片添加克制的 Apple 风格卡片悬浮动效，视觉语言对齐 X（Twitter）的克制卡片方案
 @match          https://www.xiaohongshu.com/*
 @match          https://xiaohongshu.com/*
@@ -61,8 +61,14 @@
 
   :root {
     --rn-ease: cubic-bezier(0.22, 0.8, 0.24, 1);
-    /* Above raised feed cards (z-index: 20), below the note-detail overlay. */
+    /* 层级三档，同处根层叠上下文，可直接比较：
+         20  悬浮抬起的信息流卡片（见下方 note-item:hover）
+         25  搜索结果页顶部两行导航 --rn-subnav-z
+         30  搜索头 --rn-header-z（顶栏 / 搜索框 / 建议面板）
+       导航行必须夹在中间：低于搜索头，否则会盖住展开的建议面板；
+       高于卡片，否则卡片悬浮抬起时会顶上来盖住导航。 */
     --rn-header-z: 30;
+    --rn-subnav-z: 25;
 
     /* 悬浮时的玻璃质感背景 / 边框，浅色模式 */
     --rn-panel-hover: rgba(246, 247, 248, 0.92);
@@ -198,7 +204,6 @@
     box-sizing: border-box !important;
     position: relative;
     border: none !important;
-    border-radius: 999px !important;
     background: transparent !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
@@ -242,14 +247,26 @@
   }
 
   /*
-   * 展开态：搜索框和下方的建议面板要拼成一个连续的圆角矩形。
-   * 上面那条把 .input-box 定死成 999px 胶囊，展开时它的左右两端是半圆，
-   * 而面板是直角矩形（原生 border-radius 0 0 24px 24px），接缝处胶囊的
-   * 圆角会留出两块缺口。这里跟随原生 .textarea-container 的 24px 24px 0 0，
-   * 上圆下平，正好和面板接上。
-   *
-   * 同时展开时不要切到 hover/focus 的 0.72 底色：面板是 0.60，两者贴在
-   * 一起，材质必须一致，否则接缝处会有一条明显的深浅分界。
+   * 胶囊圆角只在塌陷态给：塌陷时 .input-box 高 56px，999px 会被浏览器钳到
+   * 半高 28px，正好等于内层 .textarea-container 的原生 28px，两层严丝合缝。
+   * 一旦展开变高（实测 116px），999px 钳到 58px，而内层还是 24~28px，
+   * 外圈就会在左右两端露出一圈多余的胶囊弧——就是"搜索框外面套了个胶囊窗口"
+   * 的来源。展开态干脆不接管圆角，交回原生的圆角矩形。
+   * 条件用 .textarea-container-small（塌陷态才有这个类），比之前挂在
+   * .wendian-wrapper--panel-open 上更准：那个只在建议面板展开时才有，
+   * 搜索框自己变高、面板还没出来的中间态照样会露胶囊。
+   */
+  .ai-header-container .search-area-in-header
+  .input-box:has(.textarea-container-small) {
+    border-radius: 999px !important;
+  }
+
+  /*
+   * 建议面板展开时，搜索框和面板要拼成一块连续的圆角矩形：上圆下平，
+   * 跟随原生 .textarea-container 的 24px 24px 0 0，正好和面板
+   * （原生 0 0 24px 24px）接上。
+   * 同时不要切到 hover/focus 的 0.72 底色：面板是 0.60，两者贴在一起，
+   * 材质必须一致，否则接缝处会有一条明显的深浅分界。
    */
   .ai-header-container .search-area-in-header
   .input-box:has(.wendian-wrapper--panel-open) {
@@ -430,8 +447,12 @@
    * ::before 伪元素 inset:-8px 向外扩一圈画阴影，真实悬浮时（translateY(-4px)
    * scale(1.03) 一起作用）实测顶排卡片的有效视觉範围会越过这两行的下边界
    * 几像素，阴影模糊半径更是会溢出更多——两行不作层级提升的话会被悬浮卡片
-   * 的阴影/圆角背景盖住一角。提到 --rn-header-z（同一个变量，和顶栏
-   * .ai-header-container 共用"压过悬浮卡片"的语义）即可稳定盖住。
+   * 的阴影/圆角背景盖住一角。
+   *
+   * 用 --rn-subnav-z(25) 而不是 --rn-header-z(30)：早先这里跟搜索头同用 30，
+   * 结果反过来压住了搜索建议下拉。实测 /search_result 页搜索头
+   * .header-container 原生只有 z-index:10，两行 30 直接盖过去，展开建议时
+   * 这两行会穿透浮在面板上面。25 夹在卡片(20)和搜索头(30)之间，两头都对。
    *
    * 玻璃画在无子节点的伪元素上，不直接放在这两行自己身上：里面的标签/筛选
    * 胶囊本身也有独立的悬浮位移（用户交互态），伪元素隔离能避免玻璃取样被
@@ -440,8 +461,17 @@
   .search-layout__top,
   .search-layout__middle {
     position: relative;
-    z-index: var(--rn-header-z) !important;
+    z-index: var(--rn-subnav-z) !important;
     isolation: isolate;
+  }
+
+  /*
+   * /search_result（非 AI 搜索页）的搜索头，原生只有 z-index:10——低于
+   * 悬浮卡片的 20，卡片抬起时会盖住搜索框。抬到和顶栏同级，搜索框及其
+   * 建议下拉才稳定在最上层。
+   */
+  .header-container {
+    z-index: var(--rn-header-z) !important;
   }
 
   .search-layout__top::before,
@@ -454,6 +484,52 @@
     background-color: var(--rn-glass);
     backdrop-filter: var(--rn-glass-blur);
     -webkit-backdrop-filter: var(--rn-glass-blur);
+  }
+
+  /*
+   * 这两行里的按钮补上和侧栏同一套的克制卡片悬浮。实测各自的类名：
+   *   .search-layout__top    .channel（全部/图文/视频/用户）、.filter（筛选）
+   *   .search-layout__middle .tab（综合/日本/头戴式… 筛选胶囊）
+   * 注意文件前面那条 .channel-container .channel 覆盖不到这里（实测
+   * matches() 为 false），这两行的 .channel 不在 .channel-container 下。
+   *
+   * 圆角跟随原生：顶部一行是 999px 胶囊，筛选行是 8px 圆角矩形，不强行统一。
+   * 投影用 --rn-nav-shadow-hover 这一档收敛的：两行都在横向滚动容器里，
+   * 模糊半径过大同样会在两端被裁平（和侧栏胶囊是同一个限制）。
+   */
+  .search-layout__top :is(.channel, .filter),
+  .search-layout__middle .tab {
+    position: relative;
+    z-index: 0;
+    box-sizing: border-box !important;
+    border: 1px solid transparent !important;
+    transform: translateY(0) scale(1);
+    transform-origin: center center;
+    transition:
+      transform 220ms var(--rn-ease),
+      background-color 180ms ease,
+      border-color 180ms ease,
+      box-shadow 220ms var(--rn-ease) !important;
+    will-change: transform;
+  }
+
+  .search-layout__top :is(.channel, .filter) {
+    border-radius: 999px !important;
+  }
+
+  .search-layout__middle .tab {
+    border-radius: 8px !important;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .search-layout__top :is(.channel, .filter):hover,
+    .search-layout__middle .tab:hover {
+      z-index: 5;
+      background-color: var(--rn-panel-hover) !important;
+      border-color: var(--rn-border-hover) !important;
+      box-shadow: var(--rn-nav-shadow-hover) !important;
+      transform: translateY(-2px) scale(1.04);
+    }
   }
 
   /* Add horizontal breathing room inside the native scroll mask. */
