@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           Instagram Apple 克制卡片与悬浮动效
 @namespace      instagram-apple-restrained-cards
-@version        1.0.0
+@version        1.0.1
 @description    为 Instagram 的左侧导航、快拍行、信息流贴文和 Messages 浮钮添加克制的 Apple 风格卡片与悬浮动画
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/instagram-apple.user.css
 ==/UserStyle== */
@@ -113,9 +113,14 @@
    * 头像圈为按钮内第一个 div 中的 canvas）。
    * 触发挂在 li 上、变换挂在按钮的第一个子 div 上并令其不接收指针事件：
    * 命中网格因此永不变形，放大层盖到邻居也不会产生粘滞回环。
+   *
+   * 切勿在此处写 position：快拍栏是绝对定位轮播，li 原生即
+   * position: absolute + transform: translateX(index * 104px)。
+   * 一旦改成 relative，li 会退回常规流按 flex 排布（步进 90px），
+   * 再叠加原生的 104px 位移，步进变成 194px —— 头像间距凭空多出 104px。
+   * 原生的 absolute 本身就是定位元素，下面的 z-index 无需 position 即可生效。
    */
   main ul li:has(> div[role="button"] canvas) {
-    position: relative !important;
     z-index: 0 !important;
   }
 
