@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           Google Apple 克制卡片与动效
 @namespace      google-apple-card-motion
-@version        1.5.22
+@version        1.5.23
 @description    为 Google 搜索结果与顶部控件添加克制的 Apple 风格动效和磨砂玻璃
 @author         Codex
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/google-apple.user.css
@@ -996,11 +996,38 @@
 
   /* ---------- 7.6 问答条目、横向结果卡片与图片轮播 ---------- */
   /*
-   * 直接在真实可点击元素上绘制背景与阴影，不创建覆盖层，避免影响链接命中区域。
-   * 三类组件统一使用轻微上浮；不缩放内容，防止文字重绘与相邻卡片互相挤压。
+   * L3Ezfd 在新版问答模块中是覆盖于文字上方的交互层，不能在它自身绘制
+   * 半透明背景，否则下方问题文字会透过材质变灰。这里保持覆盖层完全透明，
+   * 不再位移，仅用外部阴影提示选中状态。
    */
+  #rso div.L3Ezfd {
+    box-sizing: border-box !important;
+    border-radius: var(--g-apple-result-radius) !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    filter: none !important;
+    translate: none !important;
+    transition: box-shadow var(--g-apple-motion) !important;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    #rso div.L3Ezfd:is(:hover, :focus-visible, :focus-within) {
+      background-color: transparent !important;
+      box-shadow: var(--g-apple-card-shadow-soft) !important;
+      filter: none !important;
+      translate: none !important;
+    }
+  }
+
+  #rso div.L3Ezfd:active {
+    background-color: transparent !important;
+    box-shadow: var(--g-apple-card-shadow-pressed) !important;
+    translate: none !important;
+    transition-duration: 90ms !important;
+  }
+
+  /* 横向结果卡和图片轮播本身承载内容，可以安全地在元素背景层绘制材质。 */
   #rso :is(
-    div.L3Ezfd,
     a.ZbQNgf,
     div.MimRQe
   ) {
@@ -1016,7 +1043,6 @@
 
   @media (hover: hover) and (pointer: fine) {
     #rso :is(
-      div.L3Ezfd,
       a.ZbQNgf,
       div.MimRQe
     ):is(:hover, :focus-visible, :focus-within) {
@@ -1028,7 +1054,6 @@
   }
 
   #rso :is(
-    div.L3Ezfd,
     a.ZbQNgf,
     div.MimRQe
   ):active {
