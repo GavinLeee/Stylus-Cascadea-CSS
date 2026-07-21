@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           小红书 Apple 风格左栏与卡片悬浮动效
 @namespace      rednote-apple-card-motion
-@version        1.8.0
+@version        1.8.1
 @description    为小红书网页版左侧导航按钮和图文卡片添加克制的 Apple 风格卡片悬浮动效，视觉语言对齐 X（Twitter）的克制卡片方案
 @match          https://www.xiaohongshu.com/*
 @match          https://xiaohongshu.com/*
@@ -653,13 +653,14 @@
     position: relative;
     z-index: 0;
     box-sizing: border-box !important;
-    border: 1px solid transparent !important;
+    /* 不画边框，和侧栏那组胶囊保持一致（那边也是 border: none，只靠底色
+       和投影表达抬起）。加 1px 描边会让这排按钮比侧栏显得硬。 */
+    border: none !important;
     transform: translateY(0) scale(1);
     transform-origin: center center;
     transition:
       transform 220ms var(--rn-ease),
       background-color 180ms ease,
-      border-color 180ms ease,
       box-shadow 220ms var(--rn-ease) !important;
     will-change: transform;
   }
@@ -677,7 +678,6 @@
     .search-layout__middle .tab:hover {
       z-index: 5;
       background-color: var(--rn-panel-hover) !important;
-      border-color: var(--rn-border-hover) !important;
       box-shadow: var(--rn-nav-shadow-hover) !important;
       transform: translateY(-2px) scale(1.04);
     }
@@ -897,21 +897,33 @@
   }
 
   /*
-   * 笔记正文区 .note-content（实测 400×253，padding 0 20px 20px）。
-   * 只做背景 + 投影的卡片感，不做位移/缩放：这块是长段落文字，一动整段
-   * 都会跟着漂，读起来晃眼；而且它自己带左右 20px 内边距，::before 往外
-   * 扩一点就能把卡片画到文字块外沿，不用碰布局。
+   * 笔记的标题和正文。
+   * 卡片只盖这两块，不盖 .note-content 整体——它还包着底部那行时间/地点
+   * （.bottom-container），把那行也罩进来就显得拖沓。
+   *
+   * 实测 .note-content 的三个子块：
+   *   #detail-title  310~321
+   *   #detail-desc   324~961
+   *   .bottom-container  966 起（自带 margin-top: 12px）
+   * 标题和正文之间有 3px 缝，交给正文那块的 top: -3px 吃掉，两块正好在
+   * 321 接上、拼成连续的一片；正文那块底部只外扩 4px（到 965），停在
+   * 时间行上沿之前。
+   *
+   * 只做背景 + 投影，不做位移/缩放：这是长段落文字，一动整段都跟着漂，
+   * 读起来晃眼。悬浮判定挂在 .note-content 上，鼠标落在标题或正文任意
+   * 一处，两块一起亮，观感就是一整张卡片。
    */
-  .note-detail-mask .note-content {
+  .note-detail-mask .note-content :is(#detail-title, #detail-desc) {
     position: relative;
     z-index: 0;
   }
 
-  .note-detail-mask .note-content::before {
+  .note-detail-mask .note-content :is(#detail-title, #detail-desc)::before {
     content: "";
     position: absolute;
     z-index: -1;
-    inset: -4px -8px;
+    right: -8px;
+    left: -8px;
     border-radius: var(--rn-card-radius);
     background: transparent;
     box-shadow: none;
@@ -923,8 +935,23 @@
       box-shadow 240ms var(--rn-ease);
   }
 
+  /* 标题：上沿外扩留白，下沿贴齐自身盒子，由正文那块接上去 */
+  .note-detail-mask .note-content #detail-title::before {
+    top: -6px;
+    bottom: 0;
+    border-radius: var(--rn-card-radius) var(--rn-card-radius) 0 0;
+  }
+
+  /* 正文：上沿吃掉与标题之间的 3px 缝，下沿停在时间行之前 */
+  .note-detail-mask .note-content #detail-desc::before {
+    top: -3px;
+    bottom: -4px;
+    border-radius: 0 0 var(--rn-card-radius) var(--rn-card-radius);
+  }
+
   @media (hover: hover) and (pointer: fine) {
-    .note-detail-mask .note-content:hover::before {
+    .note-detail-mask .note-content:hover
+    :is(#detail-title, #detail-desc)::before {
       opacity: 1;
       background: var(--rn-panel-hover);
       box-shadow: var(--rn-nav-shadow-hover);
