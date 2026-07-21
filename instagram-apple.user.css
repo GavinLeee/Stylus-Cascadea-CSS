@@ -1,8 +1,8 @@
 /* ==UserStyle==
 @name           Instagram Apple 克制卡片与悬浮动效
 @namespace      instagram-apple-restrained-cards
-@version        1.0.2
-@description    为 Instagram 的左侧导航、快拍行、信息流贴文和 Messages 浮钮添加克制的 Apple 风格卡片与悬浮动画
+@version        1.0.3
+@description    为 Instagram 的左侧导航、快拍行、信息流贴文、评论区和 Messages 浮钮添加克制的 Apple 风格卡片与悬浮动画
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/instagram-apple.user.css
 ==/UserStyle== */
 
@@ -262,6 +262,72 @@
     transition-duration: 90ms !important;
   }
 
+  /*
+   * 5. 评论区：每条评论一张预绘卡片，头像单独放大。
+   * 实测于贴文页 /p/…（首页点开的弹窗是同一套 DOM，故作用域取 main 与 dialog 两者）。
+   *
+   * 评论不用 ul/li：行容器的特征是"直接子元素为头像列，且内部含评论固定链接"。
+   * a[href*="/c/"] 就是评论自身的永久链接（时间戳"20h"即是），每条有且仅有一个，
+   * 且不随界面语言变化——比 img[alt] / aria-label 稳。之所以还要 > div.xbmvrgn
+   * （头像列，声明为 margin-inline-end: 12px）：光靠 :has(a[href*="/c/"]) 会把每一层
+   * 祖先都算进去，而只有行容器把头像列作为直接子元素，这一条把命中钉死在行这一层。
+   * 实测 15 条评论精确命中 15 个，无嵌套重复；正文 caption 不含评论链接故不受影响。
+   *
+   * 行原生 position: static，改 relative 不产生位移（伪元素卡片需要它）。
+   */
+  :is(main, [role="dialog"]) div:has(> div.xbmvrgn):has(a[href*="/c/"]) {
+    position: relative !important;
+    z-index: 0 !important;
+    transform: translateY(0) translateZ(0);
+    transition: transform 300ms var(--iga-ease);
+  }
+
+  :is(main, [role="dialog"]) div:has(> div.xbmvrgn):has(a[href*="/c/"])::before {
+    content: "";
+    position: absolute;
+    /* 左右外扩受滚动容器余量限制（实测左 16px / 右 30px，且该容器 overflow-x: auto），
+       取 8px 既有呼吸感又不会撑出横向滚动条。 */
+    inset: -4px -8px;
+    z-index: -1;
+    border-radius: 10px;
+    background: var(--iga-card);
+    /* 阴影用导航那档而非贴文卡那档：评论行只有 85px 高，
+       贴文卡的 38px 扩散阴影压在这个尺寸上会显得脏。 */
+    box-shadow:
+      inset 0 0 0 1px var(--iga-card-ring),
+      var(--iga-nav-shadow);
+    opacity: 0;
+    transition: opacity 220ms ease;
+    pointer-events: none;
+  }
+
+  :is(main, [role="dialog"]) div:has(> div.xbmvrgn):has(a[href*="/c/"]):hover {
+    z-index: 4 !important;
+    transform: translateY(-1px) translateZ(0);
+  }
+
+  :is(main, [role="dialog"]) div:has(> div.xbmvrgn):has(a[href*="/c/"]):hover::before {
+    opacity: 1;
+  }
+
+  /*
+   * 评论头像：行内共三个链接（头像、用户名、时间戳），只有头像内含 img，
+   * 故 a[role="link"]:has(img) 即可唯一命中。
+   * 原生带 transition: all，与导航胶囊同理必须收窄，否则悬停会抖。
+   * 计时沿用快拍 Dock 那一套，让本表所有头像放大手感一致。
+   */
+  :is(main, [role="dialog"]) div:has(> div.xbmvrgn):has(a[href*="/c/"])
+  a[role="link"]:has(img) {
+    transform: scale(1) translateZ(0);
+    transition: transform 360ms var(--iga-ease) !important;
+  }
+
+  :is(main, [role="dialog"]) div:has(> div.xbmvrgn):has(a[href*="/c/"])
+  a[role="link"]:has(img):hover {
+    transform: scale(1.12) translateZ(0);
+    transition: transform 190ms var(--iga-ease-dock) !important;
+  }
+
   /* 尊重系统的"减少动态效果"设置 */
   @media (prefers-reduced-motion: reduce) {
     a[role="link"]:not(main *) > div.x1obq294.x5a5i1n.xde0f50::before,
@@ -271,7 +337,11 @@
     main article,
     main article::before,
     div[role="button"]:has(svg[aria-label="Messages"]),
-    div[role="button"]:has(svg[aria-label="Messages"])::after {
+    div[role="button"]:has(svg[aria-label="Messages"])::after,
+    :is(main, [role="dialog"]) div:has(> div.xbmvrgn):has(a[href*="/c/"]),
+    :is(main, [role="dialog"]) div:has(> div.xbmvrgn):has(a[href*="/c/"])::before,
+    :is(main, [role="dialog"]) div:has(> div.xbmvrgn):has(a[href*="/c/"])
+    a[role="link"]:has(img) {
       transition: none !important;
     }
 
@@ -280,7 +350,10 @@
     main ul li:has(> div > a[role="link"]):not(:has(> div[role="button"])):hover
     > div:first-child,
     main article:hover,
-    div[role="button"]:has(svg[aria-label="Messages"]):hover {
+    div[role="button"]:has(svg[aria-label="Messages"]):hover,
+    :is(main, [role="dialog"]) div:has(> div.xbmvrgn):has(a[href*="/c/"]):hover,
+    :is(main, [role="dialog"]) div:has(> div.xbmvrgn):has(a[href*="/c/"])
+    a[role="link"]:has(img):hover {
       transform: none !important;
     }
   }
