@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           Bilibili Apple 风格统一视频卡片
 @namespace      bilibili-apple-native-theme
-@version        8.14.4
+@version        8.14.5
 @description    首页网格、播放页推荐与播放器圆角、动态视频、动态页 Apple 背景、个人空间卡片、YouTube 风格顶栏玻璃及全站紫色强调色
 @match          https://www.bilibili.com/*
 @match          https://t.bilibili.com/*
@@ -2140,7 +2140,9 @@
 
   body:has(.bili-feed4 > .header-channel):has(.bili-header__bar.slide-down)
   .bili-feed4 > .header-channel.header-channel {
-    isolation: isolate !important;
+    /* isolation:isolate 会把这里变成新的 backdrop root，导致下方视频无法
+       被 ::before 的 backdrop-filter 取样，最终只剩透明蒙版而没有模糊。 */
+    isolation: auto !important;
     overflow: visible !important;
     background: transparent !important;
     background-image: none !important;
