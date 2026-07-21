@@ -26,7 +26,7 @@
 | 脚本 | 版本 | 生效范围 | 作用 |
 | --- | --- | --- | --- |
 | [`youtube-follow-system-theme.user.js`](youtube-follow-system-theme.user.js) | 1.3.16 | `youtube.com` | 自动跟随系统深浅色、刷新组件，并为浅色播放页补实时环境光 |
-| [`xiaohongshu-panel-close.user.js`](xiaohongshu-panel-close.user.js) | 1.1.0 | `xiaohongshu.com` | 给搜索建议面板补收起淡出动画（站点是直接从 DOM 移除面板，CSS 无从附着） |
+| [`xiaohongshu-panel-close.user.js`](xiaohongshu-panel-close.user.js) | 1.2.0 | `xiaohongshu.com` | 给搜索建议面板补收起动画：被搜索框吸回去（站点是直接从 DOM 移除面板，CSS 无从附着） |
 
 需要 [Tampermonkey](https://www.tampermonkey.net/) 一类的用户脚本管理器，安装方式同样是点开文件后点 **Raw**。
 
