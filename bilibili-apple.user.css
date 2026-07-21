@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           Bilibili Apple 风格统一视频卡片
 @namespace      bilibili-apple-native-theme
-@version        8.14.3
+@version        8.14.4
 @description    首页网格、播放页推荐与播放器圆角、动态视频、动态页 Apple 背景、个人空间卡片、YouTube 风格顶栏玻璃及全站紫色强调色
 @match          https://www.bilibili.com/*
 @match          https://t.bilibili.com/*
@@ -64,15 +64,16 @@
     --video-row-gap: 52px;
     --video-card-min-width: 290px;
 
-    /* 首页、动态页及其余吸顶栏共享同一套玻璃参数。首页改成单一整块
-       背景层后不再有两层底色叠加，因此把底色适度加厚，避免内容透得过重。 */
-    --bili-header-glass-background: rgba(255, 255, 255, 0.92);
-    --bili-header-glass-filter: saturate(180%) blur(22px);
+    /* 与 youtube-apple.user.css 的顶栏材质保持完全一致。Bilibili 首页的
+       顶栏和分类条只共用这一层玻璃，不能分别绘制后再叠加，否则即使参数
+       相同也会在交界处变深。 */
+    --bili-header-glass-background: rgba(245, 245, 247, 0.55);
+    --bili-header-glass-filter: saturate(220%) blur(16px);
   }
 
   @media (prefers-color-scheme: dark) {
     :root {
-      --bili-header-glass-background: rgba(24, 24, 26, 0.90);
+      --bili-header-glass-background: rgba(38, 38, 40, 0.60);
     }
   }
 
@@ -84,7 +85,7 @@
     html[data-theme-style="dark"],
     html[data-darkreader-scheme="dark"]
   ) {
-    --bili-header-glass-background: rgba(24, 24, 26, 0.90);
+    --bili-header-glass-background: rgba(38, 38, 40, 0.60);
   }
 
 
