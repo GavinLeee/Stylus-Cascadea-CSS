@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           小红书 Apple 风格左栏与卡片悬浮动效
 @namespace      rednote-apple-card-motion
-@version        1.7.0
+@version        1.7.1
 @description    为小红书网页版左侧导航按钮和图文卡片添加克制的 Apple 风格卡片悬浮动效，视觉语言对齐 X（Twitter）的克制卡片方案
 @match          https://www.xiaohongshu.com/*
 @match          https://xiaohongshu.com/*
@@ -553,8 +553,20 @@
    * 外扩量用变量表示，跟着 .ai-feeds-page 的 padding 走；站点改版调了这个
    * padding 的话，改这一个值即可。
    */
+  /*
+   * 筛选行的玻璃挂在 .reds-sticky 上而不是外层 .search-layout__middle：
+   * 滚动后站点会把 .reds-sticky 切成 position: fixed; top: 116px 钉在顶栏
+   * 下方，而外层照常滚走（实测滚动后 .reds-sticky y=116、父元素 y=-267）。
+   * 玻璃画在外层就会跟着滚没，只剩一排没有背景板的筛选胶囊浮在卡片上。
+   *
+   * 这里不给 .reds-sticky 设 position，两种状态都自然成立：
+   *   钉住时它自己是 fixed（已定位），伪元素直接以它为包含块，跟着走；
+   *   未钉住时它是 static，伪元素回退到最近的已定位祖先，也就是外层
+   *   .search-layout__middle，正好铺满整条行。
+   * 不设 position 也就不会和站点自己那条 fixed 打架。
+   */
   .search-layout__top::before,
-  .search-layout__middle::before {
+  .search-layout__middle .reds-sticky::before {
     content: "";
     position: absolute;
     z-index: -1;
