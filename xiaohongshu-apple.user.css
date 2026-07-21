@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           小红书 Apple 风格左栏与卡片悬浮动效
 @namespace      rednote-apple-card-motion
-@version        1.9.0
+@version        1.9.1
 @description    为小红书网页版左侧导航按钮和图文卡片添加克制的 Apple 风格卡片悬浮动效，视觉语言对齐 X（Twitter）的克制卡片方案
 @match          https://www.xiaohongshu.com/*
 @match          https://xiaohongshu.com/*
@@ -1006,6 +1006,24 @@
    * 读起来晃眼。悬浮判定挂在 .note-content 上，鼠标落在标题或正文任意
    * 一处，两块一起亮，观感就是一整张卡片。
    */
+  /*
+   * 和上面头像那处同一个病根：卡片上沿被祖先的 overflow 裁平。
+   * 这里裁它的是笔记正文的滚动容器 .note-scroller（原生 overflow:
+   * auto/scroll），而它的上边缘正好压在第一块内容的上边缘上——实测
+   * .note-scroller 和 .note-content、#detail-title 三者 top 完全相同
+   * （无标题的笔记则是和 #detail-desc 相同），标题卡片向上外扩的 6px
+   * 加上投影往上够到的 8px，全在滚动视口外面，被切成一条平边。
+   *
+   * 撑开的是滚动内容而不是滚动容器：给 .note-scroller 补 padding + 负
+   * margin 会把裁切盒往上顶进作者行的地盘，正文滚动时文字会从作者行下面
+   * 冒出来。给 .note-content 补 padding-top 则是把内容往下让，卡片的外扩
+   * 和投影都落在视口内，滚动行为也完全照旧。
+   * 16px = 外扩 6 + 投影 8 + 2px 余量。
+   */
+  .note-detail-mask .note-content {
+    padding-top: 16px !important;
+  }
+
   .note-detail-mask .note-content :is(#detail-title, #detail-desc) {
     position: relative;
     z-index: 0;
