@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           Bilibili Apple 风格统一视频卡片
 @namespace      bilibili-apple-native-theme
-@version        8.14.7
+@version        8.14.8
 @description    首页网格、播放页推荐与播放器圆角、动态视频、动态页 Apple 背景、个人空间卡片、YouTube 风格顶栏玻璃及全站紫色强调色
 @match          https://www.bilibili.com/*
 @match          https://t.bilibili.com/*
@@ -1974,6 +1974,24 @@
     top: 0 !important;
   }
 
+  /* 首页顶栏始终留在视口顶部。B 站原生会根据滚动方向切换 slide-down
+     并用 transform 把顶栏移出屏幕；这里保留它的状态类供下方导航判断何时
+     已经吸顶，但不再允许该状态改变顶栏的位置或可见性。 */
+  body:has(.bili-feed4 > .header-channel) .bili-header__bar {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    z-index: 100002 !important;
+    transform: translate3d(0, 0, 0) !important;
+    translate: none !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+  }
+
   /* 首页/搜索页/视频播放页/UP主空间页/消息页顶栏：这些页面 bilibili 自己的 JS 已经会在滚动后把
      .bili-header__bar 固定在顶部（大首页 large-header、搜索页 mini-header 都是这样），
      不需要再额外强制 position:fixed，这里只需要把原生的纯白底替换成毛玻璃质感即可。
@@ -2162,15 +2180,34 @@
     -webkit-backdrop-filter: none !important;
   }
 
-  /* 独立固定底板负责一次性绘制顶栏 + 分类条的连续玻璃。它位于页面内容之上、
-     两条导航内容之下，既能稳定取样视频，也不会像扩展后的顶栏伪元素那样盖住分类按钮。 */
+  /* 合并后的玻璃改由真正随分类导航增高的 .header-channel-fixed::before 绘制。
+     上边缘向上延伸一个顶栏高度，折叠时覆盖“顶栏 + 单行分类”，展开时 bottom:0
+     会自动跟随导航容器新增的行数，不再依赖写死的 128px 高度。 */
   body:has(.bili-feed4 > .header-channel):has(.bili-header__bar.slide-down)::before {
+    content: none !important;
+  }
+
+  body:has(.bili-feed4 > .header-channel):has(.bili-header__bar.slide-down)
+  .bili-feed4 > .header-channel .header-channel-fixed {
+    position: relative !important;
+    z-index: 0 !important;
+    overflow: visible !important;
+    background: transparent !important;
+    background-image: none !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  body:has(.bili-feed4 > .header-channel):has(.bili-header__bar.slide-down)
+  .bili-feed4 > .header-channel .header-channel-fixed::before {
     content: "" !important;
-    position: fixed !important;
-    inset: 0 0 auto 0 !important;
+    position: absolute !important;
+    inset: -64px 0 0 0 !important;
     width: 100% !important;
-    height: 128px !important;
-    z-index: 100000 !important;
+    height: auto !important;
+    z-index: 0 !important;
     pointer-events: none !important;
     background: var(--bili-header-glass-background) !important;
     background-image: none !important;
@@ -2182,13 +2219,9 @@
   }
 
   body:has(.bili-feed4 > .header-channel):has(.bili-header__bar.slide-down)
-  .bili-feed4 > .header-channel .header-channel-fixed {
-    background: transparent !important;
-    background-image: none !important;
-    border: 0 !important;
-    box-shadow: none !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
+  .bili-feed4 > .header-channel .header-channel-fixed > * {
+    position: relative !important;
+    z-index: 1 !important;
   }
 
   body:has(.bili-feed4 > .header-channel):has(.bili-header__bar.slide-down)
