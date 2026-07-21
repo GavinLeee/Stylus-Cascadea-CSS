@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           Bilibili Apple 风格统一视频卡片
 @namespace      bilibili-apple-native-theme
-@version        8.14.2
+@version        8.14.3
 @description    首页网格、播放页推荐与播放器圆角、动态视频、动态页 Apple 背景、个人空间卡片、YouTube 风格顶栏玻璃及全站紫色强调色
 @match          https://www.bilibili.com/*
 @match          https://t.bilibili.com/*
@@ -66,13 +66,13 @@
 
     /* 首页、动态页及其余吸顶栏共享同一套玻璃参数。首页改成单一整块
        背景层后不再有两层底色叠加，因此把底色适度加厚，避免内容透得过重。 */
-    --bili-header-glass-background: rgba(255, 255, 255, 0.90);
+    --bili-header-glass-background: rgba(255, 255, 255, 0.92);
     --bili-header-glass-filter: saturate(180%) blur(22px);
   }
 
   @media (prefers-color-scheme: dark) {
     :root {
-      --bili-header-glass-background: rgba(24, 24, 26, 0.86);
+      --bili-header-glass-background: rgba(24, 24, 26, 0.90);
     }
   }
 
@@ -84,7 +84,7 @@
     html[data-theme-style="dark"],
     html[data-darkreader-scheme="dark"]
   ) {
-    --bili-header-glass-background: rgba(24, 24, 26, 0.86);
+    --bili-header-glass-background: rgba(24, 24, 26, 0.90);
   }
 
 
@@ -1976,7 +1976,7 @@
   /* 首页/搜索页/视频播放页/UP主空间页/消息页顶栏：这些页面 bilibili 自己的 JS 已经会在滚动后把
      .bili-header__bar 固定在顶部（大首页 large-header、搜索页 mini-header 都是这样），
      不需要再额外强制 position:fixed，这里只需要把原生的纯白底替换成毛玻璃质感即可。
-     材质使用克制但可读性更稳的浅色 90% 白、深色 86% 深灰，配合
+     材质使用克制但可读性更稳的浅色 92% 白、深色 90% 深灰，配合
      saturate(180%) blur(22px)。下边框直接去掉——它和下面接着的
      .header-channel 是同一条视觉上连续的玻璃面板，中间和底部都不保留分隔线。 */
   /* 背景+模糊改画在 ::before 伪元素上，不直接放在 .bili-header__bar 本身：实测确认
@@ -2105,7 +2105,10 @@
 
   /* 首页滚动后，顶栏与分类条原本各自执行一次 backdrop-filter。即便颜色和边框完全相同，
      两块独立取样的玻璃仍会在接缝处形成一条明暗边界。slide-down 状态下关闭这两块独立
-     材质，改由分类条的 ::before 从自身顶部向上覆盖 64px，一次性绘制整块玻璃。 */
+     材质，改由分类条的 ::before 一次性绘制整块玻璃。不能只按原生 64px 顶栏高度向上
+     延伸：Edge 实际页面会因缩放和灰度布局在两栏之间留下更大的距离，使底板上缘直接露在
+     视口内。这里使用有界的 192px 向上覆盖，超出视口的部分会被裁掉，但可确保可见区域从
+     浏览器内容顶部到分类条底部始终只有一个连续的合成层。 */
   body:has(.bili-feed4 > .header-channel):has(.bili-header__bar.slide-down)
   .bili-header {
     overflow: visible !important;
@@ -2160,7 +2163,7 @@
   .bili-feed4 > .header-channel.header-channel::before {
     content: "" !important;
     position: absolute !important;
-    inset: -66px 0 -1px !important;
+    inset: -192px 0 -1px !important;
     z-index: -1 !important;
     pointer-events: none !important;
     background: var(--bili-header-glass-background) !important;
