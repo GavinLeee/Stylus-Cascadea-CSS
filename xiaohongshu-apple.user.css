@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           小红书 Apple 风格左栏与卡片悬浮动效
 @namespace      rednote-apple-card-motion
-@version        1.4.3
+@version        1.4.4
 @description    为小红书网页版左侧导航按钮和图文卡片添加克制的 Apple 风格卡片悬浮动效，视觉语言对齐 X（Twitter）的克制卡片方案
 @match          https://www.xiaohongshu.com/*
 @match          https://xiaohongshu.com/*
@@ -150,21 +150,22 @@
    * 顶栏玻璃虽然生效了，搜索框左右两块看起来仍是实色。必须连
    * background-image 一起清掉（background-color 原生本来就是透明的）。
    *
-   * 但只清成透明还不够：这层原生自带 backdrop-filter: blur(0px)。这是个
-   * 空操作模糊，视觉上什么都不做，却足以让它成为一个 backdrop root ——
-   * 顶栏 .ai-header-container 的玻璃在这块区域的采样会被它截断，结果这一条
-   * 横带没有任何玻璃感，和上下的顶栏玻璃割裂。
+   * 但只清成透明还不够：这层原生自带 backdrop-filter: blur(0px)。虽然是
+   * 零半径、视觉上什么都不做，它仍然会让这层重新采样并合成一次背景，
+   * 结果这条横带和上下的顶栏玻璃对不上。
    *
-   * 解法是把这个空模糊换成和顶栏同一份模糊，但底色保持透明：这层被顶栏
-   * 完全包住（实测顶栏 y 0~116，这层 y 32~88），底色再画一遍就会在中间
-   * 这条带上叠成 0.55 over 0.55、比上下两端更浑。只补模糊、底色交给顶栏，
-   * 整条顶栏的玻璃色调才是均匀的。
+   * 注意 blur(0px) 和 none 不等价：必须显式写成 none，让这层彻底不参与
+   * 绘制，顶栏自己的玻璃才能原样透上来。
+   * 也不要给它补一份模糊——这层完全嵌在顶栏内部（实测顶栏 y 0~116，
+   * 这层 y 32~88），它的 backdrop 就是顶栏已经画好的玻璃，再模糊一次等于
+   * 叠了两层，那条带会明显发白发灰（实测 A/B 对比确认）。底色同理，
+   * 会叠成 0.55 over 0.55。这层什么都不画，整条顶栏才是均匀的。
    */
   .ai-header-container .search-area-in-header {
     background-color: transparent !important;
     background-image: none !important;
-    backdrop-filter: var(--rn-glass-blur) !important;
-    -webkit-backdrop-filter: var(--rn-glass-blur) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
   }
 
   /* 搜索框/搜索按钮走上浮层玻璃（--rn-raised-*），比顶栏底板更糊、更实，
