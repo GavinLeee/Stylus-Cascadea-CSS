@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           小红书 Apple 风格左栏与卡片悬浮动效
 @namespace      rednote-apple-card-motion
-@version        1.8.1
+@version        1.9.0
 @description    为小红书网页版左侧导航按钮和图文卡片添加克制的 Apple 风格卡片悬浮动效，视觉语言对齐 X（Twitter）的克制卡片方案
 @match          https://www.xiaohongshu.com/*
 @match          https://xiaohongshu.com/*
@@ -391,6 +391,47 @@
   }
 
   /*
+   * 面板里还有第三类条目：搜索框刚聚焦、还没输入时的"猜你想搜"
+   * （.suggestion-item），和上面按输入联想的 .sug-item 不是同一套结构，
+   * 之前漏了。实测它是两列网格里的一行：444×40，原生 padding: 8px 0，
+   * 圆角 8px，文字（.suggestion-desc）紧贴自己盒子的左边缘。
+   *
+   * 直接给它画卡片的话，底色会顶着文字画，没有左右呼吸。补 padding-inline
+   * 又会把文字整体推右、和上面"猜你想搜"标题错开，所以连列表一起往外
+   * 拉同样的量：列表左右各外扩 10px，条目左右各补 10px，抵消之后
+   * 左列文字仍停在 478（和标题对齐），只有右列文字右移 10px。
+   * 实测：列表 468~1375（面板 457~1377，还在里面），两列条目
+   * 468~922 / 921~1375 首尾相接不重叠——不外扩列表、只给条目补
+   * padding 的话，左列的卡片会伸到 932，压在右列文字头上。
+   *
+   * 位移只给 1px：这是一整行通栏文字，位移大了整段字都在漂。
+   */
+  .ai-dropdown-panel .suggestion-list {
+    margin-inline: -10px !important;
+    width: calc(100% + 20px) !important;
+  }
+
+  .ai-dropdown-panel .suggestion-item {
+    box-sizing: border-box !important;
+    padding-inline: 10px !important;
+    border-radius: 8px !important;
+    transform: translateY(0);
+    transition:
+      transform 200ms var(--rn-ease),
+      background-color 180ms ease,
+      box-shadow 220ms var(--rn-ease) !important;
+    will-change: transform;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .ai-dropdown-panel .suggestion-item:hover {
+      background-color: var(--rn-panel-hover) !important;
+      box-shadow: var(--rn-nav-shadow-hover) !important;
+      transform: translateY(-1px);
+    }
+  }
+
+  /*
    * .textarea-container 是 .input-box 内部的子节点（多行/AI 搜索展开态下
    * 出现），原生带一层自己的实色底（实测 rgb(41,41,46) ≈ #29292E），会整块
    * 盖住 .input-box 已经画好的玻璃——.input-box 的背景没坏，只是被这层子节点
@@ -683,6 +724,41 @@
     }
   }
 
+  /*
+   * 抬起来的按钮上沿会被切成一条平边——不是被顶栏盖住（把整行 z-index
+   * 抬到顶栏之上实测毫无变化），是被行内那层横向滚动视口裁掉的：
+   *
+   *   .search-layout__top    .content-container  y 121.7~150.3
+   *   .search-layout__middle .content-container  y 168~204
+   *
+   * 两层都是 overflow-x: scroll，而 overflow 一个轴设成非 visible，另一个轴
+   * 就不可能是 visible（浏览器强制算成 hidden），于是纵向也裁。更要命的是
+   * 这两个盒子的高度正好等于按钮本身（120.7~150.3 就是 .channel 的原始
+   * 位置），translateY(-2px) + scale(1.04) 抬出来的那两三个像素、以及整圈
+   * 投影，全都落在盒子外面被切平。
+   *
+   * 用 padding 把裁切盒上下各撑开 16px（够容纳 2px 位移 + 缩放溢出 +
+   * 投影的 4/12px 偏移和模糊），再用等量负 margin 把外框还原，按钮和整行
+   * 的布局位置一个像素都不变（实测两行仍是 116~156 / 168~224，信息流
+   * 仍从 224 开始）。横向仍然裁——那是滚动本身需要的，也是文件前面
+   * 特意把这两行投影调收敛的原因。
+   */
+  .search-layout__top .content-container,
+  .search-layout__middle .content-container {
+    padding-block: 16px !important;
+    margin-block: -16px !important;
+  }
+
+  /*
+   * 笔记/用户那一行外面还多套一层 .scroll-container（原生 overflow:
+   * hidden，高度就是行高 40px），撑开的裁切盒会被它再切一次。真正滚动的
+   * 是里面的 .content-container，这层放开不影响滚动。筛选行的同名容器
+   * 原生就是 visible，不用管。
+   */
+  .search-layout__top .scroll-container {
+    overflow: visible !important;
+  }
+
   /* Add horizontal breathing room inside the native scroll mask. */
   .side-bar :is(.channel-list, .channel-list-content) {
     box-sizing: border-box !important;
@@ -897,17 +973,34 @@
   }
 
   /*
+   * 放大的头像会被裁成上下两条平边：头像外面套着的 div.info（作者行里
+   * 装"头像 + 昵称"的那层）原生带 overflow: hidden，而它的盒子高度正好
+   * 等于头像本身（实测两者都是 y 56~96，40px），放大出来的那 5.6px
+   * （40 × 1.14 = 45.6，和开发者工具上显示的 45.59 对得上）没有地方画。
+   * 昵称的截断不靠这层：里面的 a.name 自己也是 overflow: hidden（实测
+   * 130px 宽、独立裁切），所以这层放开不会让长昵称溢出。
+   */
+  .note-detail-mask .author-wrapper .info {
+    overflow: visible !important;
+  }
+
+  /*
    * 笔记的标题和正文。
    * 卡片只盖这两块，不盖 .note-content 整体——它还包着底部那行时间/地点
    * （.bottom-container），把那行也罩进来就显得拖沓。
    *
-   * 实测 .note-content 的三个子块：
-   *   #detail-title  310~321
-   *   #detail-desc   324~961
-   *   .bottom-container  966 起（自带 margin-top: 12px）
-   * 标题和正文之间有 3px 缝，交给正文那块的 top: -3px 吃掉，两块正好在
-   * 321 接上、拼成连续的一片；正文那块底部只外扩 4px（到 965），停在
-   * 时间行上沿之前。
+   * 实测 .note-content 的三个子块（同一篇笔记连续量的）：
+   *   #detail-title      121~146，自带 margin-bottom: 8px
+   *   #detail-desc       154~1714
+   *   .bottom-container  1726 起，自带 margin-top: 12px
+   * 两块要拼成一张卡片，得同时解决"缝"和"影"两件事：
+   *   缝：标题和正文之间隔着标题自己的 8px 下外边距。让标题那块向下多吃
+   *       8px（bottom: -8px），正好落在正文块的上沿，两块严丝合缝。
+   *   影：两块各自带完整投影的话，接缝处会互相往对方身上投一道暗带，
+   *       看起来就是上下两张卡片。用 clip-path 把各自靠接缝那一侧的绘制
+   *       裁掉（标题裁下沿、正文裁上沿），另外三边留 -40px 让投影照画。
+   *       两块的底色都停在同一条线上、互不重叠，也就不会叠出深色带。
+   * 正文那块底部外扩 6px，剩下 6px 缓冲，不碰时间行。
    *
    * 只做背景 + 投影，不做位移/缩放：这是长段落文字，一动整段都跟着漂，
    * 读起来晃眼。悬浮判定挂在 .note-content 上，鼠标落在标题或正文任意
@@ -935,18 +1028,20 @@
       box-shadow 240ms var(--rn-ease);
   }
 
-  /* 标题：上沿外扩留白，下沿贴齐自身盒子，由正文那块接上去 */
+  /* 标题：上沿外扩留白，下沿吃掉自己的 8px 下外边距接到正文块 */
   .note-detail-mask .note-content #detail-title::before {
     top: -6px;
-    bottom: 0;
+    bottom: -8px;
     border-radius: var(--rn-card-radius) var(--rn-card-radius) 0 0;
+    clip-path: inset(-40px -40px 0 -40px);
   }
 
-  /* 正文：上沿吃掉与标题之间的 3px 缝，下沿停在时间行之前 */
+  /* 正文：上沿贴齐自身盒子（标题那块已经接上来），下沿停在时间行之前 */
   .note-detail-mask .note-content #detail-desc::before {
-    top: -3px;
-    bottom: -4px;
+    top: 0;
+    bottom: -6px;
     border-radius: 0 0 var(--rn-card-radius) var(--rn-card-radius);
+    clip-path: inset(0 -40px -40px -40px);
   }
 
   @media (hover: hover) and (pointer: fine) {
