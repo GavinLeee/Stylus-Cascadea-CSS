@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           Instagram Apple 克制卡片与悬浮动效
 @namespace      instagram-apple-restrained-cards
-@version        1.0.1
+@version        1.0.2
 @description    为 Instagram 的左侧导航、快拍行、信息流贴文和 Messages 浮钮添加克制的 Apple 风格卡片与悬浮动画
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/instagram-apple.user.css
 ==/UserStyle== */
@@ -120,11 +120,13 @@
    * 再叠加原生的 104px 位移，步进变成 194px —— 头像间距凭空多出 104px。
    * 原生的 absolute 本身就是定位元素，下面的 z-index 无需 position 即可生效。
    */
-  main ul li:has(> div[role="button"] canvas) {
+  main ul li:has(> div[role="button"] canvas),
+  main ul li:has(> div > a[role="link"]):not(:has(> div[role="button"])) {
     z-index: 0 !important;
   }
 
-  main ul li:has(> div[role="button"] canvas):hover {
+  main ul li:has(> div[role="button"] canvas):hover,
+  main ul li:has(> div > a[role="link"]):not(:has(> div[role="button"])):hover {
     z-index: 20 !important;
   }
 
@@ -143,6 +145,37 @@
     transform: translateY(-5px) scale(1.15) translateZ(0);
     filter: var(--iga-avatar-glow);
     /* 进场 190ms 轻过冲 */
+    transition:
+      transform 190ms var(--iga-ease-dock),
+      filter 190ms ease;
+  }
+
+  /*
+   * 同一个 ul 的尾部还挂着一排"推荐好友"（实测 18 个 li 中后 10 个属此类）。
+   * 它们没有快拍的渐变环，结构另起一支：li > div > a[role="link"]，
+   * 且多一个绝对定位的加好友徽标 button。以"有 a[role=link] 而无
+   * div[role=button]"区分两类，不用 img[alt] 判断——alt 文案随界面语言变化。
+   *
+   * 缩放层取 li 的唯一子 div：徽标压在头像下半部（实测比头像底边高 26px），
+   * 只缩放头像会让徽标掉队，而这一层同时包住头像、用户名与徽标。
+   *
+   * 此支不加 pointer-events: none：该层是链接与徽标按钮的祖先，屏蔽指针
+   * 会让两者点不动；而 1.15 倍放大仅向两侧各溢出 6.75px，小于 14px 的
+   * 相邻间距，不会盖住邻项，本就无需屏蔽。动效参数与快拍完全一致。
+   */
+  main ul li:has(> div > a[role="link"]):not(:has(> div[role="button"])) > div:first-child {
+    transform: translateY(0) scale(1) translateZ(0);
+    transform-origin: center bottom;
+    filter: none;
+    transition:
+      transform 360ms var(--iga-ease),
+      filter 360ms var(--iga-ease);
+  }
+
+  main ul li:has(> div > a[role="link"]):not(:has(> div[role="button"])):hover
+  > div:first-child {
+    transform: translateY(-5px) scale(1.15) translateZ(0);
+    filter: var(--iga-avatar-glow);
     transition:
       transform 190ms var(--iga-ease-dock),
       filter 190ms ease;
@@ -234,6 +267,7 @@
     a[role="link"]:not(main *) > div.x1obq294.x5a5i1n.xde0f50::before,
     a[role="link"]:not(main *) > div.x1obq294.x5a5i1n.xde0f50 :is(svg, img),
     main ul li > div[role="button"]:has(canvas) > div:first-of-type,
+    main ul li:has(> div > a[role="link"]):not(:has(> div[role="button"])) > div:first-child,
     main article,
     main article::before,
     div[role="button"]:has(svg[aria-label="Messages"]),
@@ -243,6 +277,8 @@
 
     a[role="link"]:not(main *):hover > div.x1obq294.x5a5i1n.xde0f50 :is(svg, img),
     main ul li:hover > div[role="button"]:has(canvas) > div:first-of-type,
+    main ul li:has(> div > a[role="link"]):not(:has(> div[role="button"])):hover
+    > div:first-child,
     main article:hover,
     div[role="button"]:has(svg[aria-label="Messages"]):hover {
       transform: none !important;
