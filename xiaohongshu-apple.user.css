@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           小红书 Apple 风格左栏与卡片悬浮动效
 @namespace      rednote-apple-card-motion
-@version        1.9.1
+@version        1.10.0
 @description    为小红书网页版左侧导航按钮和图文卡片添加克制的 Apple 风格卡片悬浮动效，视觉语言对齐 X（Twitter）的克制卡片方案
 @match          https://www.xiaohongshu.com/*
 @match          https://xiaohongshu.com/*
@@ -110,10 +110,28 @@
 
     /* 上浮层玻璃（搜索框、搜索按钮等浮在底板玻璃之上的控件），配方对齐
        YouTube 搜索框：模糊更重、不透明度只微增，靠"更糊"而不是"更厚"
-       和底板拉开层次。 */
+       和底板拉开层次。
+       这一档刻意不带 saturate：这些控件全都嵌在顶栏里，采样到的背景
+       已经被顶栏那层玻璃 saturate(220%) 过一遍，再叠一次等于 440%。
+       更要命的是饱和度是会钳位的——鲜艳色的通道会被推到 0 或 255，钳过
+       的结果没有任何单层配方还原得出来，下面展开面板就永远配不上色。 */
     --rn-raised-glass: rgba(246, 246, 246, 0.60);
     --rn-raised-glass-hover: rgba(246, 246, 246, 0.72);
-    --rn-raised-blur: saturate(200%) blur(60px);
+    --rn-raised-blur: blur(60px);
+
+    /* 展开面板专用：它挂在搜索框下方，大部分面积已经落在顶栏之外，身后
+       只有页面本身，只能靠自己这一层玻璃。而搜索框那块是"顶栏玻璃 +
+       控件玻璃"两层叠出来的，两者写同一份配方看起来就不是同一种材质
+       （实测就是用户报的那条"搜索框和展开窗口材质不一致"）。
+       所以这一档直接写成两层叠加的等效值：
+         不透明度 1 - (1-0.55)(1-0.60) = 0.82（深色 1 - 0.4×0.4 = 0.84）
+         颜色     两层加权混合后几乎不变，仍是 246/39 这一档
+         模糊     高斯叠加 √(16² + 60²) ≈ 62
+         饱和度   回到顶栏那一层的 220%（上面已说明不能叠两次）
+       实测验证：把"两层兄弟叠加"和这一份单层配方并排画在同一块渐变上，
+       接缝处看不出分界；而带 saturate(440%) 的版本明显更艳。 */
+    --rn-stacked-glass: rgba(246, 246, 246, 0.82);
+    --rn-stacked-blur: saturate(220%) blur(62px);
   }
 
   @media (prefers-color-scheme: dark) {
@@ -133,6 +151,7 @@
       --rn-glass: rgba(38, 38, 40, 0.60);
       --rn-raised-glass: rgba(40, 40, 40, 0.60);
       --rn-raised-glass-hover: rgba(52, 52, 52, 0.72);
+      --rn-stacked-glass: rgba(39, 39, 40, 0.84);
     }
   }
 
@@ -279,8 +298,9 @@
    * 建议面板展开时，搜索框和面板要拼成一块连续的圆角矩形：上圆下平，
    * 跟随原生 .textarea-container 的 24px 24px 0 0，正好和面板
    * （原生 0 0 24px 24px）接上。
-   * 同时不要切到 hover/focus 的 0.72 底色：面板是 0.60，两者贴在一起，
-   * 材质必须一致，否则接缝处会有一条明显的深浅分界。
+   * 同时不要切到 hover/focus 的 0.72 底色：两者贴在一起，材质必须一致，
+   * 否则接缝处会有一条明显的深浅分界。搜索框回到 0.60 之后，和顶栏那层
+   * 叠出来的就正好是面板那份 --rn-stacked-glass。
    */
   .ai-header-container .search-area-in-header
   .input-box:has(.wendian-wrapper--panel-open) {
@@ -322,8 +342,21 @@
 
   /*
    * 搜索框展开的建议下拉窗（.ai-dropdown-panel，原生实色 rgb(41,41,46)）。
-   * 走上浮层配方，和搜索框本体同一视觉层次、同一份底色，两者拼成一块连续
-   * 的圆角矩形。
+   * 和搜索框本体拼成一块连续的圆角矩形，所以两者必须是同一种材质。
+   *
+   * 但两边的处境不一样，配方不能照抄：搜索框整块嵌在顶栏里，身后已经有
+   * 顶栏那层玻璃，它自己那层是叠上去的第二层；面板挂在搜索框下方，绝大
+   * 部分面积落在顶栏之外，身后只有页面，只有自己一层。同写
+   * --rn-raised-glass 的话，搜索框是两层叠加、面板是一层，接缝处一眼就
+   * 能看出深浅和颜色都不一样。所以面板改用 --rn-stacked-glass /
+   * --rn-stacked-blur——那一档就是按两层叠加的等效值配出来的（推导和实测
+   * 见 :root 里的注释）。
+   *
+   * 唯一还对不齐的地方：搜索框展开成 175px 高时，顶栏下沿会盖住面板顶部
+   * 约 30px（实测顶栏 0~175、面板 145~415），那一条仍是两层叠加、比面板
+   * 其余部分再深一档（0.936 对 0.84）。透光率只差 6 个百分点，肉眼很难
+   * 分辨，就不为它再引入一套依赖顶栏内边距常量的几何补丁了。
+   *
    * 它是 .input-box 的后代（链路见上），所以上面那两层必须把 backdrop-filter
    * 让给伪元素，否则这里的玻璃采样不到页面、只剩平涂色。
    *
@@ -335,9 +368,9 @@
    * 塞回去播完出场再删；出场用的就是原生入场 fadeIn 的逆向。
    */
   .ai-dropdown-panel {
-    background-color: var(--rn-raised-glass) !important;
-    backdrop-filter: var(--rn-raised-blur) !important;
-    -webkit-backdrop-filter: var(--rn-raised-blur) !important;
+    background-color: var(--rn-stacked-glass) !important;
+    backdrop-filter: var(--rn-stacked-blur) !important;
+    -webkit-backdrop-filter: var(--rn-stacked-blur) !important;
   }
 
   /*
