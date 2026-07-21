@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           Instagram Apple 克制卡片与悬浮动效
 @namespace      instagram-apple-restrained-cards
-@version        1.0.3
+@version        1.0.4
 @description    为 Instagram 的左侧导航、快拍行、信息流贴文、评论区和 Messages 浮钮添加克制的 Apple 风格卡片与悬浮动画
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/instagram-apple.user.css
 ==/UserStyle== */
@@ -290,11 +290,16 @@
     inset: -4px -8px;
     z-index: -1;
     border-radius: 10px;
-    background: var(--iga-card);
+    /* 底色用导航胶囊那档（--iga-hl）而非贴文卡那档（--iga-card）：
+       深色主题下页面衬底实测 rgb(12,16,20)，--iga-card 是 rgb(23,27,32)，
+       两者对比度仅 1.10、RGB 只差 11 级，而阴影是纯黑、压在近黑底上完全不可见，
+       合起来等于画了张看不见的卡片。--iga-hl 是半透明提亮，叠加后约 rgb(36,41,47)，
+       与衬底拉开一倍以上差距，且与导航悬停同材质。 */
+    background: var(--iga-hl);
     /* 阴影用导航那档而非贴文卡那档：评论行只有 85px 高，
        贴文卡的 38px 扩散阴影压在这个尺寸上会显得脏。 */
     box-shadow:
-      inset 0 0 0 1px var(--iga-card-ring),
+      inset 0 0 0 1px var(--iga-hl-line),
       var(--iga-nav-shadow);
     opacity: 0;
     transition: opacity 220ms ease;
@@ -324,7 +329,9 @@
 
   :is(main, [role="dialog"]) div:has(> div.xbmvrgn):has(a[href*="/c/"])
   a[role="link"]:has(img):hover {
-    transform: scale(1.12) translateZ(0);
+    /* 头像只有 32px，1.12 倍才涨 3.8px、几乎看不出来；1.18 倍涨 5.8px，
+       单侧外溢 2.9px 仍远小于头像列 12px 的右外边距，不会挤到文字。 */
+    transform: scale(1.18) translateZ(0);
     transition: transform 190ms var(--iga-ease-dock) !important;
   }
 
