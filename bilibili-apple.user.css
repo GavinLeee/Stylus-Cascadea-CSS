@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           Bilibili Apple 风格统一视频卡片
 @namespace      bilibili-apple-native-theme
-@version        8.14.6
+@version        8.14.7
 @description    首页网格、播放页推荐与播放器圆角、动态视频、动态页 Apple 背景、个人空间卡片、YouTube 风格顶栏玻璃及全站紫色强调色
 @match          https://www.bilibili.com/*
 @match          https://t.bilibili.com/*
@@ -2117,6 +2117,7 @@
 
   body:has(.bili-feed4 > .header-channel):has(.bili-header__bar.slide-down)
   .bili-header__bar.slide-down {
+    z-index: 100002 !important;
     overflow: visible !important;
     background: transparent !important;
     background-image: none !important;
@@ -2128,21 +2129,12 @@
 
   body:has(.bili-feed4 > .header-channel):has(.bili-header__bar.slide-down)
   .bili-header__bar.slide-down::before {
-    /* 由真正固定在视口顶部的顶栏一次绘制整块玻璃，并向下覆盖分类条。
-       这样 backdrop-filter 始终在固定层上取样，不再依赖另一个 sibling
-       的负层级伪元素跨合成层采样。 */
-    content: "" !important;
-    position: absolute !important;
-    inset: 0 0 -64px !important;
-    z-index: -1 !important;
-    pointer-events: none !important;
-    background: var(--bili-header-glass-background) !important;
+    background: transparent !important;
     background-image: none !important;
     border: 0 !important;
-    border-radius: 0 !important;
     box-shadow: none !important;
-    backdrop-filter: var(--bili-header-glass-filter) !important;
-    -webkit-backdrop-filter: var(--bili-header-glass-filter) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
   }
 
   body:has(.bili-feed4 > .header-channel):has(.bili-header__bar.slide-down)
@@ -2160,6 +2152,7 @@
     /* isolation:isolate 会把这里变成新的 backdrop root，导致下方视频无法
        被 ::before 的 backdrop-filter 取样，最终只剩透明蒙版而没有模糊。 */
     isolation: auto !important;
+    z-index: 100001 !important;
     overflow: visible !important;
     background: transparent !important;
     background-image: none !important;
@@ -2167,6 +2160,25 @@
     box-shadow: none !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
+  }
+
+  /* 独立固定底板负责一次性绘制顶栏 + 分类条的连续玻璃。它位于页面内容之上、
+     两条导航内容之下，既能稳定取样视频，也不会像扩展后的顶栏伪元素那样盖住分类按钮。 */
+  body:has(.bili-feed4 > .header-channel):has(.bili-header__bar.slide-down)::before {
+    content: "" !important;
+    position: fixed !important;
+    inset: 0 0 auto 0 !important;
+    width: 100% !important;
+    height: 128px !important;
+    z-index: 100000 !important;
+    pointer-events: none !important;
+    background: var(--bili-header-glass-background) !important;
+    background-image: none !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    backdrop-filter: var(--bili-header-glass-filter) !important;
+    -webkit-backdrop-filter: var(--bili-header-glass-filter) !important;
   }
 
   body:has(.bili-feed4 > .header-channel):has(.bili-header__bar.slide-down)
