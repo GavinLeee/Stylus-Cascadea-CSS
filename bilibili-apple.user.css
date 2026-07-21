@@ -1,8 +1,8 @@
 /* ==UserStyle==
 @name           Bilibili Apple 风格统一视频卡片
 @namespace      bilibili-apple-native-theme
-@version        8.13.0
-@description    首页网格、播放页推荐与播放器圆角、动态视频、动态页 Apple 背景、个人空间卡片及全站紫色强调色
+@version        8.14.0
+@description    首页网格、播放页推荐与播放器圆角、动态视频、动态页 Apple 背景、个人空间卡片、YouTube 风格顶栏玻璃及全站紫色强调色
 @match          https://www.bilibili.com/*
 @match          https://t.bilibili.com/*
 @match          https://search.bilibili.com/*
@@ -1527,10 +1527,9 @@
   }
 
   /* 消息/动态/收藏/历史等按钮悬浮弹出的浮层内容（.v-popover-content，登录卡片、大会员
-     卡片、动态列表都共用这个类），原生纯白底 + 阴影，和顶栏的毛玻璃风格不统一；上一版
-     只换了背景色和模糊，阴影还留着原生那个 0 0 30px 的重投影，两种质感混在一起显得不
-     协调。这版直接把顶栏 .bili-header__bar 的参数原封不动搬过来（连阴影一起去掉），
-     选择器也重复类名顶一下优先级，确保不会被原生浮层样式盖掉 */
+     卡片、动态列表都共用这个类），原生纯白底 + 阴影，和玻璃顶栏不统一。这里保留浮层原有的
+     独立玻璃参数并去掉重投影，不跟随本次顶栏材质调整，避免误改正文气泡；选择器重复类名
+     提高优先级，确保不会被原生浮层样式盖掉。 */
   .v-popover-content.v-popover-content {
     background-color: rgba(255, 255, 255, 0.86) !important;
     background-image: none !important;
@@ -1952,13 +1951,12 @@
     top: 0 !important;
   }
 
-  /* 首页/搜索页/视频播放页/UP主空间页顶栏：这几个页面 bilibili 自己的 JS 已经会在滚动后把
+  /* 首页/搜索页/视频播放页/UP主空间页/消息页顶栏：这些页面 bilibili 自己的 JS 已经会在滚动后把
      .bili-header__bar 固定在顶部（大首页 large-header、搜索页 mini-header 都是这样），
      不需要再额外强制 position:fixed，这里只需要把原生的纯白底替换成毛玻璃质感即可。
-     参考 X（twitter）顶栏的克制风格：几乎不透，只留一点点模糊感，而不是大面积透色，
-     这样才不会在鲜艳的视频封面/banner 上显得"炸眼"。下边框直接去掉——它和下面接着的
-     .header-channel 是同一条视觉上连续的玻璃面板，中间不该有分隔线，只在
-     .header-channel 自己的下边缘留一条线收尾 */
+     材质直接与 YouTube Apple 顶栏一致：浅色 82% 白、深色 80% 深灰，配合
+     saturate(180%) blur(22px)。下边框直接去掉——它和下面接着的
+     .header-channel 是同一条视觉上连续的玻璃面板，中间和底部都不保留分隔线。 */
   /* 背景+模糊改画在 ::before 伪元素上，不直接放在 .bili-header__bar 本身：实测确认
      .bili-header__bar 上如果直接有 backdrop-filter，会变成一个"毛玻璃根"，导致它内部嵌套的
      悬浮浮层（消息/动态/收藏/历史那几个按钮弹出的 .v-popover-content）自己的 backdrop-filter
@@ -1978,14 +1976,14 @@
     inset: 0 !important;
     z-index: -1 !important;
     pointer-events: none !important;
-    background-color: rgba(255, 255, 255, 0.86) !important;
-    backdrop-filter: saturate(110%) blur(12px) !important;
-    -webkit-backdrop-filter: saturate(110%) blur(12px) !important;
+    background-color: rgba(255, 255, 255, 0.82) !important;
+    backdrop-filter: saturate(180%) blur(22px) !important;
+    -webkit-backdrop-filter: saturate(180%) blur(22px) !important;
   }
 
   @media (prefers-color-scheme: dark) {
     .bili-header__bar::before {
-      background-color: rgba(28, 28, 30, 0.86) !important;
+      background-color: rgba(24, 24, 26, 0.80) !important;
     }
   }
 
@@ -1997,7 +1995,7 @@
     html[data-theme-style="dark"],
     html[data-darkreader-scheme="dark"]
   ) .bili-header__bar::before {
-    background-color: rgba(28, 28, 30, 0.86) !important;
+    background-color: rgba(24, 24, 26, 0.80) !important;
   }
 
   /* 首页顶栏右上角（消息/大会员/动态/收藏/历史）：原生在"顶栏透明、悬浮在banner上"这个
@@ -2045,12 +2043,12 @@
      .header-channel 那层不透明白之上，看起来当然还是纯白。这次直接把毛玻璃画在
      .header-channel 上，.header-channel-fixed 保持透明即可 */
   .header-channel.header-channel {
-    background-color: rgba(255, 255, 255, 0.86) !important;
+    background-color: rgba(255, 255, 255, 0.82) !important;
     background-image: none !important;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.045) !important;
+    border-bottom: 0 !important;
     box-shadow: none !important;
-    backdrop-filter: saturate(110%) blur(12px) !important;
-    -webkit-backdrop-filter: saturate(110%) blur(12px) !important;
+    backdrop-filter: saturate(180%) blur(22px) !important;
+    -webkit-backdrop-filter: saturate(180%) blur(22px) !important;
   }
 
   .header-channel-fixed.header-channel-fixed {
@@ -2062,7 +2060,7 @@
 
   @media (prefers-color-scheme: dark) {
     .header-channel.header-channel {
-      background-color: rgba(28, 28, 30, 0.86) !important;
+      background-color: rgba(24, 24, 26, 0.80) !important;
       background-image: none !important;
       border-bottom-color: rgba(255, 255, 255, 0.07) !important;
       box-shadow: none !important;
@@ -2077,7 +2075,7 @@
     html[data-theme-style="dark"],
     html[data-darkreader-scheme="dark"]
   ) .header-channel.header-channel {
-    background-color: rgba(28, 28, 30, 0.86) !important;
+    background-color: rgba(24, 24, 26, 0.80) !important;
     background-image: none !important;
     border-bottom-color: rgba(255, 255, 255, 0.07) !important;
     box-shadow: none !important;
@@ -2281,17 +2279,17 @@
      （主页/动态/投稿/合集和系列 + 搜索框那一条，原生 position:sticky），
      所以毛玻璃效果要加在这一条上，才是用户滚动时实际会看到的"顶栏" */
   .nav-bar.space-navbar {
-    background-color: rgba(255, 255, 255, 0.86) !important;
+    background-color: rgba(255, 255, 255, 0.82) !important;
     background-image: none !important;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.045) !important;
+    border-bottom: 0 !important;
     box-shadow: none !important;
-    backdrop-filter: saturate(110%) blur(12px) !important;
-    -webkit-backdrop-filter: saturate(110%) blur(12px) !important;
+    backdrop-filter: saturate(180%) blur(22px) !important;
+    -webkit-backdrop-filter: saturate(180%) blur(22px) !important;
   }
 
   @media (prefers-color-scheme: dark) {
     .nav-bar.space-navbar {
-      background-color: rgba(28, 28, 30, 0.86) !important;
+      background-color: rgba(24, 24, 26, 0.80) !important;
       background-image: none !important;
       border-bottom-color: rgba(255, 255, 255, 0.07) !important;
       box-shadow: none !important;
@@ -2306,7 +2304,7 @@
     html[data-theme-style="dark"],
     html[data-darkreader-scheme="dark"]
   ) .nav-bar.space-navbar {
-    background-color: rgba(28, 28, 30, 0.86) !important;
+    background-color: rgba(24, 24, 26, 0.80) !important;
     background-image: none !important;
     border-bottom-color: rgba(255, 255, 255, 0.07) !important;
     box-shadow: none !important;
@@ -2380,13 +2378,11 @@
     inset: 0 !important;
     z-index: -1 !important;
     pointer-events: none !important;
-    background-color: rgba(255, 255, 255, 0.48) !important;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.55) !important;
-    box-shadow:
-      0 1px 0 rgba(0, 0, 0, 0.03),
-      0 8px 24px rgba(45, 55, 72, 0.08) !important;
-    backdrop-filter: saturate(180%) blur(28px) !important;
-    -webkit-backdrop-filter: saturate(180%) blur(28px) !important;
+    background-color: rgba(255, 255, 255, 0.82) !important;
+    border-bottom: 0 !important;
+    box-shadow: none !important;
+    backdrop-filter: saturate(180%) blur(22px) !important;
+    -webkit-backdrop-filter: saturate(180%) blur(22px) !important;
   }
 
   /* 外层容器保持透明，避免覆盖内层磨砂玻璃 */
@@ -2440,11 +2436,9 @@
       #bili-header-container .bili-header__bar,
       .z-top-container
     )::before {
-      background-color: rgba(28, 28, 30, 0.48) !important;
-      border-bottom-color: rgba(255, 255, 255, 0.10) !important;
-      box-shadow:
-        0 1px 0 rgba(255, 255, 255, 0.03),
-        0 10px 30px rgba(0, 0, 0, 0.26) !important;
+      background-color: rgba(24, 24, 26, 0.80) !important;
+      border-bottom: 0 !important;
+      box-shadow: none !important;
     }
   }
 
@@ -2486,11 +2480,9 @@
     #bili-header-container .bili-header__bar,
     .z-top-container
   )::before {
-    background-color: rgba(28, 28, 30, 0.48) !important;
-    border-bottom-color: rgba(255, 255, 255, 0.10) !important;
-    box-shadow:
-      0 1px 0 rgba(255, 255, 255, 0.03),
-      0 10px 30px rgba(0, 0, 0, 0.26) !important;
+    background-color: rgba(24, 24, 26, 0.80) !important;
+    border-bottom: 0 !important;
+    box-shadow: none !important;
   }
 
 
@@ -3347,7 +3339,8 @@
     z-index: 10 !important;
   }
 
-  /* 顶栏：搜索框与头像/快捷入口合并为同一条吸顶毛玻璃栏（兼容独立 t.bilibili.com 样式块） */
+  /* 顶栏：搜索框与头像/快捷入口合并为同一条吸顶玻璃栏（兼容独立 t.bilibili.com 样式块）。
+     实际材质由前面的 ::before 统一承载，这里只保持容器透明。 */
   :is(
     .bili-header.fixed-header > .bili-header__bar.mini-header,
     .bili-header__bar,
@@ -3361,12 +3354,10 @@
     right: 0 !important;
     width: 100% !important;
     z-index: 100001 !important;
-    background-color: rgba(255, 255, 255, 0.48) !important;
+    background-color: transparent !important;
     background-image: none !important;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.55) !important;
-    box-shadow:
-      0 1px 0 rgba(0, 0, 0, 0.03),
-      0 8px 24px rgba(45, 55, 72, 0.08) !important;
+    border-bottom: 0 !important;
+    box-shadow: none !important;
     /* backdrop-filter 故意不放在这里：这条规则被上面 body:has(#app > .bgc) 那条
        更高优先级的规则盖过背景色，是重复/冗余的旧规则，但如果这里还留着
        backdrop-filter，会因为没有更高优先级的同名属性竞争而单独生效，重新在
@@ -3465,12 +3456,10 @@
       #bili-header-container .bili-header__bar,
       .z-top-container
     ) {
-      background-color: rgba(28, 28, 30, 0.48) !important;
+      background-color: transparent !important;
       background-image: none !important;
-      border-bottom-color: rgba(255, 255, 255, 0.10) !important;
-      box-shadow:
-        0 1px 0 rgba(255, 255, 255, 0.03),
-        0 10px 30px rgba(0, 0, 0, 0.26) !important;
+      border-bottom: 0 !important;
+      box-shadow: none !important;
       /* backdrop-filter 不放这里，理由同上面那条冗余规则 */
     }
   }
@@ -3489,12 +3478,10 @@
     #bili-header-container .bili-header__bar,
     .z-top-container
   ) {
-    background-color: rgba(28, 28, 30, 0.48) !important;
+    background-color: transparent !important;
     background-image: none !important;
-    border-bottom-color: rgba(255, 255, 255, 0.10) !important;
-    box-shadow:
-      0 1px 0 rgba(255, 255, 255, 0.03),
-      0 10px 30px rgba(0, 0, 0, 0.26) !important;
+    border-bottom: 0 !important;
+    box-shadow: none !important;
     /* backdrop-filter 不放这里，理由同上面那条冗余规则 */
   }
 
@@ -3502,7 +3489,7 @@
 
 
 /* ========================================
-   动态页最终顶栏：X 风格整宽透明磨砂玻璃
+   动态页最终顶栏：YouTube 风格整宽玻璃
    放在独立动态规则之后，确保覆盖网站及前述兼容样式
    ======================================== */
 @-moz-document domain("t.bilibili.com"), regexp("^https://www\\.bilibili\\.com/opus/.*") {
@@ -3518,14 +3505,14 @@
     box-sizing: border-box !important;
     z-index: 100001 !important;
 
-    /* 无彩色底，只保留透明度和模糊，让信息流从后方透出 */
-    background: rgba(255, 255, 255, 0.14) !important;
-    background-color: rgba(255, 255, 255, 0.14) !important;
+    /* 容器保持透明，玻璃材质继续由 ::before 绘制。 */
+    background: transparent !important;
+    background-color: transparent !important;
     background-image: none !important;
     border: 0 !important;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.075) !important;
+    border-bottom: 0 !important;
     border-radius: 0 !important;
-    box-shadow: 0 1px 8px rgba(32, 38, 48, 0.045) !important;
+    box-shadow: none !important;
 
     /* backdrop-filter 不放这里：这条规则实际会被更前面 body:has(#app > .bgc) 那条
        更高优先级（:has() 里带 #app 这个 ID）的规则盖过背景色，是旧的冗余规则，注释里
@@ -3535,9 +3522,7 @@
     overflow: visible !important;
   }
 
-  /* 清除可能盖在玻璃面板上的白色伪元素 */
-  .bili-header.fixed-header
-  > .bili-header__bar.mini-header::before,
+  /* 清除可能盖在玻璃面板上的额外伪元素；::before 保留给统一玻璃材质。 */
   .bili-header.fixed-header
   > .bili-header__bar.mini-header::after {
     background: transparent !important;
@@ -3563,11 +3548,11 @@
   @media (prefers-color-scheme: dark) {
     .bili-header.fixed-header
     > .bili-header__bar.mini-header {
-      background: rgba(12, 12, 15, 0.18) !important;
-      background-color: rgba(12, 12, 15, 0.18) !important;
+      background: transparent !important;
+      background-color: transparent !important;
       background-image: none !important;
-      border-bottom-color: rgba(255, 255, 255, 0.10) !important;
-      box-shadow: 0 1px 8px rgba(0, 0, 0, 0.10) !important;
+      border-bottom: 0 !important;
+      box-shadow: none !important;
     }
   }
 
@@ -3581,11 +3566,11 @@
   )
   .bili-header.fixed-header
   > .bili-header__bar.mini-header {
-    background: rgba(12, 12, 15, 0.18) !important;
-    background-color: rgba(12, 12, 15, 0.18) !important;
+    background: transparent !important;
+    background-color: transparent !important;
     background-image: none !important;
-    border-bottom-color: rgba(255, 255, 255, 0.10) !important;
-    box-shadow: 0 1px 8px rgba(0, 0, 0, 0.10) !important;
+    border-bottom: 0 !important;
+    box-shadow: none !important;
   }
 }
 
