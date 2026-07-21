@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           小红书 Apple 风格左栏与卡片悬浮动效
 @namespace      rednote-apple-card-motion
-@version        1.6.0
+@version        1.6.1
 @description    为小红书网页版左侧导航按钮和图文卡片添加克制的 Apple 风格卡片悬浮动效，视觉语言对齐 X（Twitter）的克制卡片方案
 @match          https://www.xiaohongshu.com/*
 @match          https://xiaohongshu.com/*
@@ -69,6 +69,12 @@
        高于卡片，否则卡片悬浮抬起时会顶上来盖住导航。 */
     --rn-header-z: 30;
     --rn-subnav-z: 25;
+
+    /* 搜索结果页内容列相对顶栏的左右内缩，实测来自 .ai-feeds-page 的
+       padding: 116px 32px 0；两行导航的玻璃要靠它往外补齐到顶栏宽度。 */
+    --rn-content-inset: 32px;
+    /* .search-layout__top 自带的 margin-bottom，两行之间的缝。 */
+    --rn-subnav-gap: 12px;
 
     /* 悬浮时的玻璃质感背景 / 边框，浅色模式 */
     --rn-panel-hover: rgba(246, 247, 248, 0.92);
@@ -474,16 +480,44 @@
     z-index: var(--rn-header-z) !important;
   }
 
+  /*
+   * .reds-sticky 原生带一层实色底（实测 rgb(25,25,30)，1516×48 正好铺满
+   * 整条筛选行），会把下面那层玻璃整块盖住——筛选行看起来还是不透明的
+   * 底色，和顶栏割裂。清成透明让玻璃透上来。
+   */
+  .search-layout__middle .reds-sticky {
+    background-color: transparent !important;
+  }
+
+  /*
+   * 玻璃要和顶栏连成一整片，所以伪元素得往外溢出自己的盒子：
+   *
+   * 横向：两行被 .ai-feeds-page 的 padding: 116px 32px 0 往里挤了 32px
+   *   （实测顶栏 x 90~1670，两行 x 122~1638），左右各外扩 32px 才和顶栏等宽，
+   *   否则两侧会各露出一条 32px 的原始底色。
+   * 纵向：.search-layout__top 自带 margin: 0 0 12px，两行之间有 12px 缝，
+   *   底部外扩 12px 正好填上（实测 top 行底 156 + 12 = 168 = 筛选行顶）。
+   *
+   * 外扩量用变量表示，跟着 .ai-feeds-page 的 padding 走；站点改版调了这个
+   * padding 的话，改这一个值即可。
+   */
   .search-layout__top::before,
   .search-layout__middle::before {
     content: "";
     position: absolute;
     z-index: -1;
-    inset: 0;
+    top: 0;
+    right: calc(-1 * var(--rn-content-inset));
+    bottom: 0;
+    left: calc(-1 * var(--rn-content-inset));
     pointer-events: none;
     background-color: var(--rn-glass);
     backdrop-filter: var(--rn-glass-blur);
     -webkit-backdrop-filter: var(--rn-glass-blur);
+  }
+
+  .search-layout__top::before {
+    bottom: calc(-1 * var(--rn-subnav-gap));
   }
 
   /*
@@ -675,7 +709,25 @@
     transform: translateY(-3px) scale(1.015);
   }
 
-  .comments-container :is(.avatar, .user-avatar, [class*="avatar"]) {
+  /*
+   * 只挑真正的头像图片，一定要带 img 限定。
+   * 原来写的是 :is(.avatar, .user-avatar, [class*="avatar"])，会把外层的
+   * div.avatar 包裹层一起命中——那层根本不是正方形（实测 16×46、10×45、
+   * 16×53、16×69 都有），套上 border-radius:50% 就是个竖椭圆，再加
+   * overflow:hidden 直接把里面的方形头像裁变形，评论区头像就不圆了。
+   * 实测对比：旧选择器命中 36 个、其中 18 个非正方；限定 img 后命中 18 个，
+   * 全部是正方形。
+   *
+   * 放大时抬 z-index：头像周围有昵称、点赞等同级元素，不抬的话放大的部分
+   * 会被它们盖住（DOM 靠后者胜）。position 一并给上，否则 z-index 不生效。
+   */
+  .comments-container :is(
+    img.avatar-item,
+    img.author-avatar,
+    img[class*="avatar"]
+  ) {
+    position: relative;
+    z-index: 0;
     overflow: hidden;
     border-radius: 50%;
     transform: scale(1);
@@ -684,7 +736,12 @@
     will-change: transform;
   }
 
-  .comments-container :is(.avatar, .user-avatar, [class*="avatar"]):hover {
+  .comments-container :is(
+    img.avatar-item,
+    img.author-avatar,
+    img[class*="avatar"]
+  ):hover {
+    z-index: 12;
     transform: scale(1.12);
   }
 
@@ -706,7 +763,10 @@
     transform: translateY(-2px) scale(1.06);
   }
 
+  /* 同样要抬 z-index，否则放大的一圈会被右侧的昵称/关注按钮盖住。 */
   .note-detail-mask .author-wrapper .avatar-click {
+    position: relative;
+    z-index: 0;
     border-radius: 50%;
     transform: scale(1);
     transform-origin: center center;
@@ -715,6 +775,7 @@
   }
 
   .note-detail-mask .author-wrapper .avatar-click:hover {
+    z-index: 12;
     transform: scale(1.14);
   }
 
@@ -741,7 +802,11 @@
     ),
     .channel-container .channel,
     .comments-container .comment-item,
-    .comments-container :is(.avatar, .user-avatar, [class*="avatar"]),
+    .comments-container :is(
+      img.avatar-item,
+      img.author-avatar,
+      img[class*="avatar"]
+    ),
     .note-detail-mask .author-wrapper .follow-button,
     .note-detail-mask .author-wrapper .avatar-click {
       transition: none !important;
