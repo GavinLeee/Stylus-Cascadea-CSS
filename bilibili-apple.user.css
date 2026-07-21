@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           Bilibili Apple 风格统一视频卡片
 @namespace      bilibili-apple-native-theme
-@version        8.14.5
+@version        8.14.6
 @description    首页网格、播放页推荐与播放器圆角、动态视频、动态页 Apple 背景、个人空间卡片、YouTube 风格顶栏玻璃及全站紫色强调色
 @match          https://www.bilibili.com/*
 @match          https://t.bilibili.com/*
@@ -2127,7 +2127,24 @@
   }
 
   body:has(.bili-feed4 > .header-channel):has(.bili-header__bar.slide-down)
-  .bili-header__bar.slide-down::before,
+  .bili-header__bar.slide-down::before {
+    /* 由真正固定在视口顶部的顶栏一次绘制整块玻璃，并向下覆盖分类条。
+       这样 backdrop-filter 始终在固定层上取样，不再依赖另一个 sibling
+       的负层级伪元素跨合成层采样。 */
+    content: "" !important;
+    position: absolute !important;
+    inset: 0 0 -64px !important;
+    z-index: -1 !important;
+    pointer-events: none !important;
+    background: var(--bili-header-glass-background) !important;
+    background-image: none !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    backdrop-filter: var(--bili-header-glass-filter) !important;
+    -webkit-backdrop-filter: var(--bili-header-glass-filter) !important;
+  }
+
   body:has(.bili-feed4 > .header-channel):has(.bili-header__bar.slide-down)
   .bili-header__bar.slide-down::after {
     background: transparent !important;
@@ -2164,18 +2181,15 @@
 
   body:has(.bili-feed4 > .header-channel):has(.bili-header__bar.slide-down)
   .bili-feed4 > .header-channel.header-channel::before {
-    content: "" !important;
-    position: absolute !important;
-    inset: -192px 0 -1px !important;
-    z-index: -1 !important;
-    pointer-events: none !important;
-    background: var(--bili-header-glass-background) !important;
+    content: none !important;
+    position: static !important;
+    inset: auto !important;
+    background: transparent !important;
     background-image: none !important;
     border: 0 !important;
-    border-radius: 0 !important;
     box-shadow: none !important;
-    backdrop-filter: var(--bili-header-glass-filter) !important;
-    -webkit-backdrop-filter: var(--bili-header-glass-filter) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
   }
 
   /* 分类标签（番剧/国创/综艺...）：原生是块块实色浅灰底，压在毛玻璃顶栏上显得像贴上去的
