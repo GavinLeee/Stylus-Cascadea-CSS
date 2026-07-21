@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           小红书 Apple 风格左栏与卡片悬浮动效
 @namespace      rednote-apple-card-motion
-@version        1.4.4
+@version        1.5.0
 @description    为小红书网页版左侧导航按钮和图文卡片添加克制的 Apple 风格卡片悬浮动效，视觉语言对齐 X（Twitter）的克制卡片方案
 @match          https://www.xiaohongshu.com/*
 @match          https://xiaohongshu.com/*
@@ -127,13 +127,32 @@
    * 顶栏磨砂玻璃：只有滚动到吸顶态（.ai-header-container 变成
    * position:fixed，实测原生底色 rgb(25,25,30)）才会真的画出这层背景；
    * 页面顶部时它是 display:none，搜索框由页面流中的另一个组件承载，
-   * 不受这条规则影响。isolation:isolate 不会挡住 backdrop-filter 采样
-   * ——实测过，滚动后玻璃能正常透出下方滚动的信息流卡片。
+   * 不受这条规则影响。
+   *
+   * 玻璃必须画在伪元素上，不能直接放在 .ai-header-container 自己身上：
+   * 搜索框 .input-box 和展开面板 .ai-dropdown-panel 都是它的后代（实测
+   * 链路 .ai-dropdown-panel < .wendian-wrapper < .input-box <
+   * .search-area-in-header < .ai-header-container）。祖先一旦带
+   * backdrop-filter 就成了 backdrop root，后代自己的 backdrop-filter 只能
+   * 采样到这个 root 内部已绘制的内容、采不到身后的页面，玻璃就退化成一层
+   * 平涂的半透明色——展开面板会透出未经模糊的信息流，文字压根看不清。
+   * 伪元素不是这些元素的祖先，玻璃照画，采样链路不受影响。
    */
   .ai-header-container {
-    background-color: var(--rn-glass) !important;
-    backdrop-filter: var(--rn-glass-blur) !important;
-    -webkit-backdrop-filter: var(--rn-glass-blur) !important;
+    background-color: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  .ai-header-container::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: 0;
+    pointer-events: none;
+    background-color: var(--rn-glass);
+    backdrop-filter: var(--rn-glass-blur);
+    -webkit-backdrop-filter: var(--rn-glass-blur);
   }
 
   /* The native note overlay is z-index:20; keep it above our raised header. */
@@ -171,13 +190,18 @@
   /* 搜索框/搜索按钮走上浮层玻璃（--rn-raised-*），比顶栏底板更糊、更实，
      和 YouTube 搜索框相对顶栏的层次关系一致。原来的实色 --rn-panel-hover
      面板换成半透明玻璃 + backdrop-filter，其余投影/位移/圆角不变。 */
+  /* 玻璃同样走伪元素，理由和顶栏一样：展开面板 .ai-dropdown-panel 是
+     .input-box 的后代，.input-box 自己带 backdrop-filter 就会成为面板的
+     backdrop root，把面板的玻璃废掉。border-radius: inherit 让玻璃跟着
+     胶囊/圆角矩形两种形态走。 */
   .ai-header-container .search-area-in-header .input-box {
     box-sizing: border-box !important;
+    position: relative;
     border: none !important;
     border-radius: 999px !important;
-    background: var(--rn-raised-glass) !important;
-    backdrop-filter: var(--rn-raised-blur) !important;
-    -webkit-backdrop-filter: var(--rn-raised-blur) !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
     box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05),
       0 8px 24px rgba(38, 51, 77, 0.09) !important;
     transition: transform 220ms var(--rn-ease),
@@ -187,14 +211,51 @@
     will-change: transform;
   }
 
+  .ai-header-container .search-area-in-header .input-box::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    inset: 0;
+    pointer-events: none;
+    border-radius: inherit;
+    background-color: var(--rn-raised-glass);
+    backdrop-filter: var(--rn-raised-blur);
+    -webkit-backdrop-filter: var(--rn-raised-blur);
+    transition: background-color 180ms ease;
+  }
+
   .ai-header-container .search-area-in-header .input-box:hover,
   .ai-header-container .search-area-in-header .input-box:focus-within,
   .ai-header-container.explore-expanded .search-area-in-header .input-box:hover,
   .ai-header-container.explore-expanded .search-area-in-header .input-box:focus-within {
-    background: var(--rn-raised-glass-hover) !important;
     border-color: var(--rn-border-hover) !important;
     box-shadow: var(--rn-card-shadow-hover) !important;
     transform: translateY(-2px) scale(1.01) !important;
+  }
+
+  .ai-header-container .search-area-in-header .input-box:hover::before,
+  .ai-header-container .search-area-in-header .input-box:focus-within::before {
+    background-color: var(--rn-raised-glass-hover);
+  }
+
+  /*
+   * 展开态：搜索框和下方的建议面板要拼成一个连续的圆角矩形。
+   * 上面那条把 .input-box 定死成 999px 胶囊，展开时它的左右两端是半圆，
+   * 而面板是直角矩形（原生 border-radius 0 0 24px 24px），接缝处胶囊的
+   * 圆角会留出两块缺口。这里跟随原生 .textarea-container 的 24px 24px 0 0，
+   * 上圆下平，正好和面板接上。
+   *
+   * 同时展开时不要切到 hover/focus 的 0.72 底色：面板是 0.60，两者贴在
+   * 一起，材质必须一致，否则接缝处会有一条明显的深浅分界。
+   */
+  .ai-header-container .search-area-in-header
+  .input-box:has(.wendian-wrapper--panel-open) {
+    border-radius: 24px 24px 0 0 !important;
+  }
+
+  .ai-header-container .search-area-in-header
+  .input-box:has(.wendian-wrapper--panel-open)::before {
+    background-color: var(--rn-raised-glass);
   }
 
   .ai-header-container .search-area-in-header .input-button .search-icon,
