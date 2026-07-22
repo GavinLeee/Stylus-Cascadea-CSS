@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           小红书 Apple 风格左栏与卡片悬浮动效
 @namespace      rednote-apple-card-motion
-@version        1.12.1
+@version        1.13.0
 @description    为小红书网页版左侧导航按钮和图文卡片添加克制的 Apple 风格卡片悬浮动效，视觉语言对齐 X（Twitter）的克制卡片方案
 @match          https://www.xiaohongshu.com/*
 @match          https://xiaohongshu.com/*
@@ -84,6 +84,8 @@
        钉住的筛选行要靠这两个值跟着顶栏走。 */
     --rn-header-h: 116px;
     --rn-header-h-expanded: 175px;
+    /* 个人主页那套顶栏（.header-container > .mask-paper）的高度，实测 72 */
+    --rn-profile-header-h: 72px;
 
     /* 悬浮时的玻璃质感背景 / 边框，浅色模式 */
     --rn-panel-hover: rgba(246, 247, 248, 0.92);
@@ -277,6 +279,32 @@
     background-image: none !important;
     backdrop-filter: var(--rn-glass-blur) !important;
     -webkit-backdrop-filter: var(--rn-glass-blur) !important;
+  }
+
+  /*
+   * 吸顶后，顶栏和这条"笔记/收藏"要合成一整块玻璃，而不是上下两块拼在
+   * 一起——两块各自把模糊钳在自己的盒子边缘，交界处一定看得出一条线。
+   *
+   * 做法和 bilibili 那份文件里首页顶栏的处理一样：让下面这条自己的玻璃
+   * 向上长出一个顶栏的高度，同时把顶栏那层关掉，整块只剩一层
+   * backdrop-filter。backdrop-filter 作用于 border box，所以加一条透明的
+   * 上边框就能把盒子撑上去；再用等量负 margin 把位置拉回来，内容一动不动。
+   *
+   * 用 margin 而不是改 top：站点把这条切成 fixed 时自己会写 top，具体值
+   * 不好假设，负 margin 对任何 top 值都成立。
+   * 顶栏 z-index 30 高于这条的 5，所以搜索框、头像仍画在这块玻璃之上。
+   */
+  .reds-sticky-box.user-page-sticky.sticky .reds-sticky {
+    border-top: var(--rn-profile-header-h) solid transparent !important;
+    margin-top: calc(-1 * var(--rn-profile-header-h)) !important;
+    background-clip: border-box !important;
+  }
+
+  body:has(.reds-sticky-box.user-page-sticky.sticky)
+  .header-container .mask-paper {
+    background-color: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
   }
 
   /*
@@ -1082,11 +1110,28 @@
    * 实测把第二张卡片加上 translate: 0 -4px; scale: 1.03 之后，它仍待在自己
    * 的格子里（491,319 → 496,308，正是抬起 + 放大），其余卡片纹丝不动。
    */
-  .feeds-container section.note-item {
+  /*
+   * 动效挂在卡片的内层容器上，卡片本身（section.note-item）只留层级，
+   * 一个变换属性都不写。原因是个人主页的排版全靠卡片自己的内联
+   * transform: translate(x, y)：
+   *
+   *   - 写 transform 简写 → 直接顶掉排版，卡片全叠到一处
+   *   - 写 translate / scale 独立属性 → 不覆盖，但会和站点的 transform
+   *     复合，而且 scale 排在 transform 左边，等于把站点那段位移一起放大：
+   *     最终位置 = translate(0,-4) · scale(1.03) · translate(x, y)
+   *     → 卡片实际落点变成 (1.03x, 1.03y - 4)
+   *     第一行 y=0 的卡片往上抬 4px，越靠下的卡片 1.03y 多出来的量越大，
+   *     y=437 的那张就往下掉 9px——正是"有的向上有的向下"的来源
+   *
+   * 内层容器（实测是唯一子节点，一个无 class 的 div，尺寸和卡片完全相同、
+   * 自己没有 transform 也没有伪元素）不参与站点排版，在它上面用 transform
+   * 简写最干净：两个页面表现一致，也不会再被站点的定位量放大。
+   */
+  .feeds-container section.note-item > * {
+    position: relative;
+    transform: translateY(0) scale(1);
     transform-origin: center center;
-    transition:
-      translate 260ms var(--rn-ease),
-      scale 260ms var(--rn-ease) !important;
+    transition: transform 260ms var(--rn-ease) !important;
   }
 
   /*
@@ -1105,7 +1150,7 @@
    * 顺带确认过悬浮的 translateY(-4px) scale(1.03) 不会撑出可滚动区域
    * （最右一列的卡片单独放大，scrollWidth 仍是 1442），所以位移保持原样。
    */
-  .feeds-container section.note-item::before {
+  .feeds-container section.note-item > *::before {
     content: "";
     position: absolute;
     z-index: -1;
@@ -1124,11 +1169,13 @@
   .feeds-container section.note-item:hover {
     isolation: isolate;
     z-index: 20 !important;
-    translate: 0 -4px;
-    scale: 1.03;
   }
 
-  .feeds-container section.note-item:hover::before {
+  .feeds-container section.note-item:hover > * {
+    transform: translateY(-4px) scale(1.03);
+  }
+
+  .feeds-container section.note-item:hover > *::before {
     opacity: 1;
     background: var(--rn-panel-hover);
     /* 第一段扩散环补上原来 inset:-8px 那一圈，第二段才是投影 */
