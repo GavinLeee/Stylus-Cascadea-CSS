@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           Bilibili Apple 风格统一视频卡片
 @namespace      bilibili-apple-native-theme
-@version        8.18.0
+@version        8.18.1
 @description    首页网格、播放页推荐与播放器圆角、动态视频、动态页 Apple 背景、个人空间卡片、YouTube 风格顶栏玻璃及全站紫色强调色
 @match          https://www.bilibili.com/*
 @match          https://t.bilibili.com/*
@@ -2358,7 +2358,17 @@
    * 64px 高度少 1px，两者原生就压着 1px）。站点改版调了这个值的话，
    * 这里跟着改即可。
    */
-  body:has(.bili-header__bar.slide-down)
+  /*
+   * 关顶栏那层玻璃的条件里必须带上"分类条真的显示出来了"，只看
+   * .slide-down 不够：站点是先给顶栏加 slide-down（顶栏滑下来），分类条
+   * 要再往下滚一段才出现，中间那一段实测
+   *   scroll=91  bar[bili-header__bar slide-down]  channel display:none
+   * 两边都没有玻璃——就是"向下滚动时顶栏背景先消失一下"。
+   * 分类条用的是 v-show，隐藏时挂 style="display: none"，拿它当信号。
+   */
+  body:has(.bili-header__bar.slide-down):has(
+    .bili-feed4 > .header-channel:not([style*="display: none"])
+  )
   .bili-header__bar.bili-header__bar.slide-down.slide-down::before {
     background-color: transparent !important;
     backdrop-filter: none !important;
@@ -2787,6 +2797,87 @@
    * 描边断开，负 margin 拉回来贴齐。左右各内缩 1px（框 432~1072、面板
    * 433~1071）是原生行为，1px 看不出来，不动它。
    */
+  /*
+   * 搜索页那颗蓝色"搜索"按钮和左边的放大镜图标：原生是 vui_button--blue
+   * 实色蓝 + 蓝色图标（实测 rgb(0,174,236)），压在玻璃搜索框里非常跳。
+   * 换成首页 .nav-search-btn 那一档材质——半透明白 0.18、深色文字，悬浮
+   * 时提到 0.52，和首页那颗搜索框里的放大镜段落完全一致。
+   *
+   * 保留它原生的胶囊外形和位置，没有强行拉成"贴右边缘的整段"：实测那颗
+   * 按钮自带固定高度（36px，比搜索框内高 46px 矮一截），height:100% /
+   * align-self:stretch 都压不动，硬撑会把它和搜索框的圆角对不齐，反而更乱。
+   *
+   * 类名要重复四次：vui_button 那套自己的规则优先级很高，两三次压不住
+   * （实测逐级试出来的）。
+   */
+  .search-fixed-header .search-input-wrap
+  .search-button.search-button.search-button.search-button {
+    background-color: rgba(255, 255, 255, 0.18) !important;
+    background-image: none !important;
+    border: 0 !important;
+    border-radius: 8px !important;
+    color: rgb(24, 25, 28) !important;
+    box-shadow: none !important;
+    transition:
+      background-color 180ms ease,
+      box-shadow 220ms ease !important;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .search-fixed-header .search-input-wrap
+    .search-button.search-button.search-button.search-button:hover {
+      background-color: rgba(255, 255, 255, 0.52) !important;
+      box-shadow: 0 5px 14px rgba(38, 51, 77, 0.13) !important;
+    }
+  }
+
+  /* 左边那个放大镜图标原生是品牌蓝，改成和正文一致的中性色 */
+  .search-fixed-header .search-input-wrap > svg {
+    color: rgb(24, 25, 28) !important;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .search-fixed-header .search-input-wrap
+    .search-button.search-button.search-button.search-button {
+      background-color: rgba(255, 255, 255, 0.07) !important;
+      color: rgb(229, 229, 234) !important;
+    }
+
+    .search-fixed-header .search-input-wrap
+    .search-button.search-button.search-button.search-button:hover {
+      background-color: rgba(255, 255, 255, 0.14) !important;
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.34) !important;
+    }
+
+    .search-fixed-header .search-input-wrap > svg {
+      color: rgb(229, 229, 234) !important;
+    }
+  }
+
+  :is(
+    html.dark,
+    html.bili-dark,
+    html[data-theme="dark"],
+    html[data-color-mode="dark"],
+    html[data-theme-style="dark"],
+    html[data-darkreader-scheme="dark"]
+  ) .search-fixed-header .search-input-wrap
+  .search-button.search-button.search-button.search-button {
+    background-color: rgba(255, 255, 255, 0.07) !important;
+    color: rgb(229, 229, 234) !important;
+  }
+
+  :is(
+    html.dark,
+    html.bili-dark,
+    html[data-theme="dark"],
+    html[data-color-mode="dark"],
+    html[data-theme-style="dark"],
+    html[data-darkreader-scheme="dark"]
+  ) .search-fixed-header .search-input-wrap > svg {
+    color: rgb(229, 229, 234) !important;
+  }
+
   .search-panel.search-panel-popover {
     background-color: var(--bili-stacked-glass-background) !important;
     background-image: none !important;
