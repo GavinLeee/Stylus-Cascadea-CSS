@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           小红书 Apple 风格左栏与卡片悬浮动效
 @namespace      rednote-apple-card-motion
-@version        1.10.3
+@version        1.10.4
 @description    为小红书网页版左侧导航按钮和图文卡片添加克制的 Apple 风格卡片悬浮动效，视觉语言对齐 X（Twitter）的克制卡片方案
 @match          https://www.xiaohongshu.com/*
 @match          https://xiaohongshu.com/*
@@ -854,6 +854,25 @@
    */
   .search-layout__top .scroll-container {
     overflow: visible !important;
+  }
+
+  /*
+   * 筛选行的横向滚动视口原生只占整行的一部分：实测外层
+   * .scroll-container 是 flex、x 122~1638（1516 宽），里面的
+   * .content-container 却被写死成 1235.79px、x 122~1358，右边空着 280px
+   * 白白浪费——玻璃底板已经铺到最右，胶囊却挤在左边一段里滚动。
+   *
+   * 改成 flex: 1 让它吃满整行。用 flex 而不是写死 width: 100%，是因为
+   * AI 详情页那一行里还并排放着"筛选"按钮（.filter.ai-chat-filter），
+   * flex 会自动给它让出位置，胶囊区正好铺到筛选按钮左边为止。
+   * min-width: 0 是 flex 项的常规修正，否则内容多的时候它会被撑破而不是
+   * 进入横向滚动。
+   * 实测改后：.content-container x 122~1638，16 颗胶囊排到 1358 全部可见。
+   */
+  .search-layout__middle .content-container {
+    flex: 1 1 auto !important;
+    width: auto !important;
+    min-width: 0 !important;
   }
 
   /* Add horizontal breathing room inside the native scroll mask. */
