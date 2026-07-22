@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           小红书 Apple 风格左栏与卡片悬浮动效
 @namespace      rednote-apple-card-motion
-@version        1.10.7
+@version        1.10.8
 @description    为小红书网页版左侧导航按钮和图文卡片添加克制的 Apple 风格卡片悬浮动效，视觉语言对齐 X（Twitter）的克制卡片方案
 @match          https://www.xiaohongshu.com/*
 @match          https://xiaohongshu.com/*
@@ -994,12 +994,28 @@
     transition: transform 260ms var(--rn-ease) !important;
   }
 
+  /*
+   * 这块卡片背景原来写的是 inset: -8px，直接把伪元素撑到卡片外面 8px。
+   * 个人主页滚动被弹回顶部就是它引起的：那一页的笔记网格外面套着
+   * .tab-content-item（原生 overflow: scroll，实测链路
+   * .feeds-container < .tab-content-item < .transform-container <
+   * .feeds-tab-container < .user-page），伪元素往外扩的那一圈会算进这个
+   * 滚动容器的可滚动区域——实测 scrollWidth 1450 / clientWidth 1442，
+   * 凭空多出 8px 的横向可滚动量；把伪元素去掉，立刻回到 1442/1442。
+   *
+   * 改成 inset: 0 + 8px 扩散阴影：box-shadow 无论多大都不参与可滚动区域
+   * 计算（实测加上 8px 实色扩散环 + 大投影后仍是 1442/1442），外观完全
+   * 一样——扩散环的圆角 = 自身圆角 + 扩散量，所以自身圆角减去 8px，外圈
+   * 仍是 --rn-card-radius。
+   * 顺带确认过悬浮的 translateY(-4px) scale(1.03) 不会撑出可滚动区域
+   * （最右一列的卡片单独放大，scrollWidth 仍是 1442），所以位移保持原样。
+   */
   .feeds-container section.note-item::before {
     content: "";
     position: absolute;
     z-index: -1;
-    inset: -8px;
-    border-radius: var(--rn-card-radius);
+    inset: 0;
+    border-radius: calc(var(--rn-card-radius) - 8px);
     background: transparent;
     box-shadow: none;
     opacity: 0;
@@ -1019,7 +1035,10 @@
   .feeds-container section.note-item:hover::before {
     opacity: 1;
     background: var(--rn-panel-hover);
-    box-shadow: var(--rn-card-shadow-hover);
+    /* 第一段扩散环补上原来 inset:-8px 那一圈，第二段才是投影 */
+    box-shadow:
+      0 0 0 8px var(--rn-panel-hover),
+      var(--rn-card-shadow-hover);
   }
 
 
