@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           小红书 Apple 风格左栏与卡片悬浮动效
 @namespace      rednote-apple-card-motion
-@version        1.10.5
+@version        1.10.6
 @description    为小红书网页版左侧导航按钮和图文卡片添加克制的 Apple 风格卡片悬浮动效，视觉语言对齐 X（Twitter）的克制卡片方案
 @match          https://www.xiaohongshu.com/*
 @match          https://xiaohongshu.com/*
@@ -881,6 +881,24 @@
     flex: 1 1 auto !important;
     width: auto !important;
     min-width: 0 !important;
+  }
+
+  /*
+   * 胶囊多到需要横向滚动时，站点会在两端浮出翻页箭头。它自带一块不透明
+   * 白底：实测 .btn-prev / .btn-next 自己是透明的，白色来自里面两层——
+   *   div.icon         36×36，background: rgba(255,255,255,0.98)
+   *   div.padding-area 16×36，linear-gradient(90deg, rgba(255,255,255,0.98) …)
+   * 这两块糊在玻璃底板上就是两坨突兀的白斑（还带一条渐变尾巴）。
+   * 清成透明，只留箭头本身，底下的玻璃照常透出来。
+   *
+   * 只清背景不动图标颜色：箭头用的是站点自己的前景色，深浅色模式都跟着
+   * 走；这里再插手反而会在某一种模式下看不见。
+   */
+  :is(.search-layout__top, .search-layout__middle)
+  :is(.btn-prev, .btn-next) :is(.icon, .padding-area) {
+    background: transparent !important;
+    background-color: transparent !important;
+    background-image: none !important;
   }
 
   /* Add horizontal breathing room inside the native scroll mask. */
