@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           Bilibili Apple 风格统一视频卡片
 @namespace      bilibili-apple-native-theme
-@version        8.15.0
+@version        8.16.0
 @description    首页网格、播放页推荐与播放器圆角、动态视频、动态页 Apple 背景、个人空间卡片、YouTube 风格顶栏玻璃及全站紫色强调色
 @match          https://www.bilibili.com/*
 @match          https://t.bilibili.com/*
@@ -1585,15 +1585,17 @@
   }
 
   /* 消息/动态/收藏/历史等按钮悬浮弹出的浮层内容（.v-popover-content，登录卡片、大会员
-     卡片、动态列表都共用这个类），原生纯白底 + 阴影，和玻璃顶栏不统一。它整块挂在顶栏
-     下方、身后是页面内容，只有自己一层玻璃，走浮层那一档（--bili-raised-glass-*）；
+     卡片、动态列表都共用这个类），原生纯白底 + 阴影，和玻璃顶栏不统一。
+     材质要和顶栏搜索框看起来一样：搜索框是"顶栏玻璃 + 控件玻璃"两层叠出来的，而这些
+     浮层整块挂在顶栏下方、身后只有页面内容，只有自己一层，所以用按两层叠加算出来的
+     等效档 --bili-stacked-glass-*，和搜索框、搜索联想面板同一种材质。
      选择器重复类名提高优先级，确保不会被原生浮层样式盖掉。 */
   .v-popover-content.v-popover-content {
-    background-color: var(--bili-raised-glass-background) !important;
+    background-color: var(--bili-stacked-glass-background) !important;
     background-image: none !important;
     box-shadow: none !important;
-    backdrop-filter: var(--bili-raised-glass-filter) !important;
-    -webkit-backdrop-filter: var(--bili-raised-glass-filter) !important;
+    backdrop-filter: var(--bili-stacked-glass-filter) !important;
+    -webkit-backdrop-filter: var(--bili-stacked-glass-filter) !important;
     transform: translateZ(0) !important;
     isolation: isolate !important;
     will-change: backdrop-filter !important;
@@ -1641,17 +1643,16 @@
      ======================================== */
 
   /*
-   * 头像面板：浮层那一档玻璃（--bili-raised-glass-*，= YouTube 的
-   * --yt-apple-raised-*）。它整块挂在顶栏下方、身后只有页面内容，只有
-   * 自己一层玻璃，直接用浮层原值即可。比顶栏多一层边框和阴影，让它展开
-   * 时仍然明确是一张悬浮面板。
+   * 头像面板：和上面那批浮层同一种材质（--bili-stacked-glass-*，即顶栏
+   * 玻璃叠控件玻璃的等效值），这样它和顶栏搜索框看起来是同一块材质。
+   * 比顶栏多一层边框和阴影，让它展开时仍然明确是一张悬浮面板。
    */
   .right-entry .v-popover-content.v-popover-content,
   .v-popover-content.avatar-popover,
   .v-popover-content:has(> .avatar-panel-popover) {
     overflow: hidden !important;
 
-    background-color: var(--bili-raised-glass-background) !important;
+    background-color: var(--bili-stacked-glass-background) !important;
     background-image: none !important;
 
     border: 1px solid rgba(255, 255, 255, 0.62) !important;
@@ -1661,8 +1662,8 @@
       0 1px 2px rgba(15, 23, 42, 0.05),
       0 18px 48px rgba(38, 51, 77, 0.18) !important;
 
-    backdrop-filter: var(--bili-raised-glass-filter) !important;
-    -webkit-backdrop-filter: var(--bili-raised-glass-filter) !important;
+    backdrop-filter: var(--bili-stacked-glass-filter) !important;
+    -webkit-backdrop-filter: var(--bili-stacked-glass-filter) !important;
 
     transform: translateZ(0) !important;
     isolation: isolate !important;
@@ -1708,6 +1709,71 @@
 
     transform: translateZ(0) !important;
     isolation: isolate !important;
+  }
+
+  /*
+   * 面板里的搜索历史胶囊：原生是不透明的 rgb(246,247,248) 实色块（实测），
+   * 压在玻璃面板上就是一颗颗贴上去的死灰方块，材质完全不统一。
+   * 换成半透明底，让面板的玻璃从胶囊底下透上来。
+   *
+   * 这里只换底色、不给它们自己的 backdrop-filter：面板本身带
+   * backdrop-filter，已经是一个 backdrop root，里面的子元素再写
+   * backdrop-filter 也取不到页面、只会得到一层平涂（这条限制文件里
+   * 顶栏那处注释也记过）。半透明底叠在面板玻璃上就够了。
+   */
+  .search-panel .history-item,
+  .search-panel .trending-item {
+    background-color: rgba(255, 255, 255, 0.55) !important;
+    background-image: none !important;
+    border-radius: 6px !important;
+    transition: background-color 180ms ease, transform 200ms
+      cubic-bezier(.2, .8, .2, 1) !important;
+  }
+
+  /* 热搜行原生是通栏透明行，给底色会显得笨重，只在悬浮时亮起来 */
+  .search-panel .trending-item {
+    background-color: transparent !important;
+  }
+
+  .search-panel .history-item:hover,
+  .search-panel .trending-item:hover {
+    background-color: rgba(255, 255, 255, 0.82) !important;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .search-panel .history-item {
+      background-color: rgba(255, 255, 255, 0.08) !important;
+    }
+
+    .search-panel .history-item:hover,
+    .search-panel .trending-item:hover {
+      background-color: rgba(255, 255, 255, 0.14) !important;
+    }
+  }
+
+  :is(
+    html.dark,
+    html.bili-dark,
+    html[data-theme="dark"],
+    html[data-color-mode="dark"],
+    html[data-theme-style="dark"],
+    html[data-darkreader-scheme="dark"]
+  ) .search-panel .history-item {
+    background-color: rgba(255, 255, 255, 0.08) !important;
+  }
+
+  :is(
+    html.dark,
+    html.bili-dark,
+    html[data-theme="dark"],
+    html[data-color-mode="dark"],
+    html[data-theme-style="dark"],
+    html[data-darkreader-scheme="dark"]
+  ) :is(
+    .search-panel .history-item:hover,
+    .search-panel .trending-item:hover
+  ) {
+    background-color: rgba(255, 255, 255, 0.14) !important;
   }
 
   /* 搜索框本体：与浮层同系的玻璃胶囊，并保留展开时与面板相接的上圆角。
@@ -2038,8 +2104,8 @@
   /* 首页/搜索页/视频播放页/UP主空间页/消息页顶栏：这些页面 bilibili 自己的 JS 已经会在滚动后把
      .bili-header__bar 固定在顶部（大首页 large-header、搜索页 mini-header 都是这样），
      不需要再额外强制 position:fixed，这里只需要把原生的纯白底替换成毛玻璃质感即可。
-     材质使用克制但可读性更稳的浅色 92% 白、深色 90% 深灰，配合
-     saturate(180%) blur(22px)。下边框直接去掉——它和下面接着的
+     材质走 --bili-header-glass-*（底板那一档，数值见文件顶部变量块，和 YouTube
+     顶栏完全一致）。下边框直接去掉——它和下面接着的
      .header-channel 是同一条视觉上连续的玻璃面板，中间和底部都不保留分隔线。 */
   /* 背景+模糊改画在 ::before 伪元素上，不直接放在 .bili-header__bar 本身：实测确认
      .bili-header__bar 上如果直接有 backdrop-filter，会变成一个"毛玻璃根"，导致它内部嵌套的
@@ -2165,120 +2231,25 @@
     box-shadow: none !important;
   }
 
-  /* 首页滚动后，顶栏与分类条原本各自执行一次 backdrop-filter。即便颜色和边框完全相同，
-     两块独立取样的玻璃仍会在接缝处形成一条明暗边界。slide-down 状态下关闭这两块独立
-     材质，改由分类条的 ::before 一次性绘制整块玻璃。不能只按原生 64px 顶栏高度向上
-     延伸：Edge 实际页面会因缩放和灰度布局在两栏之间留下更大的距离，使底板上缘直接露在
-     视口内。这里使用有界的 192px 向上覆盖，超出视口的部分会被裁掉，但可确保可见区域从
-     浏览器内容顶部到分类条底部始终只有一个连续的合成层。 */
-  body:has(.bili-feed4 > .header-channel):has(.bili-header__bar.slide-down)
-  .bili-header {
-    overflow: visible !important;
+  /*
+   * 顶栏和分类条的玻璃：两条各画各的，但配方完全相同、边界严丝合缝，
+   * 视觉上就是连续的一整块。
+   *
+   * 之前试过"合并成一块"的写法——关掉顶栏自己的玻璃，改由分类条内层
+   * .header-channel-fixed::before 向上延伸一个顶栏高度统一绘制。结构上说得
+   * 通，但实测结果是滚动之后整条顶栏干脆没有背景了：那层伪元素的底色画得
+   * 出来（换成纯色能看到色块），backdrop-filter 却取不到样，只剩一层平涂，
+   * 而顶栏自己的那层已经被关掉，于是滚动态下什么玻璃都没有。
+   *
+   * 所以回到"各画各的"，并且顶栏那层任何状态下都不关——顶栏的背景不会再
+   * 消失。两条之间原生有 1px 重叠（实测顶栏 0~64、分类条 63~119），两层
+   * 半透明叠在一起会在交界处压出一条更深的发丝线，所以顶栏这层的下沿收
+   * 1px，正好和分类条上沿接上、不重不漏。
+   */
+  .bili-header__bar::before {
+    bottom: 1px !important;
   }
 
-  body:has(.bili-feed4 > .header-channel):has(.bili-header__bar.slide-down)
-  .bili-header__bar.slide-down {
-    z-index: 100002 !important;
-    overflow: visible !important;
-    background: transparent !important;
-    background-image: none !important;
-    border: 0 !important;
-    box-shadow: none !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-  }
-
-  body:has(.bili-feed4 > .header-channel):has(.bili-header__bar.slide-down)
-  .bili-header__bar.slide-down::before {
-    background: transparent !important;
-    background-image: none !important;
-    border: 0 !important;
-    box-shadow: none !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-  }
-
-  body:has(.bili-feed4 > .header-channel):has(.bili-header__bar.slide-down)
-  .bili-header__bar.slide-down::after {
-    background: transparent !important;
-    background-image: none !important;
-    border: 0 !important;
-    box-shadow: none !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-  }
-
-  body:has(.bili-feed4 > .header-channel):has(.bili-header__bar.slide-down)
-  .bili-feed4 > .header-channel.header-channel {
-    /* isolation:isolate 会把这里变成新的 backdrop root，导致下方视频无法
-       被 ::before 的 backdrop-filter 取样，最终只剩透明蒙版而没有模糊。 */
-    isolation: auto !important;
-    z-index: 100001 !important;
-    overflow: visible !important;
-    background: transparent !important;
-    background-image: none !important;
-    border: 0 !important;
-    box-shadow: none !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-  }
-
-  /* 合并后的玻璃改由真正随分类导航增高的 .header-channel-fixed::before 绘制。
-     上边缘向上延伸一个顶栏高度，折叠时覆盖“顶栏 + 单行分类”，展开时 bottom:0
-     会自动跟随导航容器新增的行数，不再依赖写死的 128px 高度。 */
-  body:has(.bili-feed4 > .header-channel):has(.bili-header__bar.slide-down)::before {
-    content: none !important;
-  }
-
-  body:has(.bili-feed4 > .header-channel):has(.bili-header__bar.slide-down)
-  .bili-feed4 > .header-channel .header-channel-fixed {
-    position: relative !important;
-    z-index: 0 !important;
-    overflow: visible !important;
-    background: transparent !important;
-    background-image: none !important;
-    border: 0 !important;
-    box-shadow: none !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-  }
-
-  body:has(.bili-feed4 > .header-channel):has(.bili-header__bar.slide-down)
-  .bili-feed4 > .header-channel .header-channel-fixed::before {
-    content: "" !important;
-    position: absolute !important;
-    inset: -64px 0 0 0 !important;
-    width: 100% !important;
-    height: auto !important;
-    z-index: 0 !important;
-    pointer-events: none !important;
-    background: var(--bili-header-glass-background) !important;
-    background-image: none !important;
-    border: 0 !important;
-    border-radius: 0 !important;
-    box-shadow: none !important;
-    backdrop-filter: var(--bili-header-glass-filter) !important;
-    -webkit-backdrop-filter: var(--bili-header-glass-filter) !important;
-  }
-
-  body:has(.bili-feed4 > .header-channel):has(.bili-header__bar.slide-down)
-  .bili-feed4 > .header-channel .header-channel-fixed > * {
-    position: relative !important;
-    z-index: 1 !important;
-  }
-
-  body:has(.bili-feed4 > .header-channel):has(.bili-header__bar.slide-down)
-  .bili-feed4 > .header-channel.header-channel::before {
-    content: none !important;
-    position: static !important;
-    inset: auto !important;
-    background: transparent !important;
-    background-image: none !important;
-    border: 0 !important;
-    box-shadow: none !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-  }
 
   /* 分类标签（番剧/国创/综艺...）：原生是块块实色浅灰底，压在毛玻璃顶栏上显得像贴上去的
      死板色块。改成半透明的"玻璃小标签"——极淡的黑色叠加 + 几乎看不见的发丝描边、
