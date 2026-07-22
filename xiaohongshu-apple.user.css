@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           小红书 Apple 风格左栏与卡片悬浮动效
 @namespace      rednote-apple-card-motion
-@version        1.10.4
+@version        1.10.5
 @description    为小红书网页版左侧导航按钮和图文卡片添加克制的 Apple 风格卡片悬浮动效，视觉语言对齐 X（Twitter）的克制卡片方案
 @match          https://www.xiaohongshu.com/*
 @match          https://xiaohongshu.com/*
@@ -711,8 +711,16 @@
    * 打开 AI 详情后仍可能被右侧面板自己的层叠上下文盖住。滚动态改由 body
    * 直接画一块根层级的 fixed 玻璃：24 在信息流卡片(20)之上、筛选内容(25)、
    * AI 筛选按钮(26)与搜索头(30)之下，整块自然能铺到视口最右边。
+   *
+   * 条件里必须再加一个 :has(.search-layout)——.reds-sticky-box.sticky 不是
+   * 搜索页专有的：实测通知页（/notification）自己那排标签也是
+   * .reds-sticky-box.sticky.sticky-tab，于是这块 164px 高的整宽玻璃会平白
+   * 画在通知列表上方，把前两条通知糊住（用户报的"通知页的玻璃条"）。
+   * 那个页面没有 .search-layout / .ai-feeds-page / .ai-header-container
+   * （实测三者都是 null），用 .search-layout 把这一整组规则圈在搜索页里，
+   * 两种搜索页（AI 版和普通版）都能覆盖到。
    */
-  body:has(.reds-sticky-box.sticky)::before {
+  body:has(.search-layout):has(.reds-sticky-box.sticky)::before {
     content: "";
     position: fixed;
     z-index: calc(var(--rn-subnav-z) - 1);
@@ -727,22 +735,22 @@
   }
 
   /* 左栏原来的玻璃在 sticky 态必须关掉，否则左半边会叠成双层材质。 */
-  .reds-sticky-box.sticky .reds-sticky::before {
+  body:has(.search-layout) .reds-sticky-box.sticky .reds-sticky::before {
     display: none;
   }
 
   /* AI 详情页的筛选按钮不在左侧滚动容器中，单独压在整宽玻璃之上。 */
-  body:has(.reds-sticky-box.sticky) .filter.ai-chat-filter {
+  body:has(.search-layout):has(.reds-sticky-box.sticky) .filter.ai-chat-filter {
     z-index: calc(var(--rn-subnav-z) + 1) !important;
     isolation: isolate;
   }
 
-  body:has(.reds-sticky-box.sticky)
+  body:has(.search-layout):has(.reds-sticky-box.sticky)
   .search-layout__top:has(.filter.ai-chat-filter) {
     z-index: calc(var(--rn-subnav-z) + 1) !important;
   }
 
-  body:has(.reds-sticky-box.sticky) .ai-header-container::before {
+  body:has(.search-layout):has(.reds-sticky-box.sticky) .ai-header-container::before {
     display: none;
   }
 
