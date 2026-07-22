@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           Bilibili Apple 风格统一视频卡片
 @namespace      bilibili-apple-native-theme
-@version        8.16.0
+@version        8.17.0
 @description    首页网格、播放页推荐与播放器圆角、动态视频、动态页 Apple 背景、个人空间卡片、YouTube 风格顶栏玻璃及全站紫色强调色
 @match          https://www.bilibili.com/*
 @match          https://t.bilibili.com/*
@@ -1669,6 +1669,79 @@
     isolation: isolate !important;
   }
 
+  /*
+   * 五个浮层里的条目，补上和侧栏同一套克制卡片：静止无底色，悬浮时一层
+   * 半透明底 + 上浮 + 柔和投影。
+   *
+   * 选择器说明：实测确认过两个浮层的条目类名——历史是
+   * a.header-history-card（366×92，原生透明底），头像面板是
+   * .single-link-item；消息/动态/收藏三个当时没能同时展开逐个量。B 站这几
+   * 个面板的命名是一致的 -card / -item 后缀，所以这里按"浮层内的 a / li
+   * 且类名带 -card 或 -item"来命中，覆盖到没实测过的那几个。
+   * 限定 a/li 是为了不误伤面板里的容器 div（那些也常带 -item 字样）。
+   *
+   * 位移只给 2px、不放大：这些条目是通栏的一行，放大会把右边缘顶出面板。
+   */
+  .v-popover-content :is(a, li):is(
+    [class*="-card"],
+    [class*="-item"],
+    [class*="_item"]
+  ) {
+    border-radius: 10px !important;
+    transform: translateY(0);
+    transform-origin: center center;
+    transition:
+      transform 220ms cubic-bezier(.2, .8, .2, 1),
+      background-color 180ms ease,
+      box-shadow 220ms ease !important;
+    will-change: transform;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .v-popover-content :is(a, li):is(
+      [class*="-card"],
+      [class*="-item"],
+      [class*="_item"]
+    ):hover {
+      background-color: rgba(255, 255, 255, 0.62) !important;
+      box-shadow:
+        0 1px 2px rgba(15, 23, 42, 0.05),
+        0 6px 16px rgba(38, 51, 77, 0.12) !important;
+      transform: translateY(-2px);
+    }
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .v-popover-content :is(a, li):is(
+      [class*="-card"],
+      [class*="-item"],
+      [class*="_item"]
+    ):hover {
+      background-color: rgba(255, 255, 255, 0.10) !important;
+      box-shadow:
+        0 1px 2px rgba(0, 0, 0, 0.22),
+        0 6px 18px rgba(0, 0, 0, 0.34) !important;
+    }
+  }
+
+  :is(
+    html.dark,
+    html.bili-dark,
+    html[data-theme="dark"],
+    html[data-color-mode="dark"],
+    html[data-theme-style="dark"],
+    html[data-darkreader-scheme="dark"]
+  ) .v-popover-content :is(a, li):is(
+    [class*="-card"],
+    [class*="-item"],
+    [class*="_item"]
+  ):hover {
+    background-color: rgba(255, 255, 255, 0.10) !important;
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.22),
+      0 6px 18px rgba(0, 0, 0, 0.34) !important;
+  }
+
   /* 原生内层是不透明灰底，会完全盖住外层的磨砂取样，必须清成透明。 */
   .avatar-popover .avatar-panel-popover,
   .v-popover-content > .avatar-panel-popover,
@@ -1696,8 +1769,9 @@
     background-color: var(--bili-stacked-glass-background) !important;
     background-image: none !important;
 
-    border: 1px solid rgba(15, 23, 42, 0.075) !important;
-    border-top-color: rgba(15, 23, 42, 0.10) !important;
+    /* 描边接搜索框那一圈紫色，上边留空由搜索框补齐（见上一条注释） */
+    border: 1px solid rgba(120, 86, 255, 0.30) !important;
+    border-top-color: transparent !important;
     border-radius: 0 0 8px 8px !important;
 
     box-shadow:
@@ -1837,9 +1911,20 @@
     scale: 1;
   }
 
+  /*
+   * 展开态：紫色描边要包住"搜索框 + 联想面板"整体，而不是只圈住搜索框。
+   * 做法是把这一圈拆成两半——搜索框留上/左/右三边，下边透明；面板补
+   * 左/右/下三边，上边透明；两者宽度实测完全一致（都是 500px、左右对齐），
+   * 拼起来就是一整圈。
+   * 同时去掉 focus 态那圈 0 0 0 3px 的紫色光晕：它是绕着搜索框自己画的，
+   * 面板展开后会在接缝处横穿一条，反而把两块切开。
+   */
   .bili-header__bar .center-search__bar.is-focus #nav-searchform,
   .bili-header__bar #nav-searchform.is-focus {
     border-radius: 8px 8px 0 0 !important;
+    border-color: rgba(120, 86, 255, 0.30) !important;
+    border-bottom-color: transparent !important;
+    box-shadow: 0 12px 30px rgba(38, 51, 77, 0.14) !important;
   }
 
   /* 放大镜按钮只在原来的右侧区域内缩放，不改变搜索框整体宽度。 */
@@ -2250,6 +2335,18 @@
     bottom: 1px !important;
   }
 
+  /*
+   * 两条之间还有一条明显的分界线，来源不是玻璃接缝，是顶栏自己的
+   * box-shadow: inset 0 -1px 0 rgb(227,229,231)（实测计算值）——一条画在
+   * 顶栏下沿的 1px 实色描边。文件前面那条 .bili-header__bar { box-shadow:
+   * none } 关不掉它：站点是在 .slide-down 态上用更高优先级的规则重新加的，
+   * 实测比较过——html body .bili-header__bar.slide-down（两个类）压不住，
+   * 要四个类才行。所以这里刻意重复类名把优先级顶上去。
+   */
+  .bili-header__bar.bili-header__bar.slide-down.slide-down {
+    box-shadow: none !important;
+  }
+
 
   /* 分类标签（番剧/国创/综艺...）：原生是块块实色浅灰底，压在毛玻璃顶栏上显得像贴上去的
      死板色块。改成半透明的"玻璃小标签"——极淡的黑色叠加 + 几乎看不见的发丝描边、
@@ -2312,6 +2409,80 @@
   ) .channel-link:hover {
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.36) !important;
     background-color: rgba(255, 255, 255, 0.10) !important;
+  }
+
+  /*
+   * 分类条里还有另一种胶囊：div.header-channel-fixed-right-item（实测
+   * 79×28、原生不透明底 rgb(246,247,248) + 1px rgb(241,242,243) 描边）。
+   * 它和上面那批 a.channel-link 是两套 DOM，前面的规则一条都没覆盖到，
+   * 所以在玻璃顶栏上仍是一颗颗贴上去的灰方块。
+   *
+   * 换成 Podcast 侧栏那种卡片：静止时只有一层极淡的底、没有硬描边；
+   * 悬浮时才浮起来——上移 + 轻微放大 + 一层柔和投影，底色同时提到接近
+   * 不透明，形成"抬起的小卡片"。不加边框：Podcast 侧栏那组也是只靠底色
+   * 和投影表达抬起，加 1px 描边会显得硬。
+   */
+  .header-channel-fixed-right-item {
+    box-sizing: border-box !important;
+    background-color: rgba(0, 0, 0, 0.045) !important;
+    background-image: none !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+    transform: translateY(0) scale(1);
+    transform-origin: center center;
+    transition:
+      transform 220ms cubic-bezier(.2, .8, .2, 1),
+      background-color 180ms ease,
+      box-shadow 220ms ease !important;
+    will-change: transform;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .header-channel-fixed-right-item:hover {
+      background-color: rgba(255, 255, 255, 0.85) !important;
+      box-shadow:
+        0 1px 2px rgba(15, 23, 42, 0.05),
+        0 6px 16px rgba(38, 51, 77, 0.12) !important;
+      transform: translateY(-2px) scale(1.04);
+    }
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .header-channel-fixed-right-item {
+      background-color: rgba(255, 255, 255, 0.06) !important;
+    }
+
+    .header-channel-fixed-right-item:hover {
+      background-color: rgba(255, 255, 255, 0.14) !important;
+      box-shadow:
+        0 1px 2px rgba(0, 0, 0, 0.22),
+        0 6px 18px rgba(0, 0, 0, 0.34) !important;
+    }
+  }
+
+  :is(
+    html.dark,
+    html.bili-dark,
+    html[data-theme="dark"],
+    html[data-color-mode="dark"],
+    html[data-theme-style="dark"],
+    html[data-darkreader-scheme="dark"]
+  ) .header-channel-fixed-right-item {
+    background-color: rgba(255, 255, 255, 0.06) !important;
+  }
+
+  :is(
+    html.dark,
+    html.bili-dark,
+    html[data-theme="dark"],
+    html[data-color-mode="dark"],
+    html[data-theme-style="dark"],
+    html[data-darkreader-scheme="dark"]
+  ) .header-channel-fixed-right-item:hover {
+    background-color: rgba(255, 255, 255, 0.14) !important;
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.22),
+      0 6px 18px rgba(0, 0, 0, 0.34) !important;
   }
 
   /* "动态"/"热门"左侧两个圆形图标按钮，同样补上悬浮上浮动效 */
