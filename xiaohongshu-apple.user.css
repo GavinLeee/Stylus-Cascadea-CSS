@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           小红书 Apple 风格左栏与卡片悬浮动效
 @namespace      rednote-apple-card-motion
-@version        1.13.1
+@version        1.13.2
 @description    为小红书网页版左侧导航按钮和图文卡片添加克制的 Apple 风格卡片悬浮动效，视觉语言对齐 X（Twitter）的克制卡片方案
 @match          https://www.xiaohongshu.com/*
 @match          https://xiaohongshu.com/*
@@ -1165,6 +1165,47 @@
     box-shadow:
       0 0 0 8px var(--rn-panel-hover),
       var(--rn-card-shadow-hover);
+  }
+
+  /*
+   * 个人主页（.user-page）不上这套卡片动效。
+   *
+   * 起因是那一页滚动会被平滑拉回顶部。做过一次五状态的现场对照（每段 6 秒、
+   * 共 702 帧采样、页面全程可见、最高滚到 8092），按当前状态统计"回弹"帧数：
+   *
+   *   E 全部开启      31
+   *   A 全部停用       9   ← 样式表整份关掉，依然会弹
+   *   B 关卡片动效    17
+   *   C 关侧栏        29
+   *   D 关顶栏搜索    25
+   *
+   * 两点结论：
+   *   1) 这本身是站点自己的毛病——样式表整份停用时仍然会弹（之前抓到的调用
+   *      栈是 scrollTo <- User.*.js，个人主页组件自己发起的平滑滚动）；
+   *   2) 但本文件会明显加重它，其中卡片那组是最大的加重项（31 → 17，约一半）。
+   *
+   * 纯 CSS 消不掉站点自己那份，能做的是别再往上加。侧栏和顶栏那两组影响很小
+   * （29 / 25，和全开差不多），所以只摘掉卡片这一组，其余照旧。
+   * 这里是把本文件自己的声明改回站点原值，不是 all: revert。
+   */
+  .user-page .feeds-container section.note-item {
+    isolation: auto !important;
+  }
+
+  .user-page .feeds-container section.note-item > * {
+    position: static !important;
+    transform: none !important;
+    transition: none !important;
+  }
+
+  .user-page .feeds-container section.note-item > *::before {
+    content: none !important;
+  }
+
+  .user-page .feeds-container section.note-item a.cover img {
+    scale: 1 !important;
+    transition: none !important;
+    will-change: auto !important;
   }
 
 
