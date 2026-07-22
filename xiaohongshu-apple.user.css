@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           小红书 Apple 风格左栏与卡片悬浮动效
 @namespace      rednote-apple-card-motion
-@version        1.10.6
+@version        1.10.7
 @description    为小红书网页版左侧导航按钮和图文卡片添加克制的 Apple 风格卡片悬浮动效，视觉语言对齐 X（Twitter）的克制卡片方案
 @match          https://www.xiaohongshu.com/*
 @match          https://xiaohongshu.com/*
@@ -973,12 +973,25 @@
      2. 中间图文卡片：整卡上浮放大 + 投影
      ======================================== */
 
+  /*
+   * 静止态刻意什么都不加：不写 transform、不写 will-change、不写 isolation，
+   * 只留过渡声明。
+   *
+   * 起因是个人主页（/user/profile/…）滚动会被弹回顶部，用户实测关掉本样式
+   * 就正常。那一页里本文件唯一碰到笔记网格的就是这条规则，而网格是站点用
+   * JS 量出来的：卡片全是 position:absolute，容器 .feeds-container 自身高度
+   * 是 0（实测 cssH=0px），真正的高度由站点写在外层 .tab-content-item 的
+   * 内联样式上（实测 405px，而卡片实际排到 678）——高度算少了，页面就没有
+   * 可滚动空间，一滚就被夹回 0。
+   *
+   * 给每张卡片挂常驻 transform + will-change 会把它们各自提升成合成层，
+   * 静止态本来也不需要（translateY(0) scale(1) 是恒等变换，纯粹是为了
+   * 给过渡留个起点——而 transform 从 none 过渡到具体值本来就正常工作）。
+   * 所以这里全部收进 :hover，静止态回到站点原样，尽量不干扰它的测量。
+   */
   .feeds-container section.note-item {
-    isolation: isolate;
-    transform: translateY(0) scale(1);
     transform-origin: center center;
     transition: transform 260ms var(--rn-ease) !important;
-    will-change: transform;
   }
 
   .feeds-container section.note-item::before {
@@ -998,6 +1011,7 @@
   }
 
   .feeds-container section.note-item:hover {
+    isolation: isolate;
     z-index: 20 !important;
     transform: translateY(-4px) scale(1.03);
   }
