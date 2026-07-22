@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           小红书 Apple 风格左栏与卡片悬浮动效
 @namespace      rednote-apple-card-motion
-@version        1.12.0
+@version        1.12.1
 @description    为小红书网页版左侧导航按钮和图文卡片添加克制的 Apple 风格卡片悬浮动效，视觉语言对齐 X（Twitter）的克制卡片方案
 @match          https://www.xiaohongshu.com/*
 @match          https://xiaohongshu.com/*
@@ -261,6 +261,22 @@
     box-shadow:
       0 0 0 3px rgba(120, 86, 255, 0.09),
       0 12px 30px rgba(38, 51, 77, 0.14) !important;
+  }
+
+  /*
+   * 个人主页的"笔记 / 收藏"那条：实测是 .reds-sticky-box.user-page-sticky
+   * 里的 .reds-sticky（1670×72、padding 16px 0、原生纯白底），滚动后站点会
+   * 把它切成 position: fixed 钉在顶栏下面。原来是一整条不透明白，和上面那条
+   * 玻璃顶栏并排就很突兀，换成同一档底板玻璃。
+   *
+   * 用 .user-page 限定，避开搜索结果页那条同名的 .reds-sticky——那条有自己
+   * 一套吸顶合并玻璃的处理（见上面 4. 段）。
+   */
+  .user-page .reds-sticky {
+    background-color: var(--rn-glass) !important;
+    background-image: none !important;
+    backdrop-filter: var(--rn-glass-blur) !important;
+    -webkit-backdrop-filter: var(--rn-glass-blur) !important;
   }
 
   /*
