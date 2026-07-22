@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           小红书 Apple 风格左栏与卡片悬浮动效
 @namespace      rednote-apple-card-motion
-@version        1.13.0
+@version        1.13.1
 @description    为小红书网页版左侧导航按钮和图文卡片添加克制的 Apple 风格卡片悬浮动效，视觉语言对齐 X（Twitter）的克制卡片方案
 @match          https://www.xiaohongshu.com/*
 @match          https://xiaohongshu.com/*
@@ -84,8 +84,6 @@
        钉住的筛选行要靠这两个值跟着顶栏走。 */
     --rn-header-h: 116px;
     --rn-header-h-expanded: 175px;
-    /* 个人主页那套顶栏（.header-container > .mask-paper）的高度，实测 72 */
-    --rn-profile-header-h: 72px;
 
     /* 悬浮时的玻璃质感背景 / 边框，浅色模式 */
     --rn-panel-hover: rgba(246, 247, 248, 0.92);
@@ -282,30 +280,15 @@
   }
 
   /*
-   * 吸顶后，顶栏和这条"笔记/收藏"要合成一整块玻璃，而不是上下两块拼在
-   * 一起——两块各自把模糊钳在自己的盒子边缘，交界处一定看得出一条线。
-   *
-   * 做法和 bilibili 那份文件里首页顶栏的处理一样：让下面这条自己的玻璃
-   * 向上长出一个顶栏的高度，同时把顶栏那层关掉，整块只剩一层
-   * backdrop-filter。backdrop-filter 作用于 border box，所以加一条透明的
-   * 上边框就能把盒子撑上去；再用等量负 margin 把位置拉回来，内容一动不动。
-   *
-   * 用 margin 而不是改 top：站点把这条切成 fixed 时自己会写 top，具体值
-   * 不好假设，负 margin 对任何 top 值都成立。
-   * 顶栏 z-index 30 高于这条的 5，所以搜索框、头像仍画在这块玻璃之上。
+   * 曾经在这里把顶栏和这条吸顶栏合成过一整块玻璃（下面这条向上长出一个
+   * 顶栏高度、顶栏那层关掉）。实测会让"滚动被拉回顶部"那个老毛病复发：
+   * 之前抓到的现场就是站点在 .reds-sticky-box 切换 sticky 类的前后调用
+   * scrollTo（栈是 scrollTo <- User.*.js），而这套写法恰恰在同一时刻给
+   * 这条元素换了盒模型（border-top 72px + 等量负 margin），等于在站点最
+   * 敏感的那一帧改它的几何。
+   * 两条各画各的会在交界处留一条淡淡的分界线，但比滚动不可用要好得多，
+   * 所以先退回来。要合并的话得换一条不在 sticky 切换瞬间改几何的路子。
    */
-  .reds-sticky-box.user-page-sticky.sticky .reds-sticky {
-    border-top: var(--rn-profile-header-h) solid transparent !important;
-    margin-top: calc(-1 * var(--rn-profile-header-h)) !important;
-    background-clip: border-box !important;
-  }
-
-  body:has(.reds-sticky-box.user-page-sticky.sticky)
-  .header-container .mask-paper {
-    background-color: transparent !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-  }
 
   /*
    * .input-box 和 .ai-header-container 之间隔着这层包裹容器。它的类名
