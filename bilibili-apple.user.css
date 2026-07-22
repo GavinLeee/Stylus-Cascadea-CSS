@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           Bilibili Apple 风格统一视频卡片
 @namespace      bilibili-apple-native-theme
-@version        8.18.1
+@version        8.19.0
 @description    首页网格、播放页推荐与播放器圆角、动态视频、动态页 Apple 背景、个人空间卡片、YouTube 风格顶栏玻璃及全站紫色强调色
 @match          https://www.bilibili.com/*
 @match          https://t.bilibili.com/*
@@ -2386,6 +2386,32 @@
   }
 
   /*
+   * 还有一处"顶栏背景先消失再出现"，和上面那条 display 判断是两码事：
+   * 站点给分类条挂了 animation: headerSlideDown 0.2s，实测是纯 opacity
+   * 0 → 1（几何全程不动：容器 0~119、内层 63~119、transform: none）：
+   *
+   *   t=0    chOpacity=0.00  barGlass=off
+   *   t=100  chOpacity=0.42  barGlass=off
+   *   t=200  chOpacity=1.00  barGlass=off
+   *
+   * 玻璃已经交给分类条这一层了，而它自己正在从全透明淡进来，顶栏那层又
+   * 已经关掉——这 200ms 里整块顶栏就是空的。（opacity < 1 还会让它变成
+   * backdrop root，这期间连模糊都不成立。）
+   *
+   * 把这条动画从容器移到里面的内容层：玻璃瞬间就位、不再淡入，分类标签
+   * 照旧淡进来，站点原本的动效观感保留。keyframes 是全局的，直接按名字
+   * 引用即可（站点样式表跨域读不到内容，但引用不受影响）。
+   * 实测改后：t=0 起 chOpacity 就是 1，全程 chGlass=ON。
+   */
+  .bili-feed4 > .header-channel.header-channel {
+    animation: none !important;
+  }
+
+  .bili-feed4 > .header-channel .header-channel-fixed {
+    animation: headerSlideDown 0.2s !important;
+  }
+
+  /*
    * 两条之间还有一条明显的分界线，来源不是玻璃接缝，是顶栏自己的
    * box-shadow: inset 0 -1px 0 rgb(227,229,231)（实测计算值）——一条画在
    * 顶栏下沿的 1px 实色描边。文件前面那条 .bili-header__bar { box-shadow:
@@ -2790,6 +2816,12 @@
     border-bottom-color: transparent !important;
   }
 
+  /* 展开态外框上圆下平，右下角的按钮跟着收成直角，和首页那颗一致 */
+  .search-fixed-header .search-input-wrap.search-input-focus
+  .search-button.search-button.search-button.search-button {
+    border-radius: 0 7px 0 0 !important;
+  }
+
   /*
    * 搜索页的联想面板是 .search-panel.search-panel-popover（原生纯白实色）。
    * 材质对齐首页那块：两层叠加的等效档 + 紫色描边的下半圈。
@@ -2803,24 +2835,45 @@
    * 换成首页 .nav-search-btn 那一档材质——半透明白 0.18、深色文字，悬浮
    * 时提到 0.52，和首页那颗搜索框里的放大镜段落完全一致。
    *
-   * 保留它原生的胶囊外形和位置，没有强行拉成"贴右边缘的整段"：实测那颗
-   * 按钮自带固定高度（36px，比搜索框内高 46px 矮一截），height:100% /
-   * align-self:stretch 都压不动，硬撑会把它和搜索框的圆角对不齐，反而更乱。
+   * 外形也按首页那颗来：不再是搜索框里浮着的一颗蓝胶囊，而是贴住右边缘、
+   * 与搜索框等高的一段，左边一条发丝分隔线，右侧跟随外框圆角——和首页
+   * .nav-search-btn 的几何完全一致。
+   *
+   * 高度撑满要用具体算式，不能靠 align-self: stretch：实测那颗按钮自带
+   * 36px 固定高度，stretch 和 height:100% 都压不动。外层 .search-input-wrap
+   * 是 padding: 5px 的 flex 容器（实测），所以用 height: calc(100% + 10px)
+   * 把两侧 padding 吃回来，再用负 margin 顶到边框内沿。
+   * 实测结果：按钮 1047~1147 / 8~55，外框 508~1148 / 8~56，严丝合缝。
    *
    * 类名要重复四次：vui_button 那套自己的规则优先级很高，两三次压不住
    * （实测逐级试出来的）。
    */
   .search-fixed-header .search-input-wrap
   .search-button.search-button.search-button.search-button {
+    box-sizing: border-box !important;
+    height: calc(100% + 10px) !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    margin: -5px -5px -5px 0 !important;
+    padding: 0 22px !important;
     background-color: rgba(255, 255, 255, 0.18) !important;
     background-image: none !important;
     border: 0 !important;
-    border-radius: 8px !important;
+    border-left: 1px solid rgba(15, 23, 42, 0.07) !important;
+    border-radius: 0 7px 7px 0 !important;
     color: rgb(24, 25, 28) !important;
     box-shadow: none !important;
     transition:
       background-color 180ms ease,
       box-shadow 220ms ease !important;
+  }
+
+  /*
+   * 左边那颗蓝色放大镜藏掉：首页那颗搜索框里没有左置图标，输入区直接从
+   * 左内边距开始（实测藏掉后输入框左沿从 559 回到 514，和首页一致）。
+   */
+  .search-fixed-header .search-input-wrap > svg:first-of-type {
+    display: none !important;
   }
 
   @media (hover: hover) and (pointer: fine) {
