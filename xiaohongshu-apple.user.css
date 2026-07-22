@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           小红书 Apple 风格左栏与卡片悬浮动效
 @namespace      rednote-apple-card-motion
-@version        1.10.1
+@version        1.10.2
 @description    为小红书网页版左侧导航按钮和图文卡片添加克制的 Apple 风格卡片悬浮动效，视觉语言对齐 X（Twitter）的克制卡片方案
 @match          https://www.xiaohongshu.com/*
 @match          https://xiaohongshu.com/*
@@ -107,6 +107,7 @@
        信息流卡片，玻璃能透出内容，不是纯色平涂。 */
     --rn-glass: rgba(245, 245, 247, 0.55);
     --rn-glass-blur: saturate(220%) blur(16px);
+    --rn-subnav-static-bg: #fff;
 
     /* 上浮层玻璃（搜索框、搜索按钮等浮在底板玻璃之上的控件），配方对齐
        YouTube 搜索框：模糊更重、不透明度只微增，靠"更糊"而不是"更厚"
@@ -149,6 +150,7 @@
         0 18px 44px rgba(0, 0, 0, 0.40);
 
       --rn-glass: rgba(38, 38, 40, 0.60);
+      --rn-subnav-static-bg: rgb(25, 25, 30);
       --rn-raised-glass: rgba(40, 40, 40, 0.60);
       --rn-raised-glass-hover: rgba(52, 52, 52, 0.72);
       --rn-stacked-glass: rgba(39, 39, 40, 0.84);
@@ -681,9 +683,11 @@
     bottom: 0;
     left: calc(-1 * var(--rn-content-inset));
     pointer-events: none;
-    background-color: var(--rn-glass);
-    backdrop-filter: var(--rn-glass-blur);
-    -webkit-backdrop-filter: var(--rn-glass-blur);
+    /* 页面顶部保持站点的纯色纸面；只有进入 sticky 吸顶态后才切玻璃。 */
+    background-color: var(--rn-subnav-static-bg);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    transition: background-color 180ms ease;
   }
 
   .search-layout__top::before {
@@ -703,6 +707,12 @@
    */
   .reds-sticky-box.sticky .reds-sticky::before {
     top: calc(-1 * var(--rn-header-h));
+    /* 固定筛选条在打开右侧详情栏后只占左侧结果区。用它自身宽度与
+       100vw 的差值向右外扩，让同一块玻璃一直覆盖到视口右边缘。 */
+    right: calc(100% - 100vw);
+    background-color: var(--rn-glass);
+    backdrop-filter: var(--rn-glass-blur);
+    -webkit-backdrop-filter: var(--rn-glass-blur);
   }
 
   body:has(.reds-sticky-box.sticky) .ai-header-container::before {
