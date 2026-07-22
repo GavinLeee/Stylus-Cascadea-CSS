@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           小红书 Apple 风格左栏与卡片悬浮动效
 @namespace      rednote-apple-card-motion
-@version        1.10.8
+@version        1.11.0
 @description    为小红书网页版左侧导航按钮和图文卡片添加克制的 Apple 风格卡片悬浮动效，视觉语言对齐 X（Twitter）的克制卡片方案
 @match          https://www.xiaohongshu.com/*
 @match          https://xiaohongshu.com/*
@@ -1279,6 +1279,78 @@
       transition: none !important;
       transform: none !important;
     }
+  }
+
+
+  /* ========================================
+     5. 个人主页临时让位（滚动回弹）
+     ======================================== */
+
+  /*
+   * 个人主页（/user/profile/…）向下滚动会被平滑地拉回顶部。装记录器抓到的
+   * 现场是站点自己干的，不是浏览器夹取、也不是页面高度塌陷：
+   *
+   *   点火调用栈  scrollTo (index.*.js) <- User.*.js:1:26666
+   *   轨迹        438 → 414 → 373 → 267 → 94 → 32 → 2 → 0（缓动曲线）
+   *   期间 scrollHeight 恒为 9852，一帧没变
+   *   点火前 ~200ms：.reds-sticky-box 切换吸顶 class、.back-top 出现
+   *
+   * 也就是说：个人主页组件在吸顶状态翻转前后主动调了"平滑滚回顶部"。
+   * 但用户实测关掉本样式就不再出现，所以本文件一定通过某条规则让它的判断
+   * 条件成立了——而这一页上本文件命中的规则只有侧栏那组和笔记卡片那组
+   * （吸顶玻璃那些规则实测在这一页一条都不匹配：没有 .search-layout、
+   * 没有 .ai-header-container，吸顶盒子的类名是 .user-page-sticky）。
+   *
+   * 已经排除的：卡片伪元素的 inset: -8px（它确实会给 overflow:scroll 的
+   * .tab-content-item 凭空加 8px 横向可滚动量，实测 1450/1442，已在上面
+   * 改成扩散阴影修掉，但回弹依旧）；卡片静止态的 transform / will-change /
+   * isolation（已移除，回弹依旧）。
+   *
+   * 在没定位到确切那一条之前，先让整页回到原生：把本文件在个人主页上会
+   * 生效的规则逐条中和掉，保证这一页可用。定位到之后这一段就删掉。
+   *
+   * 注意这里是"把自己的声明改回站点原值"，不是 all: revert——后者会连站点
+   * 自己的样式一起清掉，那一页会直接花掉。
+   */
+
+  /* 笔记卡片：去掉悬浮位移、卡片背景伪元素、封面放大 */
+  .user-page .feeds-container section.note-item {
+    transform: none !important;
+    transition: none !important;
+  }
+
+  .user-page .feeds-container section.note-item::before {
+    content: none !important;
+  }
+
+  .user-page .feeds-container section.note-item a.cover img {
+    transform: none !important;
+    transition: none !important;
+  }
+
+  /* 侧栏：把改过的几何量还原（侧栏在 .user-page 之外，要从 body 上判断） */
+  body:has(.user-page) .side-bar {
+    overflow: auto !important;
+    z-index: auto !important;
+  }
+
+  body:has(.user-page) .side-bar :is(.channel-list, .channel-list-content) {
+    padding-inline: 0 !important;
+  }
+
+  body:has(.user-page) .side-bar .channel-list-content {
+    width: 100% !important;
+    margin-inline: 0 !important;
+    padding-top: 0 !important;
+  }
+
+  body:has(.user-page) .side-bar :is(
+    .channel-list-content li,
+    .bottom-menu-component,
+    [class*="information-wrapper"]
+  ) {
+    transform: none !important;
+    transition: none !important;
   }
 
 }
