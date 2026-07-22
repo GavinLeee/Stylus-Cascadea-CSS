@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           小红书 Apple 风格左栏与卡片悬浮动效
 @namespace      rednote-apple-card-motion
-@version        1.14.1
+@version        1.14.2
 @description    为小红书网页版左侧导航按钮和图文卡片添加克制的 Apple 风格卡片悬浮动效，视觉语言对齐 X（Twitter）的克制卡片方案
 @match          https://www.xiaohongshu.com/*
 @match          https://xiaohongshu.com/*
@@ -815,8 +815,16 @@
     transition: background-color 180ms ease;
   }
 
+  /*
+   * 笔记/用户/问点点 这一行不铺纯色纸面：它是 static 的，页面顶部时身后
+   * 就是站点自己的同色底，涂不涂看不出差别；而吸顶后身后是 body 那块
+   * 整宽玻璃（见下），这里一涂白就把玻璃整条盖成实色白带。留透明，两种
+   * 状态都对。伪元素本身保留——它仍然要向左右各外扩 32px、向下补满 12px
+   * 的行间缝（展开态还会靠它上移 3px 补顶栏的裂缝），只是不画底色了。
+   */
   .search-layout__top::before {
     bottom: calc(-1 * var(--rn-subnav-gap));
+    background-color: transparent;
   }
 
   /*
