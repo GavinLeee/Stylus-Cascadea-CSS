@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           小红书 Apple 风格左栏与卡片悬浮动效
 @namespace      rednote-apple-card-motion
-@version        1.14.0
+@version        1.14.1
 @description    为小红书网页版左侧导航按钮和图文卡片添加克制的 Apple 风格卡片悬浮动效，视觉语言对齐 X（Twitter）的克制卡片方案
 @match          https://www.xiaohongshu.com/*
 @match          https://xiaohongshu.com/*
@@ -227,13 +227,18 @@
   }
 
   /*
-   * 同一套页面里的搜索框：实测是 #search-input（514×40，原生 3% 黑底、
+   * 同一套页面里的搜索框：实测是 div#search-input.search-input（514×40，原生 3% 黑底、
    * 999px 胶囊）。它整块浮在上面那层顶栏玻璃之上，所以走上浮层那一档，
    * 滤镜只补模糊、不叠第二次饱和度——和首页 .input-box 完全同一份配方
    * （理由见文件顶部变量块）。
    * 位移用 translate/scale 独立属性，不碰 transform（理由见笔记卡片那段）。
+   *
+   * 选择器必须写成 div#search-input.search-input，不能只写 #search-input：
+   * explore 那套 AI 搜索框里的输入区是 textarea#search-input.textarea，
+   * id 撞名。只按 id 选会把那块 textarea 也套上胶囊底色和投影，看起来就是
+   * 搜索框里面又套了一张卡片（用户报的那条）。限定标签名和类名就分开了。
    */
-  #search-input {
+  div#search-input.search-input {
     box-sizing: border-box !important;
     background-color: var(--rn-raised-glass) !important;
     background-image: none !important;
@@ -253,7 +258,7 @@
   }
 
   @media (hover: hover) and (pointer: fine) {
-    #search-input:hover:not(:focus-within) {
+    div#search-input.search-input:hover:not(:focus-within) {
       background-color: var(--rn-raised-glass-hover) !important;
       box-shadow: var(--rn-card-shadow-hover) !important;
       translate: 0 -2px;
@@ -261,7 +266,7 @@
     }
   }
 
-  #search-input:focus-within {
+  div#search-input.search-input:focus-within {
     background-color: var(--rn-raised-glass-hover) !important;
     box-shadow:
       0 0 0 3px rgba(120, 86, 255, 0.09),
