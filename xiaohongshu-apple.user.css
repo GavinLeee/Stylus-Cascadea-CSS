@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           小红书 Apple 风格左栏与卡片悬浮动效
 @namespace      rednote-apple-card-motion
-@version        1.10.2
+@version        1.10.3
 @description    为小红书网页版左侧导航按钮和图文卡片添加克制的 Apple 风格卡片悬浮动效，视觉语言对齐 X（Twitter）的克制卡片方案
 @match          https://www.xiaohongshu.com/*
 @match          https://xiaohongshu.com/*
@@ -75,6 +75,7 @@
     --rn-content-inset: 32px;
     /* .search-layout__top 自带的 margin-bottom，两行之间的缝。 */
     --rn-subnav-gap: 12px;
+    --rn-subnav-row-h: 48px;
     /* 搜索框展开时顶栏(175)和内容 padding-top(178)之间站点自己留的缝。 */
     --rn-subnav-expanded-gap: 3px;
     /* 顶栏两种形态的高度，实测：塌陷 116，搜索框展开 175。
@@ -700,19 +701,45 @@
    * 采样、各自把模糊钳在自己的盒子边缘，接缝两侧的模糊结果对不上。
    * 这是"两块玻璃"的固有现象，靠对齐几何解决不了，只能合成一块。
    *
-   * 做法：钉住时让筛选行的玻璃向上延伸盖满顶栏区域，成为唯一一块玻璃，
-   * 同时关掉顶栏自己的那块。顶栏 z-index 30 高于筛选行所在的 25，所以
-   * 顶栏的内容（搜索框）照常画在这块玻璃之上，只是不再自带背景。
-   * 钉住信号用站点自己加的 .reds-sticky-box.sticky 类（实测）。
+   * 做法：钉住时由 body 在根层画一块覆盖“顶栏 + 筛选行”的 fixed 玻璃，
+   * 同时关掉顶栏和左侧筛选行各自的背景。顶栏 z-index 30、筛选内容 25，
+   * 都高于玻璃底板 24，因此搜索框、分类按钮仍画在玻璃之上。
+   * 钉住信号沿用站点自己加的 .reds-sticky-box.sticky 类（实测）。
    */
-  .reds-sticky-box.sticky .reds-sticky::before {
-    top: calc(-1 * var(--rn-header-h));
-    /* 固定筛选条在打开右侧详情栏后只占左侧结果区。用它自身宽度与
-       100vw 的差值向右外扩，让同一块玻璃一直覆盖到视口右边缘。 */
-    right: calc(100% - 100vw);
+  /*
+   * sticky 行属于左侧结果栏的层叠上下文；即使把它的伪元素拉到 100vw，
+   * 打开 AI 详情后仍可能被右侧面板自己的层叠上下文盖住。滚动态改由 body
+   * 直接画一块根层级的 fixed 玻璃：24 在信息流卡片(20)之上、筛选内容(25)、
+   * AI 筛选按钮(26)与搜索头(30)之下，整块自然能铺到视口最右边。
+   */
+  body:has(.reds-sticky-box.sticky)::before {
+    content: "";
+    position: fixed;
+    z-index: calc(var(--rn-subnav-z) - 1);
+    top: 0;
+    right: 0;
+    left: 0;
+    height: calc(var(--rn-header-h) + var(--rn-subnav-row-h));
+    pointer-events: none;
     background-color: var(--rn-glass);
     backdrop-filter: var(--rn-glass-blur);
     -webkit-backdrop-filter: var(--rn-glass-blur);
+  }
+
+  /* 左栏原来的玻璃在 sticky 态必须关掉，否则左半边会叠成双层材质。 */
+  .reds-sticky-box.sticky .reds-sticky::before {
+    display: none;
+  }
+
+  /* AI 详情页的筛选按钮不在左侧滚动容器中，单独压在整宽玻璃之上。 */
+  body:has(.reds-sticky-box.sticky) .filter.ai-chat-filter {
+    z-index: calc(var(--rn-subnav-z) + 1) !important;
+    isolation: isolate;
+  }
+
+  body:has(.reds-sticky-box.sticky)
+  .search-layout__top:has(.filter.ai-chat-filter) {
+    z-index: calc(var(--rn-subnav-z) + 1) !important;
   }
 
   body:has(.reds-sticky-box.sticky) .ai-header-container::before {
@@ -729,9 +756,10 @@
     top: var(--rn-header-h-expanded) !important;
   }
 
-  body:has(.ai-header-container.header-container-large)
-  .reds-sticky-box.sticky .reds-sticky::before {
-    top: calc(-1 * var(--rn-header-h-expanded));
+  body:has(.ai-header-container.header-container-large):has(
+    .reds-sticky-box.sticky
+  )::before {
+    height: calc(var(--rn-header-h-expanded) + var(--rn-subnav-row-h));
   }
 
   /*
