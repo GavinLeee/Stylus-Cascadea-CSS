@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           小红书 Apple 风格左栏与卡片悬浮动效
 @namespace      rednote-apple-card-motion
-@version        1.11.1
+@version        1.12.0
 @description    为小红书网页版左侧导航按钮和图文卡片添加克制的 Apple 风格卡片悬浮动效，视觉语言对齐 X（Twitter）的克制卡片方案
 @match          https://www.xiaohongshu.com/*
 @match          https://xiaohongshu.com/*
@@ -201,6 +201,66 @@
   .note-detail-mask {
     z-index: calc(var(--rn-header-z) + 10) !important;
     isolation: isolate;
+  }
+
+  /*
+   * 个人主页这类页面的顶栏是另一套结构：不是 explore 那条
+   * .ai-header-container，而是 .header-container（fixed, 72px 高）里套一层
+   * div.mask-paper —— 站点自己就是拿它当"纸面"的，原生 backdrop-filter:
+   * blur(20px)，但底色写死成不透明白，所以那层模糊等于白铺了一层，看不出
+   * 玻璃。把底色和滤镜换成本文件顶栏那一档，观感就和首页一致了。
+   *
+   * 玻璃直接放在 .mask-paper 上没有 backdrop root 的顾虑：搜索框
+   * .input-box 是独立的 position: fixed 元素，不在 .mask-paper 里面
+   * （实测 .header-container 的子节点只有 .mask-paper 一个）。
+   */
+  .header-container .mask-paper {
+    background-color: var(--rn-glass) !important;
+    background-image: none !important;
+    backdrop-filter: var(--rn-glass-blur) !important;
+    -webkit-backdrop-filter: var(--rn-glass-blur) !important;
+  }
+
+  /*
+   * 同一套页面里的搜索框：实测是 #search-input（514×40，原生 3% 黑底、
+   * 999px 胶囊）。它整块浮在上面那层顶栏玻璃之上，所以走上浮层那一档，
+   * 滤镜只补模糊、不叠第二次饱和度——和首页 .input-box 完全同一份配方
+   * （理由见文件顶部变量块）。
+   * 位移用 translate/scale 独立属性，不碰 transform（理由见笔记卡片那段）。
+   */
+  #search-input {
+    box-sizing: border-box !important;
+    background-color: var(--rn-raised-glass) !important;
+    background-image: none !important;
+    border-radius: 999px !important;
+    box-shadow:
+      0 1px 2px rgba(15, 23, 42, 0.05),
+      0 8px 24px rgba(38, 51, 77, 0.09) !important;
+    backdrop-filter: var(--rn-raised-blur) !important;
+    -webkit-backdrop-filter: var(--rn-raised-blur) !important;
+    translate: 0 0;
+    scale: 1;
+    transition:
+      translate 220ms var(--rn-ease),
+      scale 220ms var(--rn-ease),
+      background-color 180ms ease,
+      box-shadow 220ms var(--rn-ease) !important;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    #search-input:hover:not(:focus-within) {
+      background-color: var(--rn-raised-glass-hover) !important;
+      box-shadow: var(--rn-card-shadow-hover) !important;
+      translate: 0 -2px;
+      scale: 1.01;
+    }
+  }
+
+  #search-input:focus-within {
+    background-color: var(--rn-raised-glass-hover) !important;
+    box-shadow:
+      0 0 0 3px rgba(120, 86, 255, 0.09),
+      0 12px 30px rgba(38, 51, 77, 0.14) !important;
   }
 
   /*
