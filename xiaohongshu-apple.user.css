@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           小红书 Apple 风格左栏与卡片悬浮动效
 @namespace      rednote-apple-card-motion
-@version        1.13.2
+@version        1.14.0
 @description    为小红书网页版左侧导航按钮和图文卡片添加克制的 Apple 风格卡片悬浮动效，视觉语言对齐 X（Twitter）的克制卡片方案
 @match          https://www.xiaohongshu.com/*
 @match          https://xiaohongshu.com/*
@@ -84,6 +84,11 @@
        钉住的筛选行要靠这两个值跟着顶栏走。 */
     --rn-header-h: 116px;
     --rn-header-h-expanded: 175px;
+    /* 个人主页那套顶栏与吸顶导航的高度，吸顶态实测：
+       顶栏 .mask-paper 0~72，导航行 .reds-sticky fixed top:71、71~143
+       （两者原生就压着 1px）。合并玻璃的高度按 72 + 72 - 1 = 143 算。 */
+    --rn-profile-header-h: 72px;
+    --rn-profile-sticky-h: 72px;
 
     /* 悬浮时的玻璃质感背景 / 边框，浅色模式 */
     --rn-panel-hover: rgba(246, 247, 248, 0.92);
@@ -280,15 +285,42 @@
   }
 
   /*
-   * 曾经在这里把顶栏和这条吸顶栏合成过一整块玻璃（下面这条向上长出一个
-   * 顶栏高度、顶栏那层关掉）。实测会让"滚动被拉回顶部"那个老毛病复发：
-   * 之前抓到的现场就是站点在 .reds-sticky-box 切换 sticky 类的前后调用
-   * scrollTo（栈是 scrollTo <- User.*.js），而这套写法恰恰在同一时刻给
-   * 这条元素换了盒模型（border-top 72px + 等量负 margin），等于在站点最
-   * 敏感的那一帧改它的几何。
-   * 两条各画各的会在交界处留一条淡淡的分界线，但比滚动不可用要好得多，
-   * 所以先退回来。要合并的话得换一条不在 sticky 切换瞬间改几何的路子。
+   * 吸顶后，顶栏和"笔记/收藏"要看起来是一整块玻璃。
+   *
+   * 1.13.0 试过让下面那条自己向上长出一个顶栏高度（border-top + 负 margin），
+   * 结果滚动回弹立刻变严重——之前抓到的现场是站点在 .reds-sticky-box 切换
+   * sticky 类的前后调用 scrollTo，而那种写法恰恰在同一帧改这条元素的盒模型。
+   *
+   * 这一版改成不碰站点任何元素的几何：由 body 在根层画一块 fixed 玻璃，
+   * 盖住"顶栏 + 吸顶导航"的整个高度，两条各自的玻璃同时关掉。这块伪元素
+   * 脱离文档流、pointer-events: none，站点量什么都不受影响。
+   *
+   * z-index 4 的位置：高于信息流卡片（在流内，z-auto），低于吸顶导航自己的
+   * 内容（站点原生 z-index: 5）和顶栏（本文件设为 30），所以标签文字、搜索框
+   * 仍然画在玻璃之上。
    */
+  body:has(.reds-sticky-box.user-page-sticky.sticky)::before {
+    content: "";
+    position: fixed;
+    z-index: 4;
+    top: 0;
+    right: 0;
+    left: 0;
+    height: calc(
+      var(--rn-profile-header-h) + var(--rn-profile-sticky-h) - 1px
+    );
+    pointer-events: none;
+    background-color: var(--rn-glass);
+    backdrop-filter: var(--rn-glass-blur);
+    -webkit-backdrop-filter: var(--rn-glass-blur);
+  }
+
+  body:has(.reds-sticky-box.user-page-sticky.sticky) .header-container .mask-paper,
+  body:has(.reds-sticky-box.user-page-sticky.sticky) .user-page .reds-sticky {
+    background-color: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
 
   /*
    * .input-box 和 .ai-header-container 之间隔着这层包裹容器。它的类名
