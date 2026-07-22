@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           小红书 Apple 风格左栏与卡片悬浮动效
 @namespace      rednote-apple-card-motion
-@version        1.14.2
+@version        1.14.3
 @description    为小红书网页版左侧导航按钮和图文卡片添加克制的 Apple 风格卡片悬浮动效，视觉语言对齐 X（Twitter）的克制卡片方案
 @match          https://www.xiaohongshu.com/*
 @match          https://xiaohongshu.com/*
@@ -884,6 +884,27 @@
 
   body:has(.search-layout):has(.reds-sticky-box.sticky) .ai-header-container::before {
     display: none;
+  }
+
+  /*
+   * 上一条把顶栏自己的玻璃关掉之后留下的坑：整块玻璃改由 body::before 画，
+   * 层级是 24，而笔记/用户/问点点 这一行是 25——比玻璃高。
+   *
+   * 无 AI 面板的搜索页（.ai-feeds-page 不带 .with-ai-chat）整窗滚动，这一行
+   * 是普通流内元素，会一路滚进顶栏那 116px 里（实测滚动后 y=25~65）。原本
+   * 它该被顶栏那层玻璃盖住，但 25 > 24，于是这排标签连同右端的"筛选"直接
+   * 画在玻璃上面，和搜索框并排显示——就是用户报的"滚动时覆盖到顶栏上方"。
+   *
+   * 压到 23：低于整块玻璃(24)、仍高于悬浮卡片(20)。滚上去之后它像信息流
+   * 卡片一样被玻璃糊住，正是没装样式时被不透明顶栏挡住的观感。
+   * 交互没变——实测这个位置的命中目标本来就是顶栏的 .search-area-in-header。
+   *
+   * 带 AI 面板那版不受影响：那边左栏在 .search-layout-wrapper 里独立滚动，
+   * 容器上边界就是 116，这一行滚上去直接被裁掉，压根进不了顶栏那一段。
+   * 上面 :has(.filter.ai-chat-filter) 那条多两个类、更具体，需要时仍压过这里。
+   */
+  body:has(.search-layout):has(.reds-sticky-box.sticky) .search-layout__top {
+    z-index: calc(var(--rn-subnav-z) - 2) !important;
   }
 
   /*
