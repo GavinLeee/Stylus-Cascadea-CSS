@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           小红书 Apple 风格左栏与卡片悬浮动效
 @namespace      rednote-apple-card-motion
-@version        1.10.0
+@version        1.10.1
 @description    为小红书网页版左侧导航按钮和图文卡片添加克制的 Apple 风格卡片悬浮动效，视觉语言对齐 X（Twitter）的克制卡片方案
 @match          https://www.xiaohongshu.com/*
 @match          https://xiaohongshu.com/*
@@ -310,6 +310,32 @@
   .ai-header-container .search-area-in-header
   .input-box:has(.wendian-wrapper--panel-open)::before {
     background-color: var(--rn-raised-glass);
+  }
+
+  /*
+   * 多行搜索框展开后，真正应当保留的卡片是内层 .textarea-container。
+   * 外层 .input-box::before 如果继续绘制，就会在内层圆角外再露出一圈
+   * 同形圆角和阴影，形成截图里的“双层卡片”。只在非 small 的展开态停用
+   * 外层绘制，并把玻璃材质交给内层；折叠态仍沿用上面的外层胶囊。
+   */
+  .ai-header-container .search-area-in-header
+  .input-box:has(.textarea-container:not(.textarea-container-small)) {
+    box-shadow: none !important;
+  }
+
+  .ai-header-container .search-area-in-header
+  .input-box:has(.textarea-container:not(.textarea-container-small))::before {
+    content: none !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  .ai-header-container
+  .textarea-container:not(.textarea-container-small) {
+    background-color: var(--rn-raised-glass) !important;
+    backdrop-filter: var(--rn-raised-blur) !important;
+    -webkit-backdrop-filter: var(--rn-raised-blur) !important;
   }
 
   .ai-header-container .search-area-in-header .input-button .search-icon,
