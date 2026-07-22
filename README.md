@@ -9,7 +9,7 @@
 | 样式表 | 版本 | 生效范围 | 作用 |
 | --- | --- | --- | --- |
 | [`global.user.css`](global.user.css) | 1.1.2 | 所有网站 | 统一字体栈为 Anthropic Sans + Noto Sans，并保留代码与图标字体 |
-| [`bilibili-apple.user.css`](bilibili-apple.user.css) | 8.19.0 | `bilibili.com` 主站 / 动态 / 搜索 / 空间 / 消息 | 首页网格、播放页推荐与播放器圆角、动态视频、动态页 Apple 背景、个人空间卡片、持续吸顶且随分类导航展开的无接缝顶栏玻璃及全站紫色强调色 |
+| [`bilibili-apple.user.css`](bilibili-apple.user.css) | 8.20.0 | `bilibili.com` 主站 / 动态 / 搜索 / 空间 / 消息 | 首页网格、播放页推荐与播放器圆角、动态视频、动态页 Apple 背景、个人空间卡片、持续吸顶且随分类导航展开的无接缝顶栏玻璃及全站紫色强调色 |
 | [`youtube-apple.user.css`](youtube-apple.user.css) | 2.20.49 | `youtube.com` | 顶栏、分类栏、左侧导航和视频卡片的悬浮动效 |
 | [`x-apple.user.css`](x-apple.user.css) | 1.7.16 | `x.com`、`twitter.com` | 右栏模块、推文信息流和左侧导航的卡片与悬浮动画，串联推文之间不画分隔线 |
 | [`google-apple.user.css`](google-apple.user.css) | 1.5.24 | `google.com` 及 8 个地区域名 | 搜索结果与顶部控件的动效和磨砂玻璃 |

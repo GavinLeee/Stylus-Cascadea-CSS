@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           Bilibili Apple 风格统一视频卡片
 @namespace      bilibili-apple-native-theme
-@version        8.19.0
+@version        8.20.0
 @description    首页网格、播放页推荐与播放器圆角、动态视频、动态页 Apple 背景、个人空间卡片、YouTube 风格顶栏玻璃及全站紫色强调色
 @match          https://www.bilibili.com/*
 @match          https://t.bilibili.com/*
@@ -100,6 +100,11 @@
      */
     --bili-stacked-glass-background: rgba(246, 246, 246, 0.82);
     --bili-stacked-glass-filter: saturate(220%) blur(62px);
+
+    /* 搜索页那颗按钮用的放大镜（mask-image，配 currentColor 着色，深浅色
+       模式自动跟随文字颜色）。放在变量里是因为同一串要写 mask 和
+       -webkit-mask 两遍。 */
+    --bili-search-icon: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M10.5 3a7.5 7.5 0 1 1-4.6 13.4l-3.2 3.2a1 1 0 0 1-1.4-1.4l3.2-3.2A7.5 7.5 0 0 1 10.5 3zm0 2a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11z'/></svg>");
   }
 
   @media (prefers-color-scheme: dark) {
@@ -2730,22 +2735,36 @@
   /* 搜索结果页（search.bilibili.com）：往下滚动后原生的 .bili-header__bar 会整个滚出
      屏幕，真正接管顶部、一直吸顶的是搜索页自己的 .search-fixed-header（只剩 logo+搜索框），
      和 UP 主空间页的 .nav-bar.space-navbar 是同一种模式，毛玻璃也要加在这条真正生效的栏上。
-     它是吸顶栏，和首页顶栏同一档底板玻璃 */
+     它是吸顶栏，和首页顶栏同一档底板玻璃。
+
+     玻璃画在 ::before 上而不是它自己身上：搜索框和它的联想面板都是这条栏的后代，
+     祖先一旦带 backdrop-filter 就成了 backdrop root，后代自己的玻璃只能采样到 root
+     内部已绘制的内容、采不到身后页面，于是退化成一层平涂——实测就是"展开窗口过于
+     透明"的来源。这个坑首页顶栏那处也踩过，注释在上面。 */
   .search-fixed-header {
-    background-color: var(--bili-header-glass-background) !important;
+    position: relative !important;
+    background-color: transparent !important;
     background-image: none !important;
     border-bottom: 1px solid rgba(0, 0, 0, 0.045) !important;
     box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  .search-fixed-header::before {
+    content: "" !important;
+    position: absolute !important;
+    inset: 0 !important;
+    z-index: -1 !important;
+    pointer-events: none !important;
+    background-color: var(--bili-header-glass-background) !important;
     backdrop-filter: var(--bili-header-glass-filter) !important;
     -webkit-backdrop-filter: var(--bili-header-glass-filter) !important;
   }
 
   @media (prefers-color-scheme: dark) {
     .search-fixed-header {
-      background-color: var(--bili-header-glass-background) !important;
-      background-image: none !important;
       border-bottom-color: rgba(255, 255, 255, 0.07) !important;
-      box-shadow: none !important;
     }
   }
 
@@ -2757,105 +2776,116 @@
     html[data-theme-style="dark"],
     html[data-darkreader-scheme="dark"]
   ) .search-fixed-header {
-    background-color: var(--bili-header-glass-background) !important;
-    background-image: none !important;
     border-bottom-color: rgba(255, 255, 255, 0.07) !important;
-    box-shadow: none !important;
   }
 
   /*
-   * 搜索结果页吸顶栏里的搜索框：结构和首页那颗完全不是一套（首页是
-   * form#nav-searchform，这里是 div.search-input-wrap，实测 640×48、原生
-   * 不透明底 rgb(246,247,248) + 1px rgb(241,242,243) 描边、6px 圆角），
-   * 所以前面所有 .bili-header__bar #nav-searchform 的规则一条都覆盖不到，
-   * 它一直是原生的白盒子。这里按首页那颗的配方补齐。
+   * 搜索页的搜索框：结构和首页那颗完全不是一套（首页是 form#nav-searchform，
+   * 这里是 div.search-input-wrap，实测 640×48、原生不透明底 rgb(246,247,248)
+   * + 1px rgb(241,242,243) 描边、6px 圆角），所以前面所有
+   * .bili-header__bar #nav-searchform 的规则一条都覆盖不到。
    *
-   * 它整块坐在吸顶栏玻璃上，所以和首页一样走"只补模糊、不叠第二次饱和度"
-   * 那一档；展开面板走两层叠加的等效档，两者材质就对得上了。
+   * 选择器刻意不挂 .search-fixed-header 前缀：页面最顶部时那条吸顶栏根本还
+   * 不存在（实测 scroll=91 时 document.querySelector('.search-fixed-header')
+   * 返回 null，搜索框待在 .search-header 里），挂了前缀顶部态就还是原生白盒子。
+   *
+   * 玻璃同样画在 ::before 上，理由和上面那条吸顶栏一样：联想面板是搜索框的
+   * 后代（实测链路 .search-panel-popover < .search-input-wrap），搜索框自己
+   * 带 backdrop-filter 就会把面板的玻璃废掉。
    *
    * 类名要重复三次：站点在聚焦态用更高优先级的规则把底色刷回纯白、
    * backdrop-filter 设成 blur(0px)，实测两次重复压不住、三次才行。
    */
-  .search-fixed-header
   .search-input-wrap.search-input-wrap.search-input-wrap {
+    position: relative !important;
     box-sizing: border-box !important;
-    background-color: var(--bili-raised-glass-background) !important;
+    background-color: transparent !important;
     background-image: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
     border: 1px solid rgba(15, 23, 42, 0.085) !important;
     border-radius: 8px !important;
     box-shadow:
       0 1px 2px rgba(15, 23, 42, 0.035),
       0 6px 18px rgba(38, 51, 77, 0.075) !important;
-    backdrop-filter: var(--bili-raised-glass-filter-on-glass) !important;
-    -webkit-backdrop-filter: var(--bili-raised-glass-filter-on-glass) !important;
     transition:
-      background-color 180ms ease,
       border-color 180ms ease,
       box-shadow 220ms ease !important;
   }
 
+  .search-input-wrap.search-input-wrap.search-input-wrap::before {
+    content: "" !important;
+    position: absolute !important;
+    inset: 0 !important;
+    z-index: -1 !important;
+    pointer-events: none !important;
+    border-radius: inherit !important;
+    background-color: var(--bili-raised-glass-background) !important;
+    backdrop-filter: var(--bili-raised-glass-filter) !important;
+    -webkit-backdrop-filter: var(--bili-raised-glass-filter) !important;
+    transition: background-color 180ms ease !important;
+  }
+
+  /* 吸顶态下它坐在吸顶栏那层玻璃上，去掉重复的饱和度（理由见文件顶部变量块） */
+  .search-fixed-header
+  .search-input-wrap.search-input-wrap.search-input-wrap::before {
+    backdrop-filter: var(--bili-raised-glass-filter-on-glass) !important;
+    -webkit-backdrop-filter: var(--bili-raised-glass-filter-on-glass) !important;
+  }
+
   @media (hover: hover) and (pointer: fine) {
-    .search-fixed-header
     .search-input-wrap.search-input-wrap.search-input-wrap:hover:not(
       .search-input-focus
     ) {
-      background-color: rgba(255, 255, 255, 0.72) !important;
       border-color: rgba(15, 23, 42, 0.13) !important;
       box-shadow:
         0 2px 5px rgba(15, 23, 42, 0.05),
         0 11px 28px rgba(38, 51, 77, 0.13) !important;
     }
+
+    .search-input-wrap.search-input-wrap.search-input-wrap:hover:not(
+      .search-input-focus
+    )::before {
+      background-color: var(--bili-raised-glass-hover) !important;
+    }
   }
 
   /* 展开态：紫色描边拆成上下两半，和首页同一套做法（见首页那条注释）。
      下沿透明，交给面板补齐。 */
-  .search-fixed-header
   .search-input-wrap.search-input-wrap.search-input-wrap.search-input-focus {
     border-radius: 8px 8px 0 0 !important;
     border-color: rgba(120, 86, 255, 0.30) !important;
     border-bottom-color: transparent !important;
   }
 
-  /* 展开态外框上圆下平，右下角的按钮跟着收成直角，和首页那颗一致 */
-  .search-fixed-header .search-input-wrap.search-input-focus
-  .search-button.search-button.search-button.search-button {
-    border-radius: 0 7px 0 0 !important;
-  }
-
   /*
-   * 搜索页的联想面板是 .search-panel.search-panel-popover（原生纯白实色）。
-   * 材质对齐首页那块：两层叠加的等效档 + 紫色描边的下半圈。
-   * 实测它原生比搜索框下沿低 4px（框 8~56、面板 60~449），中间那道缝会把
-   * 描边断开，负 margin 拉回来贴齐。左右各内缩 1px（框 432~1072、面板
-   * 433~1071）是原生行为，1px 看不出来，不动它。
+   * 那颗原生 vui_button--blue 实色蓝"搜索"按钮：换成首页 .nav-search-btn
+   * 那一档——贴住右边缘、与搜索框等高的一段，左边一条发丝分隔线，右侧跟随
+   * 外框圆角，半透明白 0.18 + 深色图标，悬浮提到 0.52。
+   *
+   * 文字换成放大镜：font-size 归零让"搜索"两个字消失，再用 ::after +
+   * mask-image 画一枚放大镜。mask 走 currentColor，深浅色模式自动跟随文字
+   * 颜色，不用准备两份图。
+   *
+   * 高度撑满要用具体算式，align-self: stretch 和 height: 100% 都压不动它
+   * 自带的 36px；外层 .search-input-wrap 是 padding: 5px 的 flex 容器
+   * （实测），所以用 height: calc(100% + 10px) 把两侧 padding 吃回来，再用
+   * 负 margin 顶到边框内沿。实测按钮 1047~1147、外框 508~1148，右侧严丝合缝。
+   *
+   * 类名重复四次：vui_button 那套自己的规则优先级很高，两三次压不住。
    */
-  /*
-   * 搜索页那颗蓝色"搜索"按钮和左边的放大镜图标：原生是 vui_button--blue
-   * 实色蓝 + 蓝色图标（实测 rgb(0,174,236)），压在玻璃搜索框里非常跳。
-   * 换成首页 .nav-search-btn 那一档材质——半透明白 0.18、深色文字，悬浮
-   * 时提到 0.52，和首页那颗搜索框里的放大镜段落完全一致。
-   *
-   * 外形也按首页那颗来：不再是搜索框里浮着的一颗蓝胶囊，而是贴住右边缘、
-   * 与搜索框等高的一段，左边一条发丝分隔线，右侧跟随外框圆角——和首页
-   * .nav-search-btn 的几何完全一致。
-   *
-   * 高度撑满要用具体算式，不能靠 align-self: stretch：实测那颗按钮自带
-   * 36px 固定高度，stretch 和 height:100% 都压不动。外层 .search-input-wrap
-   * 是 padding: 5px 的 flex 容器（实测），所以用 height: calc(100% + 10px)
-   * 把两侧 padding 吃回来，再用负 margin 顶到边框内沿。
-   * 实测结果：按钮 1047~1147 / 8~55，外框 508~1148 / 8~56，严丝合缝。
-   *
-   * 类名要重复四次：vui_button 那套自己的规则优先级很高，两三次压不住
-   * （实测逐级试出来的）。
-   */
-  .search-fixed-header .search-input-wrap
+  .search-input-wrap
   .search-button.search-button.search-button.search-button {
     box-sizing: border-box !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
     height: calc(100% + 10px) !important;
     min-height: 0 !important;
     max-height: none !important;
     margin: -5px -5px -5px 0 !important;
-    padding: 0 22px !important;
+    padding: 0 !important;
+    font-size: 0 !important;
     background-color: rgba(255, 255, 255, 0.18) !important;
     background-image: none !important;
     border: 0 !important;
@@ -2868,43 +2898,52 @@
       box-shadow 220ms ease !important;
   }
 
-  /*
-   * 左边那颗蓝色放大镜藏掉：首页那颗搜索框里没有左置图标，输入区直接从
-   * 左内边距开始（实测藏掉后输入框左沿从 559 回到 514，和首页一致）。
-   */
-  .search-fixed-header .search-input-wrap > svg:first-of-type {
-    display: none !important;
+  .search-input-wrap
+  .search-button.search-button.search-button.search-button::after {
+    content: "" !important;
+    display: block !important;
+    width: 20px !important;
+    height: 20px !important;
+    background-color: currentColor !important;
+    -webkit-mask: var(--bili-search-icon) center / contain no-repeat !important;
+    mask: var(--bili-search-icon) center / contain no-repeat !important;
   }
 
   @media (hover: hover) and (pointer: fine) {
-    .search-fixed-header .search-input-wrap
+    .search-input-wrap
     .search-button.search-button.search-button.search-button:hover {
       background-color: rgba(255, 255, 255, 0.52) !important;
       box-shadow: 0 5px 14px rgba(38, 51, 77, 0.13) !important;
     }
   }
 
-  /* 左边那个放大镜图标原生是品牌蓝，改成和正文一致的中性色 */
-  .search-fixed-header .search-input-wrap > svg {
-    color: rgb(24, 25, 28) !important;
+  /* 展开态外框上圆下平，右下角的按钮跟着收成直角，和首页那颗一致 */
+  .search-input-wrap.search-input-focus
+  .search-button.search-button.search-button.search-button {
+    border-radius: 0 7px 0 0 !important;
+  }
+
+  /*
+   * 左边那颗蓝色放大镜藏掉：首页那颗搜索框里没有左置图标，输入区直接从
+   * 左内边距开始（实测藏掉后输入框左沿从 559 回到 514，和首页一致）。
+   */
+  .search-input-wrap > svg:first-of-type {
+    display: none !important;
   }
 
   @media (prefers-color-scheme: dark) {
-    .search-fixed-header .search-input-wrap
+    .search-input-wrap
     .search-button.search-button.search-button.search-button {
       background-color: rgba(255, 255, 255, 0.07) !important;
+      border-left-color: rgba(255, 255, 255, 0.10) !important;
       color: rgb(229, 229, 234) !important;
     }
 
-    .search-fixed-header .search-input-wrap
+    .search-input-wrap
     .search-button.search-button.search-button.search-button:hover {
       background-color: rgba(255, 255, 255, 0.14) !important;
       box-shadow: 0 6px 15px rgba(0, 0, 0, 0.34) !important;
     }
-
-    .search-fixed-header .search-input-wrap > svg {
-      color: rgb(229, 229, 234) !important;
-    }
   }
 
   :is(
@@ -2914,23 +2953,20 @@
     html[data-color-mode="dark"],
     html[data-theme-style="dark"],
     html[data-darkreader-scheme="dark"]
-  ) .search-fixed-header .search-input-wrap
+  ) .search-input-wrap
   .search-button.search-button.search-button.search-button {
     background-color: rgba(255, 255, 255, 0.07) !important;
+    border-left-color: rgba(255, 255, 255, 0.10) !important;
     color: rgb(229, 229, 234) !important;
   }
 
-  :is(
-    html.dark,
-    html.bili-dark,
-    html[data-theme="dark"],
-    html[data-color-mode="dark"],
-    html[data-theme-style="dark"],
-    html[data-darkreader-scheme="dark"]
-  ) .search-fixed-header .search-input-wrap > svg {
-    color: rgb(229, 229, 234) !important;
-  }
-
+  /*
+   * 搜索页的联想面板是 .search-panel.search-panel-popover（原生纯白实色）。
+   * 材质对齐首页那块：两层叠加的等效档 + 紫色描边的下半圈。
+   * 实测它原生比搜索框下沿低 4px（框 8~56、面板 60~449），中间那道缝会把
+   * 描边断开，负 margin 拉回来贴齐。左右各内缩 1px（框 432~1072、面板
+   * 433~1071）是原生行为，1px 看不出来，不动它。
+   */
   .search-panel.search-panel-popover {
     background-color: var(--bili-stacked-glass-background) !important;
     background-image: none !important;
@@ -2944,7 +2980,6 @@
       0 2px 5px rgba(15, 23, 42, 0.055),
       0 20px 46px rgba(38, 51, 77, 0.17) !important;
   }
-
   /* 动态页顶栏：搜索框与头像/快捷入口合并为同一条吸顶毛玻璃栏。
      背景+模糊同样搬到 ::before 伪元素上——原因见上面首页顶栏那条注释，这里是
      嵌套悬浮浮层（消息/动态/收藏/历史）真正在用的那条规则，必须一起改，否则
