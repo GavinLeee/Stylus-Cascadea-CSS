@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           Bilibili Apple 风格统一视频卡片
 @namespace      bilibili-apple-native-theme
-@version        8.17.0
+@version        8.18.0
 @description    首页网格、播放页推荐与播放器圆角、动态视频、动态页 Apple 背景、个人空间卡片、YouTube 风格顶栏玻璃及全站紫色强调色
 @match          https://www.bilibili.com/*
 @match          https://t.bilibili.com/*
@@ -1674,19 +1674,27 @@
    * 半透明底 + 上浮 + 柔和投影。
    *
    * 选择器说明：实测确认过两个浮层的条目类名——历史是
-   * a.header-history-card（366×92，原生透明底），头像面板是
-   * .single-link-item；消息/动态/收藏三个当时没能同时展开逐个量。B 站这几
-   * 个面板的命名是一致的 -card / -item 后缀，所以这里按"浮层内的 a / li
-   * 且类名带 -card 或 -item"来命中，覆盖到没实测过的那几个。
-   * 限定 a/li 是为了不误伤面板里的容器 div（那些也常带 -item 字样）。
+   * a.header-history-card（366×92），头像面板是 a.single-link-item
+   * （252×38）；消息/动态/收藏三个始终没能在自动化里稳定展开逐个量。
+   * B 站这几个面板的命名是一致的 -card / -item 后缀，所以按类名命中，
+   * 覆盖到没实测过的那几个。第一版只认 a / li，动态那个浮层没生效（用户
+   * 反馈），说明它的条目不是链接标签，所以放开标签限制，改用两条约束把
+   * "真正的条目"择出来：
+   *   :not([class*="__"])  排掉 BEM 子块（.header-history-card__info
+   *                        这类内部零件也带 -card 字样）
+   *   :not(:has(条目))     只留最内层，避免外层分组容器（如
+   *                        .links-item 包着 4 个 .single-link-item）
+   *                        跟着一起亮，叠出两层卡片。
    *
    * 位移只给 2px、不放大：这些条目是通栏的一行，放大会把右边缘顶出面板。
    */
-  .v-popover-content :is(a, li):is(
+  .v-popover-content :is(
     [class*="-card"],
     [class*="-item"],
     [class*="_item"]
-  ) {
+  ):not([class*="__"]):not(:has(
+    :is([class*="-card"], [class*="-item"], [class*="_item"]):not([class*="__"])
+  )) {
     border-radius: 10px !important;
     transform: translateY(0);
     transform-origin: center center;
@@ -1698,11 +1706,13 @@
   }
 
   @media (hover: hover) and (pointer: fine) {
-    .v-popover-content :is(a, li):is(
+    .v-popover-content :is(
       [class*="-card"],
       [class*="-item"],
       [class*="_item"]
-    ):hover {
+    ):not([class*="__"]):not(:has(
+      :is([class*="-card"], [class*="-item"], [class*="_item"]):not([class*="__"])
+    )):hover {
       background-color: rgba(255, 255, 255, 0.62) !important;
       box-shadow:
         0 1px 2px rgba(15, 23, 42, 0.05),
@@ -1712,11 +1722,13 @@
   }
 
   @media (prefers-color-scheme: dark) {
-    .v-popover-content :is(a, li):is(
+    .v-popover-content :is(
       [class*="-card"],
       [class*="-item"],
       [class*="_item"]
-    ):hover {
+    ):not([class*="__"]):not(:has(
+      :is([class*="-card"], [class*="-item"], [class*="_item"]):not([class*="__"])
+    )):hover {
       background-color: rgba(255, 255, 255, 0.10) !important;
       box-shadow:
         0 1px 2px rgba(0, 0, 0, 0.22),
@@ -1731,11 +1743,13 @@
     html[data-color-mode="dark"],
     html[data-theme-style="dark"],
     html[data-darkreader-scheme="dark"]
-  ) .v-popover-content :is(a, li):is(
+  ) .v-popover-content :is(
     [class*="-card"],
     [class*="-item"],
     [class*="_item"]
-  ):hover {
+  ):not([class*="__"]):not(:has(
+    :is([class*="-card"], [class*="-item"], [class*="_item"]):not([class*="__"])
+  )):hover {
     background-color: rgba(255, 255, 255, 0.10) !important;
     box-shadow:
       0 1px 2px rgba(0, 0, 0, 0.22),
@@ -2317,22 +2331,48 @@
   }
 
   /*
-   * 顶栏和分类条的玻璃：两条各画各的，但配方完全相同、边界严丝合缝，
-   * 视觉上就是连续的一整块。
+   * 吸顶后，顶栏和分类条要真的是"一块玻璃"，不是两块拼在一起。
    *
-   * 之前试过"合并成一块"的写法——关掉顶栏自己的玻璃，改由分类条内层
-   * .header-channel-fixed::before 向上延伸一个顶栏高度统一绘制。结构上说得
-   * 通，但实测结果是滚动之后整条顶栏干脆没有背景了：那层伪元素的底色画得
-   * 出来（换成纯色能看到色块），backdrop-filter 却取不到样，只剩一层平涂，
-   * 而顶栏自己的那层已经被关掉，于是滚动态下什么玻璃都没有。
+   * 走过两条弯路，都记在这里免得再试：
+   *   1) 关掉顶栏玻璃、由分类条内层 .header-channel-fixed::before 向上延伸
+   *      一个顶栏高度统一绘制——那层伪元素底色画得出来（换成纯色能看到
+   *      色块），backdrop-filter 却取不到样，只剩一层平涂，结果滚动态下
+   *      整条顶栏没有任何玻璃。
+   *   2) 两条各画各的、边界对齐——接缝处仍然看得出一条线：两层玻璃各自
+   *      把模糊钳在自己的盒子边缘，交界两侧的采样结果对不上，这是"两块
+   *      玻璃"的固有现象，几何对齐解决不了。
    *
-   * 所以回到"各画各的"，并且顶栏那层任何状态下都不关——顶栏的背景不会再
-   * 消失。两条之间原生有 1px 重叠（实测顶栏 0~64、分类条 63~119），两层
-   * 半透明叠在一起会在交界处压出一条更深的发丝线，所以顶栏这层的下沿收
-   * 1px，正好和分类条上沿接上、不重不漏。
+   * 现在的做法不用伪元素、也不拼接：让分类条自己那一层玻璃向上长出一个
+   * 顶栏的高度，把顶栏区域一起罩进来。backdrop-filter 作用于 border box，
+   * 所以给它加一条透明的上边框就够了——盒子长高、内容位置一动不动：
+   *   top: 63px            → top: 0 + border-top: 63px solid transparent
+   *   实测 border box 63~119 → 0~119，内层 .header-channel-fixed 仍是 63~119
+   * 整块 0~119 只有这一层 backdrop-filter，没有接缝可言。顶栏自己那层同时
+   * 关掉，避免叠成两层。顶栏 z-index(100002) 高于分类条(100001)，所以搜索
+   * 框、头像这些内容照常画在这块玻璃之上。
+   *
+   * 顺带解决了"顶栏滑下来时先出现一次再变成整块"：玻璃始终由分类条这一层
+   * 持有，顶栏滑入时不再有自己的一块先淡进来。
+   *
+   * 63 是实测的站点定位值（分类条 position: fixed; top: 63px，比顶栏
+   * 64px 高度少 1px，两者原生就压着 1px）。站点改版调了这个值的话，
+   * 这里跟着改即可。
    */
-  .bili-header__bar::before {
-    bottom: 1px !important;
+  body:has(.bili-header__bar.slide-down)
+  .bili-header__bar.bili-header__bar.slide-down.slide-down::before {
+    background-color: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  body:has(.bili-header__bar.slide-down)
+  .bili-feed4 > .header-channel.header-channel.header-channel.header-channel {
+    top: 0 !important;
+    border-top: 63px solid transparent !important;
+    background-clip: border-box !important;
+    background-color: var(--bili-header-glass-background) !important;
+    backdrop-filter: var(--bili-header-glass-filter) !important;
+    -webkit-backdrop-filter: var(--bili-header-glass-filter) !important;
   }
 
   /*
@@ -2685,6 +2725,80 @@
     background-image: none !important;
     border-bottom-color: rgba(255, 255, 255, 0.07) !important;
     box-shadow: none !important;
+  }
+
+  /*
+   * 搜索结果页吸顶栏里的搜索框：结构和首页那颗完全不是一套（首页是
+   * form#nav-searchform，这里是 div.search-input-wrap，实测 640×48、原生
+   * 不透明底 rgb(246,247,248) + 1px rgb(241,242,243) 描边、6px 圆角），
+   * 所以前面所有 .bili-header__bar #nav-searchform 的规则一条都覆盖不到，
+   * 它一直是原生的白盒子。这里按首页那颗的配方补齐。
+   *
+   * 它整块坐在吸顶栏玻璃上，所以和首页一样走"只补模糊、不叠第二次饱和度"
+   * 那一档；展开面板走两层叠加的等效档，两者材质就对得上了。
+   *
+   * 类名要重复三次：站点在聚焦态用更高优先级的规则把底色刷回纯白、
+   * backdrop-filter 设成 blur(0px)，实测两次重复压不住、三次才行。
+   */
+  .search-fixed-header
+  .search-input-wrap.search-input-wrap.search-input-wrap {
+    box-sizing: border-box !important;
+    background-color: var(--bili-raised-glass-background) !important;
+    background-image: none !important;
+    border: 1px solid rgba(15, 23, 42, 0.085) !important;
+    border-radius: 8px !important;
+    box-shadow:
+      0 1px 2px rgba(15, 23, 42, 0.035),
+      0 6px 18px rgba(38, 51, 77, 0.075) !important;
+    backdrop-filter: var(--bili-raised-glass-filter-on-glass) !important;
+    -webkit-backdrop-filter: var(--bili-raised-glass-filter-on-glass) !important;
+    transition:
+      background-color 180ms ease,
+      border-color 180ms ease,
+      box-shadow 220ms ease !important;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .search-fixed-header
+    .search-input-wrap.search-input-wrap.search-input-wrap:hover:not(
+      .search-input-focus
+    ) {
+      background-color: rgba(255, 255, 255, 0.72) !important;
+      border-color: rgba(15, 23, 42, 0.13) !important;
+      box-shadow:
+        0 2px 5px rgba(15, 23, 42, 0.05),
+        0 11px 28px rgba(38, 51, 77, 0.13) !important;
+    }
+  }
+
+  /* 展开态：紫色描边拆成上下两半，和首页同一套做法（见首页那条注释）。
+     下沿透明，交给面板补齐。 */
+  .search-fixed-header
+  .search-input-wrap.search-input-wrap.search-input-wrap.search-input-focus {
+    border-radius: 8px 8px 0 0 !important;
+    border-color: rgba(120, 86, 255, 0.30) !important;
+    border-bottom-color: transparent !important;
+  }
+
+  /*
+   * 搜索页的联想面板是 .search-panel.search-panel-popover（原生纯白实色）。
+   * 材质对齐首页那块：两层叠加的等效档 + 紫色描边的下半圈。
+   * 实测它原生比搜索框下沿低 4px（框 8~56、面板 60~449），中间那道缝会把
+   * 描边断开，负 margin 拉回来贴齐。左右各内缩 1px（框 432~1072、面板
+   * 433~1071）是原生行为，1px 看不出来，不动它。
+   */
+  .search-panel.search-panel-popover {
+    background-color: var(--bili-stacked-glass-background) !important;
+    background-image: none !important;
+    backdrop-filter: var(--bili-stacked-glass-filter) !important;
+    -webkit-backdrop-filter: var(--bili-stacked-glass-filter) !important;
+    margin-top: -4px !important;
+    border: 1px solid rgba(120, 86, 255, 0.30) !important;
+    border-top-color: transparent !important;
+    border-radius: 0 0 8px 8px !important;
+    box-shadow:
+      0 2px 5px rgba(15, 23, 42, 0.055),
+      0 20px 46px rgba(38, 51, 77, 0.17) !important;
   }
 
   /* 动态页顶栏：搜索框与头像/快捷入口合并为同一条吸顶毛玻璃栏。
