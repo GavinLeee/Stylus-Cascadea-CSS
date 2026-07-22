@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           Bilibili Apple 风格统一视频卡片
 @namespace      bilibili-apple-native-theme
-@version        8.14.8
+@version        8.15.0
 @description    首页网格、播放页推荐与播放器圆角、动态视频、动态页 Apple 背景、个人空间卡片、YouTube 风格顶栏玻璃及全站紫色强调色
 @match          https://www.bilibili.com/*
 @match          https://t.bilibili.com/*
@@ -69,11 +69,44 @@
        相同也会在交界处变深。 */
     --bili-header-glass-background: rgba(245, 245, 247, 0.55);
     --bili-header-glass-filter: saturate(220%) blur(16px);
+
+    /*
+     * 浮层玻璃：浮在页面内容之上的面板/弹层/悬浮按钮，取
+     * youtube-apple.user.css 的 --yt-apple-raised-*。
+     * 苹果那套材质的层次是靠"更糊"拉开的，不是靠"更厚"——两档不透明度
+     * 几乎一样（0.55/0.60），差的是模糊半径 16 → 60。
+     */
+    --bili-raised-glass-background: rgba(246, 246, 246, 0.60);
+    --bili-raised-glass-filter: saturate(200%) blur(60px);
+
+    /*
+     * 已经坐在顶栏玻璃之上的控件（搜索框）用这一档：底色同浮层，滤镜只留
+     * 模糊、不叠第二次饱和度。顶栏那层已经把背景 saturate(220%) 过一遍，
+     * 控件再叠一次等于 440%；而且饱和度会钳位，鲜艳色的通道被推到 0/255
+     * 之后，任何单层配方都还原不出那个结果，和它拼在一起的联想面板就永远
+     * 配不上色（这条是在 xiaohongshu-apple.user.css 里实测踩出来的）。
+     */
+    --bili-raised-glass-filter-on-glass: blur(60px);
+
+    /*
+     * 搜索联想面板用这一档：它和搜索框拼成一块连续的圆角矩形，但两边处境
+     * 不同——搜索框整块嵌在顶栏里，身后先有顶栏玻璃，自己那层是第二层；
+     * 面板绝大部分挂在顶栏之外，身后只有页面，只有一层。写同一份配方两边
+     * 就不是同一种材质。这一档直接写成两层叠加的等效值：
+     *   不透明度 1-(1-0.55)(1-0.60)=0.82（深色 1-0.4×0.4=0.84）
+     *   颜色     加权混合后几乎不变
+     *   模糊     高斯叠加 √(16²+60²)≈62
+     *   饱和度   回到底板那一层的 220%（不能叠两次，理由见上）
+     */
+    --bili-stacked-glass-background: rgba(246, 246, 246, 0.82);
+    --bili-stacked-glass-filter: saturate(220%) blur(62px);
   }
 
   @media (prefers-color-scheme: dark) {
     :root {
       --bili-header-glass-background: rgba(38, 38, 40, 0.60);
+      --bili-raised-glass-background: rgba(40, 40, 40, 0.60);
+      --bili-stacked-glass-background: rgba(39, 39, 40, 0.84);
     }
   }
 
@@ -86,6 +119,8 @@
     html[data-darkreader-scheme="dark"]
   ) {
     --bili-header-glass-background: rgba(38, 38, 40, 0.60);
+    --bili-raised-glass-background: rgba(40, 40, 40, 0.60);
+    --bili-stacked-glass-background: rgba(39, 39, 40, 0.84);
   }
 
 
@@ -1147,12 +1182,12 @@
     box-sizing: border-box !important;
     border: 1px solid rgba(0, 0, 0, 0.065) !important;
     border-radius: 10px !important;
-    background-color: rgba(255, 255, 255, 0.76) !important;
+    background-color: var(--bili-raised-glass-background) !important;
     box-shadow:
       0 1px 2px rgba(0, 0, 0, 0.025),
       0 6px 18px rgba(31, 38, 50, 0.07) !important;
-    backdrop-filter: saturate(125%) blur(12px) !important;
-    -webkit-backdrop-filter: saturate(125%) blur(12px) !important;
+    backdrop-filter: var(--bili-raised-glass-filter) !important;
+    -webkit-backdrop-filter: var(--bili-raised-glass-filter) !important;
     transform: translate3d(0, 0, 0) scale(1);
     transform-origin: center;
     will-change: transform;
@@ -1550,15 +1585,15 @@
   }
 
   /* 消息/动态/收藏/历史等按钮悬浮弹出的浮层内容（.v-popover-content，登录卡片、大会员
-     卡片、动态列表都共用这个类），原生纯白底 + 阴影，和玻璃顶栏不统一。这里保留浮层原有的
-     独立玻璃参数并去掉重投影，不跟随本次顶栏材质调整，避免误改正文气泡；选择器重复类名
-     提高优先级，确保不会被原生浮层样式盖掉。 */
+     卡片、动态列表都共用这个类），原生纯白底 + 阴影，和玻璃顶栏不统一。它整块挂在顶栏
+     下方、身后是页面内容，只有自己一层玻璃，走浮层那一档（--bili-raised-glass-*）；
+     选择器重复类名提高优先级，确保不会被原生浮层样式盖掉。 */
   .v-popover-content.v-popover-content {
-    background-color: rgba(255, 255, 255, 0.86) !important;
+    background-color: var(--bili-raised-glass-background) !important;
     background-image: none !important;
     box-shadow: none !important;
-    backdrop-filter: saturate(110%) blur(12px) !important;
-    -webkit-backdrop-filter: saturate(110%) blur(12px) !important;
+    backdrop-filter: var(--bili-raised-glass-filter) !important;
+    -webkit-backdrop-filter: var(--bili-raised-glass-filter) !important;
     transform: translateZ(0) !important;
     isolation: isolate !important;
     will-change: backdrop-filter !important;
@@ -1606,15 +1641,17 @@
      ======================================== */
 
   /*
-   * 头像面板使用与顶栏同系的透明玻璃；比顶栏多一层边框和阴影，
-   * 让它在展开时仍然明确是一张悬浮面板。
+   * 头像面板：浮层那一档玻璃（--bili-raised-glass-*，= YouTube 的
+   * --yt-apple-raised-*）。它整块挂在顶栏下方、身后只有页面内容，只有
+   * 自己一层玻璃，直接用浮层原值即可。比顶栏多一层边框和阴影，让它展开
+   * 时仍然明确是一张悬浮面板。
    */
   .right-entry .v-popover-content.v-popover-content,
   .v-popover-content.avatar-popover,
   .v-popover-content:has(> .avatar-panel-popover) {
     overflow: hidden !important;
 
-    background-color: rgba(255, 255, 255, 0.76) !important;
+    background-color: var(--bili-raised-glass-background) !important;
     background-image: none !important;
 
     border: 1px solid rgba(255, 255, 255, 0.62) !important;
@@ -1624,8 +1661,8 @@
       0 1px 2px rgba(15, 23, 42, 0.05),
       0 18px 48px rgba(38, 51, 77, 0.18) !important;
 
-    backdrop-filter: saturate(170%) blur(24px) !important;
-    -webkit-backdrop-filter: saturate(170%) blur(24px) !important;
+    backdrop-filter: var(--bili-raised-glass-filter) !important;
+    -webkit-backdrop-filter: var(--bili-raised-glass-filter) !important;
 
     transform: translateZ(0) !important;
     isolation: isolate !important;
@@ -1645,14 +1682,17 @@
   }
 
   /*
-   * 搜索面板采用“高一级的浮层玻璃”：比顶栏更不透明、模糊略弱，
-   * 再通过下方圆角、细边框和投影与顶栏/搜索框区分。
+   * 搜索联想面板：它和搜索框拼成一块连续的圆角矩形（搜索框上圆、面板下圆），
+   * 两边必须是同一种材质。但处境不同——搜索框整块嵌在顶栏里，身后先有顶栏
+   * 玻璃，自己那层是第二层；面板绝大部分挂在顶栏之外，身后只有页面内容，
+   * 只有一层。所以面板不能照抄浮层原值，要用按两层叠加算出来的等效档
+   * --bili-stacked-glass-*（推导见文件顶部变量块）。
    */
   .bili-header__bar.slide-down .search-panel.search-panel,
   .bili-header__bar .center-search-container .search-panel.search-panel {
     overflow: hidden !important;
 
-    background-color: rgba(255, 255, 255, 0.84) !important;
+    background-color: var(--bili-stacked-glass-background) !important;
     background-image: none !important;
 
     border: 1px solid rgba(15, 23, 42, 0.075) !important;
@@ -1663,20 +1703,23 @@
       0 2px 5px rgba(15, 23, 42, 0.055),
       0 20px 46px rgba(38, 51, 77, 0.17) !important;
 
-    backdrop-filter: saturate(145%) blur(18px) !important;
-    -webkit-backdrop-filter: saturate(145%) blur(18px) !important;
+    backdrop-filter: var(--bili-stacked-glass-filter) !important;
+    -webkit-backdrop-filter: var(--bili-stacked-glass-filter) !important;
 
     transform: translateZ(0) !important;
     isolation: isolate !important;
   }
 
-  /* 搜索框本体：与浮层同系的玻璃胶囊，并保留展开时与面板相接的上圆角。 */
+  /* 搜索框本体：与浮层同系的玻璃胶囊，并保留展开时与面板相接的上圆角。
+     它整块坐在顶栏玻璃上，所以滤镜走 --bili-raised-glass-filter-on-glass
+     那一档——只补模糊、不叠第二次饱和度（理由见文件顶部变量块）。底色和
+     顶栏那层叠加之后，正好等于面板那份 --bili-stacked-glass-background。 */
   .bili-header__bar #nav-searchform,
   .bili-header__bar .center-search-container #nav-searchform {
     position: relative !important;
     isolation: isolate;
 
-    background-color: rgba(255, 255, 255, 0.58) !important;
+    background-color: var(--bili-raised-glass-background) !important;
     background-image: none !important;
 
     border: 1px solid rgba(15, 23, 42, 0.085) !important;
@@ -1686,8 +1729,8 @@
       0 1px 2px rgba(15, 23, 42, 0.035),
       0 6px 18px rgba(38, 51, 77, 0.075) !important;
 
-    backdrop-filter: saturate(150%) blur(18px) !important;
-    -webkit-backdrop-filter: saturate(150%) blur(18px) !important;
+    backdrop-filter: var(--bili-raised-glass-filter-on-glass) !important;
+    -webkit-backdrop-filter: var(--bili-raised-glass-filter-on-glass) !important;
 
     translate: 0 0;
     scale: 1;
@@ -2468,19 +2511,20 @@
 
   /* 搜索结果页（search.bilibili.com）：往下滚动后原生的 .bili-header__bar 会整个滚出
      屏幕，真正接管顶部、一直吸顶的是搜索页自己的 .search-fixed-header（只剩 logo+搜索框），
-     和 UP 主空间页的 .nav-bar.space-navbar 是同一种模式，毛玻璃也要加在这条真正生效的栏上 */
+     和 UP 主空间页的 .nav-bar.space-navbar 是同一种模式，毛玻璃也要加在这条真正生效的栏上。
+     它是吸顶栏，和首页顶栏同一档底板玻璃 */
   .search-fixed-header {
-    background-color: rgba(255, 255, 255, 0.86) !important;
+    background-color: var(--bili-header-glass-background) !important;
     background-image: none !important;
     border-bottom: 1px solid rgba(0, 0, 0, 0.045) !important;
     box-shadow: none !important;
-    backdrop-filter: saturate(110%) blur(12px) !important;
-    -webkit-backdrop-filter: saturate(110%) blur(12px) !important;
+    backdrop-filter: var(--bili-header-glass-filter) !important;
+    -webkit-backdrop-filter: var(--bili-header-glass-filter) !important;
   }
 
   @media (prefers-color-scheme: dark) {
     .search-fixed-header {
-      background-color: rgba(28, 28, 30, 0.86) !important;
+      background-color: var(--bili-header-glass-background) !important;
       background-image: none !important;
       border-bottom-color: rgba(255, 255, 255, 0.07) !important;
       box-shadow: none !important;
@@ -2495,7 +2539,7 @@
     html[data-theme-style="dark"],
     html[data-darkreader-scheme="dark"]
   ) .search-fixed-header {
-    background-color: rgba(28, 28, 30, 0.86) !important;
+    background-color: var(--bili-header-glass-background) !important;
     background-image: none !important;
     border-bottom-color: rgba(255, 255, 255, 0.07) !important;
     box-shadow: none !important;
