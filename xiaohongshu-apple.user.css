@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           小红书 Apple 风格左栏与卡片悬浮动效
 @namespace      rednote-apple-card-motion
-@version        1.14.3
+@version        1.14.4
 @description    为小红书网页版左侧导航按钮和图文卡片添加克制的 Apple 风格卡片悬浮动效，视觉语言对齐 X（Twitter）的克制卡片方案
 @match          https://www.xiaohongshu.com/*
 @match          https://xiaohongshu.com/*
@@ -200,6 +200,41 @@
     background-color: var(--rn-glass);
     backdrop-filter: var(--rn-glass-blur);
     -webkit-backdrop-filter: var(--rn-glass-blur);
+  }
+
+  /*
+   * 上面那层 ::before 玻璃靠 backdrop-filter 采样身后的像素——身后有滚动内容
+   * 穿过才糊得出“磨砂”，身后若是一整片纯色，就只是一条半透明实色横条。
+   * explore 首页和普通搜索页都是整窗滚动，卡片会从固定顶栏身后经过，磨砂成立。
+   *
+   * 但“搜索 + 点点AI 回答”这一版（.ai-feeds-page.with-ai-chat，右侧挂 AI 面板）
+   * 的信息流被单独关进内层滚动容器 .search-layout-wrapper：.ai-feeds-page 用
+   * padding-top: 116px 把这个容器整体压到顶栏下面，容器上沿正好落在 y=116
+   * （顶栏下边界），且自带 overflow: hidden auto。于是卡片在顶栏下边界处被裁掉、
+   * 永远进不到顶栏身后，backdrop-filter 只能采样到 .ai-feeds-page 那层不透明底
+   * （实测 rgb(25,25,30)），糊出来是一整片纯色——顶栏退化成一条实心深色横条，
+   * 和首页那条磨砂对不上（用户报的就是这条）。
+   *
+   * 修法：只把信息流这一列往上拉到顶栏身后，内容仍留在顶栏下方，右侧 AI 面板
+   * （同一 flex 行里的兄弟列）不动。
+   *   margin-top 负一个顶栏高 → 容器上沿回到 y=0，卡片得以画进顶栏身后；
+   *   padding-top 补一个顶栏高 → 内容起点仍在 y=116，不被顶栏压住；
+   *   height   加一个顶栏高 → 补回负 margin 让出的那段，底部不缺一截；
+   *   align-self: flex-start → 顶掉 flex 行默认的 stretch，让上面这个显式高度生效。
+   * 实测（浏览器里逐帧核对）：卡片滚动时顶栏开始糊出真实内容，材质与首页顶栏
+   * 一致；上下滚动顺滑无回弹；右侧 AI 面板不受影响。
+   *
+   * 副作用：笔记/用户/问点点 那一行（.search-layout__top）不再被 y=116 裁掉，
+   * 会随卡片一起滚进顶栏身后——但它 z-index 25 低于顶栏 30，是被顶栏玻璃糊住、
+   * 而不是画在顶栏之上，观感正是“内容从磨砂顶栏下穿过”，即想要的效果。
+   * 高度按塌陷态顶栏 116（--rn-header-h）算；AI 搜索页顶栏实测常驻 .compact
+   * 塌陷态，若日后出现展开态(175) 再照 header-container-large 补条件。
+   */
+  .ai-feeds-page.with-ai-chat .search-layout-wrapper {
+    margin-top: calc(-1 * var(--rn-header-h)) !important;
+    padding-top: var(--rn-header-h) !important;
+    height: calc(100% + var(--rn-header-h)) !important;
+    align-self: flex-start !important;
   }
 
   /* The native note overlay is z-index:20; keep it above our raised header. */
@@ -899,8 +934,10 @@
    * 卡片一样被玻璃糊住，正是没装样式时被不透明顶栏挡住的观感。
    * 交互没变——实测这个位置的命中目标本来就是顶栏的 .search-area-in-header。
    *
-   * 带 AI 面板那版不受影响：那边左栏在 .search-layout-wrapper 里独立滚动，
-   * 容器上边界就是 116，这一行滚上去直接被裁掉，压根进不了顶栏那一段。
+   * 带 AI 面板那版不受这条影响：它只在 .reds-sticky-box.sticky 态生效，而 AI
+   * 搜索页压根没有 .reds-sticky-box（实测 null）。那边左栏的滚动另见前面
+   * .search-layout-wrapper 那条——本文件把它上拉到了顶栏身后，这一行会随卡片
+   * 滚进顶栏 116px，但被 z-index 30 的顶栏玻璃糊住，不会画在顶栏之上。
    * 上面 :has(.filter.ai-chat-filter) 那条多两个类、更具体，需要时仍压过这里。
    */
   body:has(.search-layout):has(.reds-sticky-box.sticky) .search-layout__top {
