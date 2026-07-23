@@ -2,8 +2,8 @@
 // @name         Bilibili Video CDN Switcher - Smart Benchmark
 // @name:zh-CN   Bilibili CDN 智能测速切换
 // @namespace    local.codex.bilibili-cdn-switcher
-// @version      0.3.2
-// @description  后台分阶段测试真实媒体地址；仅在主线路与候选线路都稳定可用且候选明显更快时切换，并自动熔断失败节点。
+// @version      0.4.0
+// @description  后台分阶段测试真实媒体地址；采用更大采样块识别海外冷回源慢节点；可在首个播放请求短暂等待测速以便当次即切换；主线路明显偏慢或测不出时改用更快候选，并自动熔断失败节点。
 // @author       Local optimized edition
 // @license      MIT
 // @run-at       document-start
@@ -40,11 +40,13 @@
     const KNOWN_CDNS = Object.freeze([]);
 
     const SETTINGS = Object.freeze({
-        // 第一轮只下载少量数据，第二轮仅复测主线路和最快候选。
-        quickProbeBytes: 96 * 1024,
-        confirmProbeBytes: 256 * 1024,
-        minProbeBytes: 48 * 1024,
-        probeTimeoutMs: 4200,
+        // 采样块调大：海外冷回源常见 0.5~5Mbps 的差距，小样本会被 TCP 慢启动/边缘突发掩盖，
+        // 需要下载到足够数据才能反映“持续吞吐”。第一轮快测，第二轮仅复测主线路和最快候选。
+        quickProbeBytes: 512 * 1024,
+        confirmProbeBytes: 1536 * 1024,
+        minProbeBytes: 128 * 1024,
+        // 超时放宽：让 ~1.5MB 在偏慢节点上也能采到；真正很慢的节点会在此触发部分采样（记为偏低速度）或超时。
+        probeTimeoutMs: 8000,
         probeConcurrency: 2,
         confirmRuns: 2,
         exactCacheTtlMs: 10 * 60 * 1000,
@@ -55,6 +57,13 @@
         minGainRatio: 1.35,
         minGainMbps: 1.5,
         minBitrateHeadroom: 1.55,
+        // 救急：候选比主线路“压倒性”更快（海外冷回源慢节点），即使达不到理想码率余量也切换——0.5→5Mbps 也值得切。
+        rescueGainRatio: 2.0,
+        rescueGainMbps: 1.0,
+        // 主线路测不出/持续失败时，只要候选达到该绝对下限（Mbps）即改用候选。
+        minUsableMbps: 1.2,
+        // 首个播放请求最多等待多少毫秒做一次测速，让“当次播放”就切到快节点；设为 0 恢复旧行为（只影响下次加载）。
+        firstLoadBenchmarkMaxMs: 3500,
         // 跨视频复用结果更保守。
         minGlobalGainRatio: 1.7,
         runtimeFailureWindowMs: 60 * 1000,
@@ -296,6 +305,7 @@
             let firstByteAt = 0;
             let settled = false;
             let requestHandle = null;
+            let lastLoaded = 0;
 
             const finish = result => {
                 if (settled) return;
@@ -345,6 +355,7 @@
                 timeout: SETTINGS.probeTimeoutMs,
                 onprogress(event) {
                     const bytes = Number(event.loaded) || 0;
+                    if (bytes > lastLoaded) lastLoaded = bytes;
                     if (bytes > 0 && !firstByteAt) firstByteAt = performance.now();
                     if (bytes < targetBytes) return;
                     finishFromBytes(targetBytes, Number(event.status) || 206);
@@ -361,7 +372,11 @@
                     if (bytes > 0 && !firstByteAt) firstByteAt = performance.now();
                     finishFromBytes(bytes, Number(response.status));
                 },
-                ontimeout() { fail('超时'); },
+                ontimeout() {
+                    // 慢节点也要给出真实（偏低）速度供比较；否则会被当作“无数据”而错失切换判断。
+                    if (lastLoaded >= SETTINGS.minProbeBytes) finishFromBytes(lastLoaded, 206);
+                    else fail('超时');
+                },
                 onerror(response) { fail('网络错误', Number(response && response.status)); },
                 onabort() {
                     if (!settled) fail('请求被中止');
@@ -424,7 +439,9 @@
             .filter(result => result.host !== identity.originalHost)
             .sort((a, b) => b.mbps - a.mbps)[0] || null;
 
-        const confirmCandidates = officialQuick && bestAlternativeQuick
+        // 只要存在可用候选就进入复测（同时复测主线路）——这样即便主线路首轮很慢/失败，
+        // 候选也能拿到 >=2 次采样，从而触发“主线路测不出即改用候选”的判断。
+        const confirmCandidates = bestAlternativeQuick
             ? candidates.filter(candidate =>
                 candidate.host === identity.originalHost || candidate.host === bestAlternativeQuick.host
             )
@@ -450,17 +467,26 @@
         let selected = official;
         let gainRatio = 0;
         const requiredMbps = getRequiredMbps(originalUrl);
-        if (official && alternative && official.count >= 2 && alternative.count >= 2) {
-            gainRatio = alternative.conservativeMbps / Math.max(official.conservativeMbps, 0.01);
-            const gain = alternative.conservativeMbps - official.conservativeMbps;
+        if (alternative && alternative.count >= 2 && !isHostBlocked(alternative.host)) {
+            const altSpeed = alternative.conservativeMbps;
+            const officialUsable = Boolean(official && official.count >= 2);
+            const offSpeed = officialUsable ? official.conservativeMbps : 0;
+            gainRatio = altSpeed / Math.max(offSpeed, 0.01);
+            const gain = altSpeed - offSpeed;
             const hasHeadroom = !requiredMbps ||
-                alternative.conservativeMbps >= requiredMbps * SETTINGS.minBitrateHeadroom;
-            if (
+                altSpeed >= requiredMbps * SETTINGS.minBitrateHeadroom;
+            // ① 常规：主线路可测，候选更快且能满足码率余量。
+            const normalSwitch = officialUsable &&
                 gainRatio >= SETTINGS.minGainRatio &&
                 gain >= SETTINGS.minGainMbps &&
-                hasHeadroom &&
-                !isHostBlocked(alternative.host)
-            ) {
+                hasHeadroom;
+            // ② 救急：候选压倒性更快（海外冷回源慢节点），即使达不到理想余量也值得切。
+            const rescueSwitch = officialUsable &&
+                gainRatio >= SETTINGS.rescueGainRatio &&
+                gain >= SETTINGS.rescueGainMbps;
+            // ③ 主线路测不出/持续失败，但候选达到可用下限时改用候选。
+            const mainUnusableSwitch = !officialUsable && altSpeed >= SETTINGS.minUsableMbps;
+            if (normalSwitch || rescueSwitch || mainUnusableSwitch) {
                 selectedHost = alternative.host;
                 selected = alternative;
             }
@@ -710,10 +736,23 @@
         if (!isValidPlayInfo(playInfo)) return playInfo;
         const descriptors = collectMediaEntries(playInfo);
         applyCachedDecisions(descriptors);
-        // 测速始终在后台进行，绝不阻塞首个播放接口。
         const videoDescriptor = getRepresentatives(descriptors)
             .find(descriptor => descriptor.kind === 'video');
-        if (videoDescriptor) void ensureBenchmark(videoDescriptor);
+        if (videoDescriptor) {
+            const alreadyDecided = Boolean(getCachedDecision(videoDescriptor.originalUrl, videoDescriptor.kind));
+            if (!alreadyDecided && SETTINGS.firstLoadBenchmarkMaxMs > 0) {
+                // 首个播放请求：最多等待 firstLoadBenchmarkMaxMs 做一次测速，让“当次播放”就落到快节点；
+                // 超时则先放行（后台继续测速，结果供后续加载使用）。仅作用于可 await 的 fetch 路径。
+                await Promise.race([
+                    ensureBenchmark(videoDescriptor).catch(() => null),
+                    new Promise(resolve => { setTimeout(resolve, SETTINGS.firstLoadBenchmarkMaxMs); })
+                ]);
+                // 用刚得到的决策再改写一次媒体地址。
+                applyCachedDecisions(descriptors);
+            } else {
+                void ensureBenchmark(videoDescriptor);
+            }
+        }
         return playInfo;
     }
 
@@ -1023,5 +1062,5 @@
     } else {
         installTransformingProperty('__playinfo__', transformPlayInfo);
     }
-    log('v0.3.2 已启用：后台分阶段测速；没有可靠对照时保持主线路。');
+    log('v0.4.0 已启用：更大采样块识别慢节点；首个播放请求最多等待测速以便当次切换；主线路明显偏慢/测不出时改用更快候选。');
 })();
