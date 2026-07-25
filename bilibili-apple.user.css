@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           Bilibili Apple 风格统一视频卡片
 @namespace      bilibili-apple-native-theme
-@version        8.20.0
+@version        8.20.1
 @description    首页网格、播放页推荐与播放器圆角、动态视频、动态页 Apple 背景、个人空间卡片、YouTube 风格顶栏玻璃及全站紫色强调色
 @match          https://www.bilibili.com/*
 @match          https://t.bilibili.com/*
@@ -2988,8 +2988,7 @@
     .bili-header.fixed-header > .bili-header__bar.mini-header,
     .bili-header__bar,
     .bili-header .bili-header__bar,
-    #bili-header-container .bili-header__bar,
-    .z-top-container
+    #bili-header-container .bili-header__bar
   ) {
     position: fixed !important;
     top: 0 !important;
@@ -3977,8 +3976,7 @@
     .bili-header.fixed-header > .bili-header__bar.mini-header,
     .bili-header__bar,
     .bili-header .bili-header__bar,
-    #bili-header-container .bili-header__bar,
-    .z-top-container
+    #bili-header-container .bili-header__bar
   ) {
     position: fixed !important;
     top: 0 !important;
@@ -3994,6 +3992,39 @@
        更高优先级的规则盖过背景色，是重复/冗余的旧规则，但如果这里还留着
        backdrop-filter，会因为没有更高优先级的同名属性竞争而单独生效，重新在
        .bili-header__bar 上形成"毛玻璃根"，把嵌套浮层的模糊卡住 */
+  }
+
+  /*
+   * .z-top-container 单独拎出来处理，不能跟着上面两条一起 position: fixed。
+   *
+   * 它是 body 的直接子节点、高 64px，里面只包着 .bili-header.fixed-header
+   * （真正那条可见的吸顶栏 .bili-header__bar.mini-header 原生自己就是 fixed，
+   * 不靠这一层）。所以在原生结构里 .z-top-container 的职责只有一个：
+   * 用自己这 64px 在文档流里占位，把页面内容顶到吸顶栏下面。
+   *
+   * 一旦把它也设成 fixed，这 64px 就从流里消失，后面的内容整体上移 64px：
+   *   动态首页（#app > .bili-dyn-home--member）——本文件在内容区另外补了顶栏
+   *     留白，抵消掉了，实测 up 主列表卡片 native 254 / 本文件 256，没有差别；
+   *   动态详情页（#app > .content）——内容区没有这份留白，全靠这个占位块，
+   *     于是帖子直接钻到吸顶栏底下：实测滚到最顶部时帖子上沿 y=8，而吸顶栏
+   *     下沿在 64，日期和头像被压掉 56px（用户报的就是这条）。
+   *
+   * 因此这里按版式区分：详情页保持原生 static 让它继续占位，其余页面维持
+   * 既有的 fixed（改回 static 反而会在动态首页多出 64px 空档）。
+   * 用 :not(:has(#app > .content)) 这种"排除详情页"的写法而不是正面点名首页，
+   * 是因为只有详情页这一种版式是坏的，其余（首页/空间等）一律维持现状最稳。
+   *
+   * 只需要接管 position：实测 .z-top-container 原生就是透明、无边框、无阴影、
+   * 宽度已经铺满，上面那几条 background/border/box-shadow 对它本来就是空转，
+   * z-index 在 static 上也不生效，所以这里不必重复。
+   */
+  body:not(:has(#app > .content)) .z-top-container {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    z-index: 100001 !important;
   }
 
   :is(
