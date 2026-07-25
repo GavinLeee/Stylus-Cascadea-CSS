@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           Bilibili Apple 风格统一视频卡片
 @namespace      bilibili-apple-native-theme
-@version        8.20.1
+@version        8.21.0
 @description    首页网格、播放页推荐与播放器圆角、动态视频、动态页 Apple 背景、个人空间卡片、YouTube 风格顶栏玻璃及全站紫色强调色
 @match          https://www.bilibili.com/*
 @match          https://t.bilibili.com/*
@@ -105,6 +105,18 @@
        模式自动跟随文字颜色）。放在变量里是因为同一串要写 mask 和
        -webkit-mask 两遍。 */
     --bili-search-icon: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M10.5 3a7.5 7.5 0 1 1-4.6 13.4l-3.2 3.2a1 1 0 0 1-1.4-1.4l3.2-3.2A7.5 7.5 0 0 1 10.5 3zm0 2a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11z'/></svg>");
+
+    /* 与 global.user.css 的字体栈保持一致（用途见下面动态卡片字体那一段）。
+       那边改了字体，这里要跟着改。 */
+    --bili-apple-font:
+      "Anthropic Sans Text",
+      "Anthropic Sans",
+      "Noto Sans SC",
+      "Noto Sans CJK SC",
+      "Noto Sans JP",
+      "Noto Sans CJK JP",
+      "Segoe UI Emoji",
+      sans-serif;
   }
 
   @media (prefers-color-scheme: dark) {
@@ -1279,6 +1291,55 @@
     .bili-dyn-sidebar__btn {
       transition: none !important;
     }
+  }
+
+  /*
+   * 动态卡片字体：让 global.user.css 那套字体栈真正落到动态正文上。
+   *
+   * 现象：动态页有些内容用的是苹方（PingFang SC），和站内其余部分不统一。
+   * 实测正文 .bili-dyn-content__orig__desc / .bili-rich-text__content 的
+   * computed font-family 是 B 站自己那条
+   *   "PingFang SC", HarmonyOS_Regular, "Helvetica Neue", "Microsoft YaHei", sans-serif
+   * 而 html/body 上是我们的栈——也就是说 global 生效了，只是够不到这些元素：
+   * global 的白名单刻意不含 div/span（避免误伤别站用私有类名做的连字图标），
+   * 而这些正文全是 div，B 站又直接在它们身上写了 font-family，继承链被打断。
+   *
+   * 和 X 那边同一个缺口，但后果不同：X 的栈里没有任何中文字体，一路落到通用族
+   * sans-serif，再由浏览器按 lang 解析；B 站直接点名了 PingFang SC，本机装了
+   * 就直接命中（实测字宽与"不存在的字体"不同，确认是真装了）。
+   *
+   * 用户描述的"有些帖子"其实是按元素类型分的，不是按帖子：同一页实测 188 个
+   * 元素用我们的栈（视频卡片标题/UP主名/时长），182 个用 B 站的栈（正文/时间/
+   * 话题/操作栏/专栏标题），混在一起才像是"有的帖子变了有的没变"。
+   *
+   * 范围：实测把页面上所有 PingFang 元素统计一遍，动态首页 1555 个、详情页 50 个，
+   * 100% 都落在 .bili-dyn-item / .bili-popup-modal / .bili-popover 这三棵子树里，
+   * 外面一个都没有。所以只圈这三棵，不必全站放宽 div/span——播放页/主站实测本来
+   * 就已经是我们的字体（标题/UP主/简介/评论/工具栏全是），不需要动，也就顺带避开了
+   * 播放页那几个自定义字体（fans-num 粉丝数、medalnum 勋章数、pc-comments-* 评论
+   * 区数字）。
+   *
+   * 不能只覆盖 .bili-dyn-item 靠继承：实测把它单独改掉之后，后代
+   * .bili-dyn-content__orig__desc 仍是 PingFang——B 站是逐个元素声明的，不是只写
+   * 在容器上。所以必须连后代一起圈。
+   *
+   * :not([style*="font-family"]) 是给自带内联字体的元素留的活口：粉丝数那种
+   * 数字字体（fans-num）是写在 style 属性里的，本条带 !important 会盖掉它，
+   * 排除掉就不会误伤（实测插一个内联 fans-num 的探针，加规则后仍保持 fans-num）。
+   *
+   * 选择器前面那个 body 是实测需要的：不带 body 时 .bili-dyn-item 自己那条改不动
+   * （B 站有同权重规则且在后面），补一个元素选择器就压过去了；后代那半部分本来
+   * 就够权重，一起写上保持对称。
+   */
+  body :is(.bili-dyn-item, .bili-popup-modal, .bili-popover),
+  body :is(.bili-dyn-item, .bili-popup-modal, .bili-popover)
+    :where(
+      div, span, p, a, li, blockquote,
+      h1, h2, h3, h4, h5, h6,
+      button, input, textarea, select, option, label,
+      time, small, strong, em, mark, cite
+    ):not([style*="font-family"]) {
+    font-family: var(--bili-apple-font) !important;
   }
 
   /* 动态页每条动态的整卡（含头像/昵称/正文），浅色模式下默认就要能看出是张卡片，
