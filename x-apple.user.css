@@ -1,8 +1,8 @@
 /* ==UserStyle==
 @name           X Apple 克制卡片与悬浮动效
 @namespace      x-apple-restrained-cards
-@version        1.7.16
-@description    为 X 的右栏模块、推文信息流和左侧导航添加克制的 Apple 风格卡片与悬浮动画
+@version        1.7.17
+@description    为 X 的右栏模块、推文信息流和左侧导航添加克制的 Apple 风格卡片与悬浮动画，并修正中文被判成日文后套用日文字体的问题
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/x-apple.user.css
 ==/UserStyle== */
 
@@ -33,6 +33,18 @@
       0 2px 5px rgba(15, 23, 42, 0.055),
       0 16px 40px rgba(38, 51, 77, 0.14);
     --x-apple-ease: cubic-bezier(0.22, 0.8, 0.24, 1);
+
+    /* 与 global.user.css 的字体栈保持一致（含义见下面第 0 段）。
+       那边改了字体，这里要跟着改。 */
+    --x-apple-font:
+      "Anthropic Sans Text",
+      "Anthropic Sans",
+      "Noto Sans SC",
+      "Noto Sans CJK SC",
+      "Noto Sans JP",
+      "Noto Sans CJK JP",
+      "Segoe UI Emoji",
+      sans-serif;
   }
 
   /*
@@ -66,6 +78,49 @@
     --x-apple-shadow-hover:
       0 2px 5px rgba(0, 0, 0, 0.28),
       0 18px 44px rgba(0, 0, 0, 0.40);
+  }
+
+  /*
+   * 0. 中文被判成日文、于是用了日文字体的修正
+   *
+   * 现象：X 给每条推文的 div[data-testid="tweetText"] 打一个 lang，它的语种
+   * 识别对中文短句经常判错——实测 "完蛋了！" 这条纯中文推文被标成 lang="ja"。
+   * 这类推文的汉字会用日文字形（DevTools 的 Rendered Fonts 显示 Yu Gothic，
+   * 个别字再退到 SimSun）。
+   *
+   * 成因不是字体没装：实测 document.fonts.check() 对 Noto Sans SC / CJK SC /
+   * JP / CJK JP 全部为 true。真正的原因是 global.user.css 那套字体栈压根没落到
+   * 这些元素上——global 只白名单了 html/body/p/a/li/h1-h6… 这类明确的文字元素，
+   * 刻意不含 div 和 span（避免误伤别的站点用私有类名做的连字图标，见那边注释），
+   * 而 X 的推文正文正是 div[data-testid="tweetText"] > span，且 X 自己在这些
+   * 元素上直接写了 font-family，继承链被打断，我们的栈永远轮不上（实测这两级
+   * 的 computed font-family 都是 X 自己那条）。
+   *
+   * 于是实际走的是 X 那条：TwitterChirp（只有拉丁字形）→ -apple-system /
+   * Segoe UI / Roboto / Helvetica / Arial（都没有汉字）→ 一路落到通用族
+   * sans-serif。通用族是由浏览器按元素的 lang 去解析的：lang="ja" 就取系统的
+   * 日文默认字体 = Yu Gothic。这才是中文显示成日文字形的真正原因。
+   *
+   * 修法：把 div/span 一并纳入，让字体栈真正生效即可。在 X 上这样做是安全的：
+   * 实测全站没有连字图标（<i> 0 个、SVG 图标 174 个、emoji 是 <img> Twemoji），
+   * 所以不存在 global 那边担心的"图标被显示成 history/bookmarks 一类文字"。
+   * 栈里 Noto Sans SC 排在 JP 之前，因此无论 lang 被判成什么，汉字都拿中文字形。
+   * 实测校验：把真实推文节点克隆出来放大到 44px，与 Noto Sans SC / Yu Gothic
+   * 并排比对 "每海骨直"（这几个字的中日字形差别最明显）——修复前与 Yu Gothic
+   * 完全一致，修复后与 Noto Sans SC 完全一致。
+   *
+   * 注意：不要另外写 :lang(ja) 指向日文字体。X 的 lang 本身就不可信，那样只会
+   * 把这些误判的中文推文重新推回日文字形，正是这里要修的问题。代价是真正的
+   * 日文推文的汉字也会用中文字形，这对中文读者是划算的取舍，也和
+   * global.user.css 里 SC 排在 JP 前面的既定选择一致。
+   */
+  body :where(
+    div, span, p, a, li, blockquote,
+    h1, h2, h3, h4, h5, h6,
+    button, input, textarea, select, option, label,
+    time, small, strong, em, mark, cite
+  ):not([aria-hidden="true"]):not([role="img"]):not([role="presentation"]) {
+    font-family: var(--x-apple-font) !important;
   }
 
   /* 1. 右侧信息模块：原有圆角不变，增加玻璃感、层次与轻微上浮 */
