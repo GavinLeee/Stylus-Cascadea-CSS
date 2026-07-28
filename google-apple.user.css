@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           Google Apple 克制卡片与动效
 @namespace      google-apple-card-motion
-@version        1.5.24
+@version        1.5.25
 @description    为 Google 搜索结果与顶部控件添加克制的 Apple 风格动效和磨砂玻璃
 @author         Codex
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/google-apple.user.css
@@ -415,6 +415,12 @@
     content: none !important;
   }
 
+  /* Logo 卡片自 1.5.25 起画在 ::before 上，下面那条元素级重置管不到伪元素，
+   * 需要单独撤销，否则首页大 Logo 悬停会冒出结果页才该有的卡片。 */
+  body:not(:has(#search)) :is(#logo, .jfN4p, a[aria-label="Google"])::before {
+    content: none !important;
+  }
+
   body:not(:has(#search)) :is(
     #logo,
     .jfN4p,
@@ -447,20 +453,31 @@
     transition-duration: 90ms !important;
   }
 
-  /* AI 工具栏的圆形伪元素按钮统一增加放大反馈。 */
-  div.niO4u::before {
+  /*
+   * 顶部分享/设置等圆形按钮的放大反馈。
+   *
+   * 这里缩放的是 .niO4u 本身，不是它的伪元素。实测 Google 的两个伪元素各有分工：
+   *   ::before  48x48、无背景，只是把点击热区撑到触控尺寸，纯透明；
+   *   ::after   才是悬停高亮，且只有父级 .btku5b:hover 时才拿到 content。
+   * 早先的规则缩放 ::before，等于在放大一个看不见的盒子，页面上毫无变化。
+   * 改缩放元素本体后，图标与 ::after 高亮会一起放大。
+   *
+   * 用 transform 安全：实测该元素原生 transform 为 none，圆形热区靠 top/margin
+   * 定位，不依赖 transform，不会被覆盖掉。
+   */
+  div.niO4u {
     transform: scale(1);
     transform-origin: center;
     transition: transform var(--g-apple-motion-spring) !important;
   }
 
   @media (hover: hover) and (pointer: fine) {
-    div.niO4u:hover::before {
-      transform: scale(1.1);
+    div.niO4u:hover {
+      transform: scale(1.12);
     }
   }
 
-  div.niO4u:active::before {
+  div.niO4u:active {
     transform: scale(0.94);
     transition-duration: 90ms !important;
   }
@@ -493,18 +510,42 @@
   }
 
   /* ---------- 4. 左上角 Google Logo 卡片反馈 ---------- */
+  /*
+   * 卡片改用 ::before 绘制，不再把背景直接铺在元素上。
+   * 元素盒子实测只有 92x34，紧贴字形，卡片显得局促；而给元素加 padding 撑大
+   * 并不可行 —— #logo 里的 <svg> 是绝对定位的，padding 推不动它，实测字形会
+   * 跟着负 margin 偏移 18/12px。伪元素画在盒子外围，不参与布局，字形与右侧
+   * 搜索框都不会动。
+   *
+   * 沿用 1.2 节结果卡的写法：isolation 建立层叠上下文，让 z-index:-1 的伪元素
+   * 只沉到本元素内容之下，不会掉到页面背景后面。
+   */
   :is(#logo, .jfN4p, a[aria-label="Google"]),
   svg[width="92"][height="30"] {
     position: relative;
     z-index: 0;
-    border-radius: 12px;
+    isolation: isolate;
     transform: translateY(0) scale(1);
     transform-origin: center;
+    transition: transform var(--g-apple-motion-spring) !important;
+    will-change: transform;
+  }
+
+  /* inset 负值即卡片外扩量：92x34 的 logo 撑到约 128x58。 */
+  :is(#logo, .jfN4p, a[aria-label="Google"])::before {
+    content: "";
+    position: absolute;
+    inset: -12px -18px;
+    z-index: -1;
+    pointer-events: none;
+    border-radius: var(--g-apple-result-radius);
+    background-color: transparent;
+    box-shadow: none;
+    opacity: 0;
     transition:
-      transform var(--g-apple-motion-spring),
+      opacity var(--g-apple-motion),
       background-color var(--g-apple-motion),
       box-shadow var(--g-apple-motion) !important;
-    will-change: transform;
   }
 
   @media (hover: hover) and (pointer: fine) {
@@ -512,6 +553,10 @@
     svg[width="92"][height="30"]:hover {
       z-index: 4;
       transform: translateY(-2px) scale(1.045);
+    }
+
+    :is(#logo, .jfN4p, a[aria-label="Google"]):hover::before {
+      opacity: 1;
       background-color: var(--g-apple-card-bg-strong) !important;
       box-shadow: var(--g-apple-card-shadow-soft) !important;
     }
@@ -520,8 +565,11 @@
   :is(#logo, .jfN4p, a[aria-label="Google"]):active,
   svg[width="92"][height="30"]:active {
     transform: translateY(0) scale(0.975);
-    box-shadow: var(--g-apple-card-shadow-pressed) !important;
     transition-duration: 90ms !important;
+  }
+
+  :is(#logo, .jfN4p, a[aria-label="Google"]):active::before {
+    box-shadow: var(--g-apple-card-shadow-pressed) !important;
   }
 
   /*
@@ -1120,6 +1168,7 @@
     :is(li.Ndm2cf, li.h7wxwc)::before,
     :is(li.Ndm2cf, li.h7wxwc) img,
     button.UTNPFf,
+    div.niO4u,
     :is(
       a.gb_C.gb_6a,
       a[aria-label*="Google apps" i],
