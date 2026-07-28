@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           Google Apple 克制卡片与动效
 @namespace      google-apple-card-motion
-@version        1.5.25
+@version        1.5.26
 @description    为 Google 搜索结果与顶部控件添加克制的 Apple 风格动效和磨砂玻璃
 @author         Codex
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/google-apple.user.css
@@ -23,6 +23,11 @@
     --g-apple-card-bg: rgba(255, 255, 255, 0.70);
     --g-apple-card-bg-strong: rgba(247, 247, 249, 0.90);
     --g-apple-card-stroke: rgba(15, 23, 42, 0.06);
+    /*
+     * Logo 悬停填充。用中性半透明，不用不透明的卡片色：卡片色在白底上会读成
+     * 一块浮起的面板，而 Apple 给控件的悬停态是"底色压深一点"的高亮。
+     */
+    --g-apple-logo-hover-fill: rgba(0, 0, 0, 0.05);
     --g-apple-card-shadow:
       0 10px 26px rgba(15, 23, 42, 0.08),
       0 2px 6px rgba(15, 23, 42, 0.045);
@@ -54,6 +59,7 @@
   body[data-dt="1"] {
     --g-apple-card-bg: rgba(42, 42, 45, 0.74);
     --g-apple-card-bg-strong: rgba(48, 48, 52, 0.90);
+    --g-apple-logo-hover-fill: rgba(255, 255, 255, 0.10);
     --g-apple-card-stroke: rgba(255, 255, 255, 0.08);
     --g-apple-card-shadow:
       0 12px 30px rgba(0, 0, 0, 0.28),
@@ -77,6 +83,7 @@
     :root {
       --g-apple-card-bg: rgba(42, 42, 45, 0.74);
       --g-apple-card-bg-strong: rgba(48, 48, 52, 0.90);
+      --g-apple-logo-hover-fill: rgba(255, 255, 255, 0.10);
       --g-apple-card-stroke: rgba(255, 255, 255, 0.08);
       --g-apple-card-shadow:
         0 12px 30px rgba(0, 0, 0, 0.28),
@@ -509,36 +516,48 @@
     transition-duration: 90ms !important;
   }
 
-  /* ---------- 4. 左上角 Google Logo 卡片反馈 ---------- */
+  /* ---------- 4. 左上角 Google Logo 悬停高亮 ---------- */
   /*
-   * 卡片改用 ::before 绘制，不再把背景直接铺在元素上。
-   * 元素盒子实测只有 92x34，紧贴字形，卡片显得局促；而给元素加 padding 撑大
-   * 并不可行 —— #logo 里的 <svg> 是绝对定位的，padding 推不动它，实测字形会
-   * 跟着负 margin 偏移 18/12px。伪元素画在盒子外围，不参与布局，字形与右侧
-   * 搜索框都不会动。
+   * 做成 Apple 给控件的那种悬停高亮：一枚包住字形的胶囊，中性半透明填充，
+   * 配一层很浅的阴影。不做成不透明卡片 —— 白底上那样会读成浮起的面板，
+   * 而且和右侧胶囊形的搜索框形状语言也对不上。
    *
-   * 沿用 1.2 节结果卡的写法：isolation 建立层叠上下文，让 z-index:-1 的伪元素
-   * 只沉到本元素内容之下，不会掉到页面背景后面。
+   * 两个实测结论决定了这里的写法：
+   *
+   * 1. #logo 自带 overflow: hidden。高亮画在 ::before 上会被裁到锚点盒子
+   *    （实测 92x33.5），圆角全部被切掉，页面上就是一块紧贴字形的直角灰方块。
+   *    必须显式解除裁剪；实测改 visible 后字形、搜索框、锚点高度均无变化
+   *    （inline-block 的基线只在 overflow 非 visible 时才改用下外边距）。
+   *
+   * 2. 撑大不能靠 padding。锚点里的 <svg> 拿不到 padding 推移，实测补偿用的
+   *    负 margin 会把字形整体拽偏 18/12px。伪元素不参与布局，才能只长外观。
+   *
+   * 沿用 1.2 节结果卡的层叠写法：isolation 建栈，让 z-index:-1 的伪元素只沉到
+   * 本元素内容之下，不会掉到页面背景后面。
    */
   :is(#logo, .jfN4p, a[aria-label="Google"]),
   svg[width="92"][height="30"] {
     position: relative;
     z-index: 0;
     isolation: isolate;
+    overflow: visible !important;
     transform: translateY(0) scale(1);
     transform-origin: center;
     transition: transform var(--g-apple-motion-spring) !important;
     will-change: transform;
   }
 
-  /* inset 负值即卡片外扩量：92x34 的 logo 撑到约 128x58。 */
+  /*
+   * inset 负值即高亮的外扩量：92x33.5 的锚点撑到约 144x57.5。
+   * 上下留得比左右少，字形才不会显得浮在一枚过高的胶囊中央。
+   */
   :is(#logo, .jfN4p, a[aria-label="Google"])::before {
     content: "";
     position: absolute;
-    inset: -12px -18px;
+    inset: -12px -26px;
     z-index: -1;
     pointer-events: none;
-    border-radius: var(--g-apple-result-radius);
+    border-radius: 9999px;
     background-color: transparent;
     box-shadow: none;
     opacity: 0;
@@ -557,7 +576,7 @@
 
     :is(#logo, .jfN4p, a[aria-label="Google"]):hover::before {
       opacity: 1;
-      background-color: var(--g-apple-card-bg-strong) !important;
+      background-color: var(--g-apple-logo-hover-fill) !important;
       box-shadow: var(--g-apple-card-shadow-soft) !important;
     }
   }
