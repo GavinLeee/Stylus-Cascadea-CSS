@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         YouTube 自动跟随系统深浅色模式（完整刷新组件）
 // @namespace    youtube-follow-system-theme
-// @version      1.3.16
+// @version      1.3.17
 // @description  自动同步系统主题、刷新 YouTube 组件，并为浅色播放页补充实时环境光
 // @author       Codex
 // @updateURL    https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/youtube-follow-system-theme.user.js
@@ -17,12 +17,16 @@
 
   const RELOAD_DELAY = 450;
   const RESUME_KEY = 'yt-system-theme-playback-state-v1';
+  const THEME_RELOAD_GUARD_KEY = 'yt-system-theme-reload-guard-v2';
+  const THEME_RELOAD_GUARD_TTL = 15_000;
+  const MAX_THEME_RELOAD_ATTEMPTS = 2;
   const LIGHT_AMBIENT_ID = 'yt-light-ambient';
   const LIGHT_AMBIENT_FRAME_DELAY = 90;
   const systemTheme = window.matchMedia('(prefers-color-scheme: dark)');
   const root = document.documentElement;
   let applying = false;
   let reloadTimer = 0;
+  let themeVerifyTimer = 0;
   let scrollFrame = 0;
   let channelShelfTimer = 0;
   let lightAmbientTimer = 0;
@@ -424,21 +428,129 @@
     }, 200);
   }
 
-  function reloadForCompleteThemeSwitch() {
+  function readThemeReloadGuard() {
+    try {
+      return JSON.parse(sessionStorage.getItem(THEME_RELOAD_GUARD_KEY) || 'null');
+    } catch {
+      return null;
+    }
+  }
+
+  function clearThemeReloadGuard() {
+    try {
+      sessionStorage.removeItem(THEME_RELOAD_GUARD_KEY);
+    } catch {
+      /* sessionStorage 不可用时跳过循环保护。 */
+    }
+  }
+
+  function parseColorLuminance(color) {
+    const match = String(color).match(
+      /rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)/
+    );
+
+    if (!match) return null;
+
+    const red = Number(match[1]);
+    const green = Number(match[2]);
+    const blue = Number(match[3]);
+
+    if (![red, green, blue].every(Number.isFinite)) return null;
+
+    return (red * 0.2126) + (green * 0.7152) + (blue * 0.0722);
+  }
+
+  function getRenderedThemeLuminance() {
+    if (!document.body) return null;
+
+    const rootStyle = getComputedStyle(root);
+    const colors = [
+      rootStyle.getPropertyValue('--yt-spec-base-background'),
+      getComputedStyle(document.body).backgroundColor,
+      document.querySelector('ytd-app')
+        ? getComputedStyle(document.querySelector('ytd-app')).backgroundColor
+        : ''
+    ];
+
+    for (const color of colors) {
+      const luminance = parseColorLuminance(color);
+      if (luminance !== null) return luminance;
+    }
+
+    return null;
+  }
+
+  function isRenderedThemeCoherent() {
+    const dark = systemTheme.matches;
+
+    if (root.hasAttribute('dark') !== dark) return false;
+
+    const luminance = getRenderedThemeLuminance();
+    if (luminance === null) return true;
+
+    return dark ? luminance < 128 : luminance >= 128;
+  }
+
+  function scheduleThemeVerification(delay = 900) {
+    clearTimeout(themeVerifyTimer);
+    themeVerifyTimer = window.setTimeout(() => {
+      themeVerifyTimer = 0;
+
+      if (isRenderedThemeCoherent()) {
+        clearThemeReloadGuard();
+        return;
+      }
+
+      reloadForCompleteThemeSwitch('rendered-theme-mismatch');
+    }, delay);
+  }
+
+  function reloadForCompleteThemeSwitch(reason = 'system-theme-change') {
     applySystemTheme();
     clearTimeout(reloadTimer);
 
     reloadTimer = window.setTimeout(() => {
+      const target = systemTheme.matches ? 'dark' : 'light';
+      const now = Date.now();
+      const guard = readThemeReloadGuard();
+      const sameRecentTarget = Boolean(
+        guard &&
+        guard.target === target &&
+        now - guard.savedAt < THEME_RELOAD_GUARD_TTL
+      );
+      const attempts = sameRecentTarget ? Number(guard.attempts || 0) + 1 : 1;
+
+      if (attempts > MAX_THEME_RELOAD_ATTEMPTS) {
+        return;
+      }
+
+      try {
+        sessionStorage.setItem(THEME_RELOAD_GUARD_KEY, JSON.stringify({
+          target,
+          attempts,
+          reason,
+          savedAt: now
+        }));
+      } catch {
+        /* sessionStorage 不可用时仍继续刷新。 */
+      }
+
       savePlaybackState();
-      location.reload();
+      window.location.reload();
     }, RELOAD_DELAY);
   }
 
-  /* 防止 YouTube 在刷新前短暂写回旧的 dark 属性。 */
+  /*
+   * YouTube 的 SPA 有时只改写根节点 dark 属性，却保留旧主题变量，
+   * 形成“浅色顶栏 + 深色内容区”。检测到写回时必须完成一次整页同步。
+   */
   const themeObserver = new MutationObserver(() => {
     if (root.hasAttribute('dark') !== systemTheme.matches) {
-      applySystemTheme();
+      reloadForCompleteThemeSwitch('youtube-dark-writeback');
+      return;
     }
+
+    scheduleThemeVerification(700);
   });
 
   themeObserver.observe(root, {
@@ -464,6 +576,7 @@
   });
   document.addEventListener('yt-navigate-finish', () => {
     applySystemTheme();
+    scheduleThemeVerification(900);
     observeChannelDockState(true);
     scheduleMastheadScrollSync();
     scheduleChannelVideoShelfExpansion(180);
@@ -476,6 +589,11 @@
 
   document.addEventListener('visibilitychange', () => {
     scheduleLightAmbient(0);
+    if (!document.hidden) scheduleThemeVerification(500);
+  });
+
+  window.addEventListener('pageshow', () => {
+    scheduleThemeVerification(700);
   });
 
   document.addEventListener('fullscreenchange', () => {
@@ -492,14 +610,17 @@
       observeChannelDockState(true);
       scheduleMastheadScrollSync();
       scheduleChannelVideoShelfExpansion(180);
+      scheduleThemeVerification(900);
       setTimeout(() => scheduleChannelVideoShelfExpansion(0), 900);
     }, { once: true });
   } else {
     restorePlaybackState();
     observeChannelDockState(true);
     scheduleChannelVideoShelfExpansion(180);
+    scheduleThemeVerification(500);
   }
 
   applySystemTheme();
+  scheduleThemeVerification(1200);
   syncMastheadScrollState();
 })();
