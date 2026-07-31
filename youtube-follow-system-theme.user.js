@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         YouTube 自动跟随系统深浅色模式（完整刷新组件）
+// @name         YouTube 自动跟随系统深浅色模式（单次刷新组件）
 // @namespace    youtube-follow-system-theme
-// @version      1.3.17
-// @description  自动同步系统主题、刷新 YouTube 组件，并为浅色播放页补充实时环境光
+// @version      1.3.18
+// @description  自动同步系统主题、最多刷新一次 YouTube 组件，并为浅色播放页补充实时环境光
 // @author       Codex
 // @updateURL    https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/youtube-follow-system-theme.user.js
 // @downloadURL  https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/youtube-follow-system-theme.user.js
@@ -15,11 +15,18 @@
 (() => {
   'use strict';
 
+  const INSTANCE_KEY = '__ytSystemThemeUserscriptActiveV1';
+  if (window[INSTANCE_KEY]) return;
+  Object.defineProperty(window, INSTANCE_KEY, {
+    value: true,
+    configurable: false
+  });
+
   const RELOAD_DELAY = 450;
   const RESUME_KEY = 'yt-system-theme-playback-state-v1';
-  const THEME_RELOAD_GUARD_KEY = 'yt-system-theme-reload-guard-v2';
+  const THEME_RELOAD_GUARD_KEY = 'yt-system-theme-reload-guard-v3';
   const THEME_RELOAD_GUARD_TTL = 15_000;
-  const MAX_THEME_RELOAD_ATTEMPTS = 2;
+  const MAX_THEME_RELOAD_ATTEMPTS = 1;
   const LIGHT_AMBIENT_ID = 'yt-light-ambient';
   const LIGHT_AMBIENT_FRAME_DELAY = 90;
   const systemTheme = window.matchMedia('(prefers-color-scheme: dark)');
@@ -430,7 +437,20 @@
 
   function readThemeReloadGuard() {
     try {
-      return JSON.parse(sessionStorage.getItem(THEME_RELOAD_GUARD_KEY) || 'null');
+      const guard = JSON.parse(
+        sessionStorage.getItem(THEME_RELOAD_GUARD_KEY) || 'null'
+      );
+
+      if (
+        guard &&
+        Number.isFinite(Number(guard.savedAt)) &&
+        Date.now() - Number(guard.savedAt) < THEME_RELOAD_GUARD_TTL
+      ) {
+        return guard;
+      }
+
+      clearThemeReloadGuard();
+      return null;
     } catch {
       return null;
     }
@@ -497,7 +517,6 @@
       themeVerifyTimer = 0;
 
       if (isRenderedThemeCoherent()) {
-        clearThemeReloadGuard();
         return;
       }
 
@@ -563,10 +582,14 @@
     subtree: true
   });
 
+  const handleSystemThemeChange = () => {
+    reloadForCompleteThemeSwitch('system-theme-change');
+  };
+
   if (typeof systemTheme.addEventListener === 'function') {
-    systemTheme.addEventListener('change', reloadForCompleteThemeSwitch);
+    systemTheme.addEventListener('change', handleSystemThemeChange);
   } else {
-    systemTheme.addListener(reloadForCompleteThemeSwitch);
+    systemTheme.addListener(handleSystemThemeChange);
   }
 
   window.addEventListener('scroll', scheduleMastheadScrollSync, { passive: true });
