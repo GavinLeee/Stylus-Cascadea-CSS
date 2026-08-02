@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Apple Podcasts 哈喽怪谈透明播放源
 // @namespace    apple-podcasts-source-switcher
-// @version      1.2.0
+// @version      1.2.1
 // @description  保留 Apple Podcasts 原生播放与切集体验，仅在后台将《哈喽怪谈》的音频替换为喜马拉雅播放源
 // @author       Codex
 // @match        https://podcasts.apple.com/*
@@ -23,7 +23,7 @@
   const TRACK_CACHE_MAX_AGE = 12 * 60 * 60 * 1000;
   const AUDIO_CACHE_MAX_AGE = 15 * 60 * 1000;
   const AES_KEY = 'aaad3e4fd540b0f79dca95606e72bf93';
-  const PLAY_INTENT_WINDOW = 15000;
+  const PENDING_TITLE_WINDOW = 15000;
 
   const attachedAudio = new WeakSet();
   const audioCache = new Map();
@@ -36,7 +36,8 @@
   let activeGeneration = 0;
   let pendingTitle = '';
   let pendingTitleAt = 0;
-  let lastPlayIntentAt = 0;
+  let desiredPlaying = false;
+  let lastExplicitPlayAt = 0;
   let applyingSource = false;
   let appliedTitleKey = '';
   let observer = null;
@@ -66,7 +67,7 @@
   }
 
   function playerTitle() {
-    if (pendingTitle && Date.now() - pendingTitleAt < PLAY_INTENT_WINDOW) return pendingTitle;
+    if (pendingTitle && Date.now() - pendingTitleAt < PENDING_TITLE_WINDOW) return pendingTitle;
 
     const marquee = document.querySelector('[data-testid="marquee-text-item"]')?.textContent?.trim();
     if (marquee) return marquee;
@@ -219,20 +220,21 @@
       activeGeneration += 1;
       debug('切换节目', title);
     }
-    if (requestPlayback) lastPlayIntentAt = Date.now();
+    if (requestPlayback) {
+      desiredPlaying = true;
+      lastExplicitPlayAt = Date.now();
+    }
     return activeGeneration;
   }
 
-  function shouldResume(audio) {
-    return !audio.paused || Date.now() - lastPlayIntentAt < PLAY_INTENT_WINDOW;
-  }
-
-  function restoreAndPlay(audio, time, requestPlayback) {
+  function restoreAndPlay(audio, time, generation, titleKey) {
     const apply = () => {
-      if (Number.isFinite(time) && time > 0 && Number.isFinite(audio.duration)) {
+      if (Number.isFinite(time) && time >= 0 && Number.isFinite(audio.duration)) {
         audio.currentTime = Math.min(time, Math.max(0, audio.duration - 0.25));
       }
-      if (requestPlayback) audio.play().catch((error) => debug('等待用户再次播放', error?.message));
+      if (desiredPlaying && generation === activeGeneration && titleKey === activeTitleKey) {
+        audio.play().catch((error) => debug('等待用户再次播放', error?.message));
+      }
     };
     if (audio.readyState >= HTMLMediaElement.HAVE_METADATA) apply();
     else audio.addEventListener('loadedmetadata', apply, { once: true });
@@ -246,22 +248,26 @@
         debug('忽略已过期的解析结果', resolved.title);
         return;
       }
-      if (mediaUrl(audio) === resolved.url) return;
+      if (mediaUrl(audio) === resolved.url) {
+        if (desiredPlaying && audio.paused) {
+          audio.play().catch((error) => debug('等待用户再次播放', error?.message));
+        }
+        return;
+      }
 
       const switchedWhileOldEpisodeStillLoaded = isXimalayaUrl(mediaUrl(audio))
         && appliedTitleKey && appliedTitleKey !== resolved.titleKey;
       const resumeTime = switchedWhileOldEpisodeStillLoaded
         ? 0
         : (Number.isFinite(audio.currentTime) ? audio.currentTime : 0);
-      const requestPlayback = shouldResume(audio);
       applyingSource = true;
       audio.pause();
       audio.src = resolved.url;
       audio.load();
       appliedTitleKey = resolved.titleKey;
       queueMicrotask(() => { applyingSource = false; });
-      restoreAndPlay(audio, resumeTime, requestPlayback);
-      pendingTitle = '';
+      restoreAndPlay(audio, resumeTime, generation, resolved.titleKey);
+      if (normalizeTitle(pendingTitle) === resolved.titleKey) pendingTitle = '';
       debug('已使用喜马拉雅播放源', resolved.title, resolved.trackId);
     } catch (error) {
       debug('播放源替换失败', title, error?.message || error);
@@ -289,23 +295,32 @@
 
     audio.addEventListener('play', () => {
       if (!isHalloPage()) return;
-      lastPlayIntentAt = Date.now();
+      desiredPlaying = true;
       if (!isXimalayaUrl(mediaUrl(audio))) ensureCurrentSource(true);
+    });
+
+    audio.addEventListener('pause', () => {
+      if (!isHalloPage() || applyingSource) return;
+      window.setTimeout(() => {
+        if (audio.paused && Date.now() - lastExplicitPlayAt > 400) desiredPlaying = false;
+      }, 0);
     });
 
     audio.addEventListener('loadstart', () => {
       if (!isHalloPage() || applyingSource) return;
       const title = playerTitle();
       if (!title) return;
-      setEpisode(title, Date.now() - lastPlayIntentAt < PLAY_INTENT_WINDOW);
-      if (!isXimalayaUrl(mediaUrl(audio)) && Date.now() - lastPlayIntentAt < PLAY_INTENT_WINDOW) {
+      setEpisode(title, false);
+      if (!isXimalayaUrl(mediaUrl(audio)) && desiredPlaying) {
         ensureCurrentSource(true);
       }
     });
 
     for (const eventName of ['waiting', 'stalled']) {
       audio.addEventListener(eventName, () => {
-        if (isHalloPage() && !isXimalayaUrl(mediaUrl(audio))) ensureCurrentSource(true);
+        if (isHalloPage() && desiredPlaying && !isXimalayaUrl(mediaUrl(audio))) {
+          ensureCurrentSource(true);
+        }
       });
     }
 
@@ -315,9 +330,9 @@
       if (isXimalayaUrl(failedUrl)) {
         const cached = [...audioCache.entries()].find(([, item]) => item.url === failedUrl);
         if (cached) audioCache.delete(cached[0]);
-        ensureCurrentSource(true, true);
+        ensureCurrentSource(desiredPlaying, true);
       } else {
-        ensureCurrentSource(true);
+        ensureCurrentSource(desiredPlaying);
       }
     });
   }
@@ -335,11 +350,12 @@
     if (titleChanged) prewarm(title);
 
     if (activeAudio && isXimalayaUrl(mediaUrl(activeAudio))) {
-      appliedTitleKey = normalizeTitle(title);
+      if (appliedTitleKey === normalizeTitle(title)) return;
+      if (desiredPlaying) useXimalaya(activeAudio, title, generation);
       return;
     }
 
-    if (activeAudio && Date.now() - lastPlayIntentAt < PLAY_INTENT_WINDOW) {
+    if (activeAudio && desiredPlaying) {
       useXimalaya(activeAudio, title, generation);
     }
   }
@@ -357,18 +373,31 @@
       if (!button) return;
       const label = `${button.getAttribute('aria-label') || ''} ${button.textContent || ''}`.trim();
 
+      if (/^(?:Pause|暂停)(?:\b|[，,])/i.test(label)) {
+        desiredPlaying = false;
+        pendingTitle = '';
+        if (activeAudio && !activeAudio.paused) activeAudio.pause();
+        return;
+      }
+
       if (/^(?:Play|播放)(?:\b|[，,])/i.test(label)) {
+        let requestedGeneration = activeGeneration;
         const clickedTitle = button.closest('[data-testid="episode-wrapper"]')
           ?.querySelector('[data-testid="episode-lockup-title"]')?.textContent?.trim();
         if (clickedTitle) {
           pendingTitle = clickedTitle;
           pendingTitleAt = Date.now();
-          setEpisode(clickedTitle, true);
+          const generation = setEpisode(clickedTitle, true);
+          requestedGeneration = generation;
           prewarm(clickedTitle);
+          if (activeAudio) useXimalaya(activeAudio, clickedTitle, generation);
         } else {
-          lastPlayIntentAt = Date.now();
+          desiredPlaying = true;
+          lastExplicitPlayAt = Date.now();
         }
-        window.setTimeout(() => ensureCurrentSource(true), 0);
+        window.setTimeout(() => {
+          if (desiredPlaying && requestedGeneration === activeGeneration) ensureCurrentSource(false);
+        }, 0);
       }
     }, true);
 

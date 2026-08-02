@@ -11,7 +11,7 @@ const script = fs.readFileSync(
 const XM_A = 'https://a.xmcdn.com/a.m4a';
 const XM_B = 'https://a.xmcdn.com/b.m4a';
 
-function createHarness({ hallo = true } = {}) {
+function createHarness({ hallo = true, requestDelay = 0 } = {}) {
   const listeners = new Map();
   const requests = [];
   let currentPlayerTitle = '节目甲';
@@ -127,8 +127,12 @@ function createHarness({ hallo = true } = {}) {
     },
     GM_xmlhttpRequest(options) {
       requests.push(options.url);
+      const respond = (payload) => {
+        if (requestDelay > 0) setTimeout(() => options.onload(payload), requestDelay);
+        else queueMicrotask(() => options.onload(payload));
+      };
       if (options.url.includes('queryAlbumPage')) {
-        queueMicrotask(() => options.onload({
+        respond({
           status: 200,
           responseText: JSON.stringify({
             data: {
@@ -144,17 +148,17 @@ function createHarness({ hallo = true } = {}) {
               }
             }
           })
-        }));
+        });
         return;
       }
       if (options.url.includes('trackId=101')) decryptResult = XM_A;
       if (options.url.includes('trackId=102')) decryptResult = XM_B;
-      queueMicrotask(() => options.onload({
+      respond({
         status: 200,
         responseText: JSON.stringify({
           trackInfo: { playUrlList: [{ type: 'M4A_64', url: 'ciphertext' }] }
         })
-      }));
+      });
     }
   };
   context.window = context;
@@ -180,6 +184,15 @@ function createHarness({ hallo = true } = {}) {
     listeners.get('click')?.({ target: new FakeButton() });
   }
 
+  function clickPause() {
+    class FakeButton extends Element {
+      getAttribute(name) { return name === 'aria-label' ? 'Pause, remaining' : ''; }
+      get textContent() { return ''; }
+      closest(selector) { return selector === 'button' ? this : null; }
+    }
+    listeners.get('click')?.({ target: new FakeButton() });
+  }
+
   function loadAppleSource(url, time = 0) {
     audio.src = url;
     audio.currentSrc = url;
@@ -192,6 +205,7 @@ function createHarness({ hallo = true } = {}) {
     audio,
     requests,
     clickPlay,
+    clickPause,
     loadAppleSource,
     setTitle(title) { currentPlayerTitle = title; }
   };
@@ -211,13 +225,33 @@ async function settle() {
   assert.equal(hallo.audio.currentTime, 18, '同一集替换播放源时应保留当前进度');
   assert.ok(hallo.audio.playCount >= 1, '替换后应继续使用原生 audio 播放');
 
+  hallo.clickPause();
+  await settle();
+  assert.equal(hallo.audio.paused, true, '点击暂停后应直接暂停当前喜马拉雅音频');
+
+  hallo.clickPlay('节目甲');
+  await settle();
+  assert.equal(hallo.audio.paused, false, '同一集再次点击播放后应恢复播放');
+
   hallo.clickPlay('节目乙');
-  hallo.loadAppleSource('https://apple.example/b.mp3', 0);
   await settle();
   assert.equal(hallo.audio.currentSrc, XM_B, '切换节目后应使用新一集的喜马拉雅地址');
   assert.equal(hallo.audio.currentTime, 0, '切换节目不得继承上一集播放进度');
   assert.equal(hallo.requests.filter((url) => url.includes('queryAlbumPage')).length, 1,
     '节目目录在同一页面中只应请求一次');
+
+  const delayed = createHarness({ requestDelay: 10 });
+  delayed.clickPlay('节目甲');
+  delayed.clickPause();
+  await settle();
+  assert.equal(delayed.audio.currentSrc, XM_A, '暂停期间仍可完成后台换源');
+  assert.equal(delayed.audio.paused, true, '异步换源完成后不得推翻用户的暂停操作');
+
+  const rapid = createHarness({ requestDelay: 10 });
+  rapid.clickPlay('节目甲');
+  rapid.clickPlay('节目乙');
+  await settle();
+  assert.equal(rapid.audio.currentSrc, XM_B, '快速连续切集时只允许最新一集生效');
 
   const other = createHarness({ hallo: false });
   other.clickPlay('节目甲');
