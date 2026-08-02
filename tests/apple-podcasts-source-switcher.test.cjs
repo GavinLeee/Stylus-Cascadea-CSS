@@ -72,6 +72,52 @@ function createHarness({ hallo = true, requestDelay = 0 } = {}) {
     }
   }
 
+  class FakeProgress extends Element {
+    constructor(value = 0, max = 100) {
+      super();
+      this.value = value;
+      this.max = max;
+      this.dataset = {};
+    }
+    cloneNode() { return new FakeProgress(this.value, this.max); }
+    setAttribute(name, value) {
+      if (name === 'value') this.value = Number(value);
+      if (name === 'max') this.max = Number(value);
+    }
+  }
+
+  class FakeProgressContainer extends Element {
+    constructor(progress = null) {
+      super();
+      this.progress = progress;
+      this.owner = null;
+    }
+    cloneNode() { return new FakeProgressContainer(this.progress?.cloneNode() || null); }
+    querySelector(selector) {
+      return selector === 'progress[data-testid="progress-bar"]' ? this.progress : null;
+    }
+    append(progress) { this.progress = progress; }
+    replaceWith(next) {
+      if (!this.owner) return;
+      this.owner.progressContainer = next;
+      next.owner = this.owner;
+    }
+  }
+
+  class FakeButtonText extends Element {
+    constructor(text) {
+      super();
+      this.textContent = text;
+      this.owner = null;
+    }
+    cloneNode() { return new FakeButtonText(this.textContent); }
+    replaceWith(next) {
+      if (!this.owner) return;
+      this.owner.text = next;
+      next.owner = this.owner;
+    }
+  }
+
   class FakeEpisodeButton extends Element {
     constructor(title, remaining) {
       super();
@@ -81,6 +127,10 @@ function createHarness({ hallo = true, requestDelay = 0 } = {}) {
       this.dataset = {};
       this.icon = new FakeIcon('play');
       this.icon.owner = this;
+      this.progressContainer = new FakeProgressContainer();
+      this.progressContainer.owner = this;
+      this.text = new FakeButtonText(remaining);
+      this.text.owner = this;
       this.wrapper = null;
     }
     getAttribute(name) {
@@ -98,6 +148,9 @@ function createHarness({ hallo = true, requestDelay = 0 } = {}) {
       if (selector === '[data-testid="button-icon"] [data-testid="invertible-mask-svg"]') {
         return this.icon.querySelector('[data-testid="invertible-mask-svg"]');
       }
+      if (selector === 'progress[data-testid="progress-bar"]') return this.progressContainer.progress;
+      if (selector === '.progress-bar') return this.progressContainer;
+      if (selector === '[data-testid="hero__play-button-text"]') return this.text;
       return null;
     }
     closest(selector) {
@@ -295,6 +348,9 @@ function createHarness({ hallo = true, requestDelay = 0 } = {}) {
         item.button.icon = new FakeIcon(item === card ? 'native-pause' : 'play');
         item.button.icon.owner = item.button;
         item.bars.classList.toggle('playing', item === card);
+        if (item === card && !item.button.progressContainer.progress) {
+          item.button.progressContainer.progress = new FakeProgress(1, 100);
+        }
       }
     }
   }
@@ -336,6 +392,12 @@ function createHarness({ hallo = true, requestDelay = 0 } = {}) {
         icon: card.button.icon.kind,
         indicatorPlaying: card.bars.classList.contains('playing')
       }));
+    },
+    progressStates() {
+      return episodeCards.map((card) => {
+        const progress = card.button.progressContainer.progress;
+        return progress ? { value: progress.value, max: progress.max } : null;
+      });
     },
     playerTitles() { return marqueeNodes.map((node) => node.textContent); },
     setTitle(title) {
@@ -411,6 +473,8 @@ async function settle() {
     { label: 'Play, 10 minutes remaining', icon: 'play', indicatorPlaying: false },
     { label: 'Pause, 20 minutes remaining', icon: 'native-pause', indicatorPlaying: true }
   ], 'Apple 换源后未迁移卡片状态时，脚本应把两处原生持续声波动画迁移到当前剧集');
+  assert.deepEqual(staleCardState.progressStates(), [null, { value: 0, max: 100 }],
+    '切换剧集时应清除旧卡片的错误活动进度，并把当前音频进度迁移到新卡片');
 
   const other = createHarness({ hallo: false });
   other.clickPlay('节目甲');

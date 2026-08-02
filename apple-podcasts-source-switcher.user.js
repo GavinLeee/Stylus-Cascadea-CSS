@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Apple Podcasts 哈喽怪谈透明播放源
 // @namespace    apple-podcasts-source-switcher
-// @version      1.2.9
+// @version      1.2.10
 // @description  保留 Apple Podcasts 原生播放与切集体验，仅在后台将《哈喽怪谈》的音频替换为喜马拉雅播放源
 // @author       Codex
 // @match        https://podcasts.apple.com/*
@@ -42,6 +42,8 @@
   let scanQueued = false;
   let playIconTemplate = null;
   let pauseIconTemplate = null;
+  let progressTemplate = null;
+  const idleCardTemplates = new Map();
 
   function debug(...args) {
     console.debug('[Hallo Ximalaya]', ...args);
@@ -118,15 +120,28 @@
   }
 
   function captureNativeButtonTemplates() {
-    for (const { button } of episodeCardEntries()) {
+    for (const { title, button } of episodeCardEntries()) {
       const icon = button.querySelector('[data-testid="button-icon"]');
       if (!icon?.cloneNode) continue;
       const label = button.getAttribute('aria-label') || '';
+      const progress = button.querySelector('progress[data-testid="progress-bar"]');
+      if (progress?.cloneNode) progressTemplate = progress.cloneNode(true);
       if (/^Pause\b/i.test(label) && icon.querySelector('[data-testid="playback-bars"].playing')) {
         pauseIconTemplate = icon.cloneNode(true);
       } else if (!playIconTemplate && /^Play\b/i.test(label)
         && icon.querySelector('[data-testid="invertible-mask-svg"]')) {
         playIconTemplate = icon.cloneNode(true);
+      }
+      const titleKey = normalizeTitle(title);
+      if (/^Play\b/i.test(label) && button.dataset.halloXimalayaManaged !== '1'
+        && titleKey && !idleCardTemplates.has(titleKey)) {
+        const progressContainer = button.querySelector('.progress-bar');
+        const text = button.querySelector('[data-testid="hero__play-button-text"]');
+        idleCardTemplates.set(titleKey, {
+          label,
+          progressContainer: progressContainer?.cloneNode?.(true) || null,
+          text: text?.cloneNode?.(true) || null
+        });
       }
     }
   }
@@ -155,6 +170,47 @@
     bars?.classList?.toggle('playing', playing);
   }
 
+  function restoreIdleCard(item) {
+    const titleKey = normalizeTitle(item.title);
+    const idle = idleCardTemplates.get(titleKey);
+    if (!idle || item.button.dataset.halloXimalayaIdleRestored === titleKey) return;
+    const progressContainer = item.button.querySelector('.progress-bar');
+    if (progressContainer?.replaceWith && idle.progressContainer?.cloneNode) {
+      progressContainer.replaceWith(idle.progressContainer.cloneNode(true));
+    }
+    const text = item.button.querySelector('[data-testid="hero__play-button-text"]');
+    if (text?.replaceWith && idle.text?.cloneNode) text.replaceWith(idle.text.cloneNode(true));
+    item.button.setAttribute('aria-label', idle.label);
+    item.button.dataset.halloXimalayaIdleRestored = titleKey;
+  }
+
+  function syncActiveCardProgress(item) {
+    const audio = activeAudio;
+    if (!audio) return;
+    const duration = Number(audio.duration);
+    const currentTime = Number(audio.currentTime);
+    if (!Number.isFinite(duration) || duration <= 0 || !Number.isFinite(currentTime)) return;
+    const container = item.button.querySelector('.progress-bar');
+    if (!container) return;
+    let progress = container.querySelector('progress[data-testid="progress-bar"]');
+    if (!progress && progressTemplate?.cloneNode) {
+      progress = progressTemplate.cloneNode(true);
+      container.append(progress);
+    }
+    if (!progress) return;
+    progress.max = duration;
+    progress.value = Math.max(0, Math.min(currentTime, duration));
+    progress.setAttribute?.('max', String(duration));
+    progress.setAttribute?.('value', String(progress.value));
+    progress.dataset.halloXimalayaProgress = '1';
+  }
+
+  function syncCurrentCardProgress(title = playerTitle()) {
+    const titleKey = normalizeTitle(title);
+    const item = episodeCardEntries().find((entry) => normalizeTitle(entry.title) === titleKey);
+    if (item) syncActiveCardProgress(item);
+  }
+
   function reconcileNativeCardState(title, playing) {
     captureNativeButtonTemplates();
     if (!playIconTemplate || (playing && !pauseIconTemplate)) return false;
@@ -169,12 +225,15 @@
       setCardPlayingBars(item.wrapper, false);
       const label = item.button.getAttribute('aria-label') || '';
       if (/^Pause\b/i.test(label) || item.button.dataset.halloXimalayaManaged === '1') {
+        restoreIdleCard(item);
         if (!buttonHasPlayIcon(item.button)) replaceButtonIcon(item.button, playIconTemplate);
-        item.button.setAttribute('aria-label', label.replace(/^(?:Play|Pause)\b/i, 'Play'));
+        const restoredLabel = item.button.getAttribute('aria-label') || label;
+        item.button.setAttribute('aria-label', restoredLabel.replace(/^(?:Play|Pause)\b/i, 'Play'));
         item.button.dataset.halloXimalayaManaged = '1';
       }
     }
 
+    delete target.button.dataset.halloXimalayaIdleRestored;
     setCardPlayingBars(target.wrapper, playing);
     if (playing ? !buttonHasPlayingIcon(target.button) : !buttonHasPlayIcon(target.button)) {
       replaceButtonIcon(target.button, playing ? pauseIconTemplate : playIconTemplate);
@@ -185,6 +244,7 @@
       playing ? 'Pause' : 'Play'
     ));
     target.button.dataset.halloXimalayaManaged = '1';
+    if (playing) syncActiveCardProgress(target);
     return true;
   }
 
@@ -425,6 +485,12 @@
       }
     });
 
+    for (const eventName of ['loadedmetadata', 'durationchange', 'timeupdate']) {
+      audio.addEventListener(eventName, () => {
+        if (isHalloPage() && desiredPlaying) syncCurrentCardProgress();
+      });
+    }
+
     for (const eventName of ['waiting', 'stalled']) {
       audio.addEventListener(eventName, () => {
         if (isHalloPage() && desiredPlaying && !isXimalayaUrl(mediaUrl(audio))) {
@@ -451,6 +517,7 @@
     const audio = document.querySelector('#apple-music-player, audio');
     if (audio) attach(audio);
     if (!isHalloPage()) return;
+    captureNativeButtonTemplates();
 
     if (pendingTitle) {
       syncPlayerTitle(pendingTitle);
@@ -528,6 +595,7 @@
       attributes: true,
       attributeFilter: ['src']
     });
+    captureNativeButtonTemplates();
     scan();
     window.setInterval(scan, 1000);
   }
