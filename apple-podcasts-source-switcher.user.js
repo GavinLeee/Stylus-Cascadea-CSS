@@ -1,12 +1,15 @@
 // ==UserScript==
 // @name         Apple Podcasts 播放源自动切换
 // @namespace    apple-podcasts-source-switcher
-// @version      1.0.1
-// @description  原播放源失败时自动切换到已匹配的喜马拉雅音频，并提供苹果风手动播放源控件
+// @version      1.1.0
+// @description  《哈喽怪谈》原播放源失败时，按节目标题自动匹配喜马拉雅整档音频，并提供苹果风手动播放源控件
 // @author       Codex
 // @match        https://podcasts.apple.com/*
 // @run-at       document-start
-// @grant        none
+// @require      https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js
+// @grant        GM_xmlhttpRequest
+// @connect      m.ximalaya.com
+// @connect      www.ximalaya.com
 // @updateURL    https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/apple-podcasts-source-switcher.user.js
 // @downloadURL  https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/apple-podcasts-source-switcher.user.js
 // ==/UserScript==
@@ -36,10 +39,17 @@
   });
 
   const MODE_KEY = 'ap-source-switcher-mode';
+  const HALLO_APPLE_SHOW_ID = '512426799';
+  const HALLO_XIMALAYA_ALBUM_ID = '25133280';
+  const HALLO_TRACK_CACHE_KEY = 'ap-hallo-ximalaya-tracks-v1';
+  const HALLO_TRACK_CACHE_MAX_AGE = 12 * 60 * 60 * 1000;
+  const XIMALAYA_AES_KEY = 'aaad3e4fd540b0f79dca95606e72bf93';
   const AUTO_TIMEOUT_MS = 9000;
   const RETRY_TIMEOUT_MS = 6500;
   const attachedAudio = new WeakSet();
   const originalUrl = new WeakMap();
+  const dynamicMappings = new Map();
+  const resolvingTitles = new Map();
 
   let mode = readMode();
   let activeAudio = null;
@@ -50,6 +60,9 @@
   let controlHost = null;
   let controlRoot = null;
   let lastPlayIntentAt = 0;
+  let halloTracksPromise = null;
+  let pendingEpisodeTitle = '';
+  let pendingEpisodeTitleAt = 0;
 
   function readMode() {
     try {
@@ -73,9 +86,178 @@
     return audio?.currentSrc || audio?.src || '';
   }
 
+  function isHalloPage() {
+    return location.pathname.includes(`/id${HALLO_APPLE_SHOW_ID}`)
+      || document.title.includes('哈喽怪谈');
+  }
+
+  function normalizeTitle(value) {
+    return String(value || '')
+      .normalize('NFKC')
+      .toLocaleLowerCase('zh-CN')
+      .replace(/[\p{P}\p{S}\s]+/gu, '');
+  }
+
+  function currentEpisodeTitle() {
+    if (pendingEpisodeTitle && Date.now() - pendingEpisodeTitleAt < 15000) {
+      return pendingEpisodeTitle;
+    }
+    const playerTitle = document.querySelector('[data-testid="marquee-text-item"]')?.textContent?.trim();
+    if (playerTitle) return playerTitle;
+
+    const episodeId = episodeIdFromLocation();
+    if (episodeId) {
+      const link = [...document.querySelectorAll('a[href*="?i="]')]
+        .find((item) => new URL(item.href, location.href).searchParams.get('i') === episodeId);
+      const lockupTitle = link?.querySelector('[data-testid="episode-lockup-title"]')?.textContent?.trim();
+      if (lockupTitle) return lockupTitle;
+
+      const slug = decodeURIComponent(location.pathname.split('/').at(-2) || '');
+      if (slug) return slug.replace(/-/g, ' ');
+    }
+    return '';
+  }
+
+  function requestJson(url) {
+    return new Promise((resolve, reject) => {
+      GM_xmlhttpRequest({
+        method: 'GET',
+        url,
+        timeout: 20000,
+        headers: { Accept: 'application/json, text/plain, */*' },
+        onload(response) {
+          if (response.status < 200 || response.status >= 300) {
+            reject(new Error(`HTTP ${response.status}`));
+            return;
+          }
+          try { resolve(JSON.parse(response.responseText)); }
+          catch (error) { reject(error); }
+        },
+        onerror: () => reject(new Error('网络请求失败')),
+        ontimeout: () => reject(new Error('网络请求超时'))
+      });
+    });
+  }
+
+  function readHalloTrackCache() {
+    try {
+      const cached = JSON.parse(localStorage.getItem(HALLO_TRACK_CACHE_KEY) || 'null');
+      if (!cached || Date.now() - cached.savedAt > HALLO_TRACK_CACHE_MAX_AGE) return null;
+      return Array.isArray(cached.tracks) ? cached.tracks : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function saveHalloTrackCache(tracks) {
+    try {
+      localStorage.setItem(HALLO_TRACK_CACHE_KEY, JSON.stringify({ savedAt: Date.now(), tracks }));
+    } catch { /* restricted storage */ }
+  }
+
+  async function loadHalloTracks() {
+    const cached = readHalloTrackCache();
+    if (cached?.length) return cached;
+    if (halloTracksPromise) return halloTracksPromise;
+
+    halloTracksPromise = requestJson(
+      `https://m.ximalaya.com/m-revision/page/album/queryAlbumPage/${HALLO_XIMALAYA_ALBUM_ID}?pageSize=1000`
+    ).then((payload) => {
+      const records = payload?.data?.typeSpecData?.freeOrSingleAlbumData
+        ?.albumPageTrackRecords?.trackDetailInfos;
+      if (!Array.isArray(records) || !records.length) throw new Error('未取得喜马拉雅节目列表');
+      const tracks = records.map((record) => ({
+        id: String(record?.trackInfo?.id || record?.id || ''),
+        title: String(record?.trackInfo?.title || '')
+      })).filter((track) => track.id && track.title);
+      saveHalloTrackCache(tracks);
+      return tracks;
+    }).finally(() => { halloTracksPromise = null; });
+    return halloTracksPromise;
+  }
+
+  function decryptXimalayaUrl(ciphertext) {
+    if (!globalThis.CryptoJS?.AES || !ciphertext) throw new Error('音频地址解密组件未加载');
+    return CryptoJS.AES.decrypt(
+      { ciphertext: CryptoJS.enc.Base64url.parse(ciphertext) },
+      CryptoJS.enc.Hex.parse(XIMALAYA_AES_KEY),
+      { mode: CryptoJS.mode.ECB, padding: CryptoJS.pad.Pkcs7 }
+    ).toString(CryptoJS.enc.Utf8);
+  }
+
+  async function fetchXimalayaAudio(trackId) {
+    const payload = await requestJson(
+      `https://www.ximalaya.com/mobile-playpage/track/v3/baseInfo/${Date.now()}?device=web&trackId=${trackId}&trackQualityLevel=1`
+    );
+    const playUrls = payload?.trackInfo?.playUrlList;
+    if (!Array.isArray(playUrls) || !playUrls.length) throw new Error('未取得喜马拉雅播放地址');
+    const selected = playUrls.find((item) => item.type === 'M4A_64') || playUrls[0];
+    const url = decryptXimalayaUrl(selected.url);
+    if (!/^https?:\/\//i.test(url)) throw new Error('喜马拉雅播放地址无效');
+    return url;
+  }
+
+  function findHalloTrack(tracks, title) {
+    const wanted = normalizeTitle(title);
+    if (!wanted) return null;
+    const exact = tracks.find((track) => normalizeTitle(track.title) === wanted);
+    if (exact) return exact;
+    return tracks
+      .filter((track) => {
+        const candidate = normalizeTitle(track.title);
+        return candidate.length >= 5 && (candidate.includes(wanted) || wanted.includes(candidate));
+      })
+      .sort((a, b) => normalizeTitle(b.title).length - normalizeTitle(a.title).length)[0] || null;
+  }
+
+  async function resolveHalloMapping(audio = activeAudio) {
+    if (!isHalloPage() || !audio) return null;
+    const title = currentEpisodeTitle();
+    const key = normalizeTitle(title);
+    if (!key) return null;
+    if (dynamicMappings.has(key)) return dynamicMappings.get(key);
+    if (resolvingTitles.has(key)) return resolvingTitles.get(key);
+
+    ensureControl();
+    updateControl('正在匹配喜马拉雅…');
+    const task = (async () => {
+      const tracks = await loadHalloTracks();
+      const track = findHalloTrack(tracks, title);
+      if (!track) throw new Error(`未找到对应节目：${title}`);
+      const ximalayaUrl = await fetchXimalayaAudio(track.id);
+      const mapping = Object.freeze({
+        title,
+        appleUrl: mediaUrl(audio),
+        appleToken: '',
+        ximalayaTrackId: track.id,
+        ximalayaUrl
+      });
+      dynamicMappings.set(key, mapping);
+      activeMapping = mapping;
+      pendingEpisodeTitle = '';
+      if (!originalUrl.has(audio) && !isXimalayaUrl(mediaUrl(audio))) {
+        originalUrl.set(audio, mediaUrl(audio));
+      }
+      updateControl(`已匹配：${track.title}`);
+      if (mode === 'ximalaya'
+        || (mode === 'auto' && audio.dataset.apSourcePlayIntent === '1'
+          && (audio.error || audio.readyState < HTMLMediaElement.HAVE_CURRENT_DATA))) {
+        switchToXimalaya(audio, '已自动匹配喜马拉雅', true);
+      }
+      return mapping;
+    })().catch((error) => {
+      updateControl(error?.message || '自动匹配失败');
+      return null;
+    }).finally(() => resolvingTitles.delete(key));
+    resolvingTitles.set(key, task);
+    return task;
+  }
+
   function mappingFor(audio = activeAudio) {
     const byUrl = SOURCE_MAP[episodeIdFromLocation()];
     if (byUrl) return byUrl;
+    const dynamic = dynamicMappings.get(normalizeTitle(currentEpisodeTitle()));
+    if (dynamic) return dynamic;
     const src = mediaUrl(audio);
     if (!src) return null;
     return Object.values(SOURCE_MAP).find((item) => src.includes(item.appleToken)) || null;
@@ -92,7 +274,13 @@
 
   function armWatchdog(audio, delay = AUTO_TIMEOUT_MS) {
     clearWatchdog();
-    if (mode !== 'auto' || !mappingFor(audio) || isXimalayaUrl(mediaUrl(audio))) return;
+    if (mode !== 'auto' || isXimalayaUrl(mediaUrl(audio))) return;
+    if (!mappingFor(audio)) {
+      resolveHalloMapping(audio).then((mapping) => {
+        if (mapping) armWatchdog(audio, delay);
+      });
+      return;
+    }
     if (audio.paused && audio.dataset.apSourcePlayIntent !== '1') return;
     const observedTime = Number.isFinite(audio.currentTime) ? audio.currentTime : 0;
     watchdog = window.setTimeout(() => {
@@ -172,7 +360,11 @@
       updateControl('请先点击本集的播放按钮');
       return;
     }
-    if (mode === 'ximalaya') switchToXimalaya(activeAudio, '固定使用喜马拉雅');
+    if (mode === 'ximalaya' && !mappingFor(activeAudio)) {
+      resolveHalloMapping(activeAudio).then((mapping) => {
+        if (mapping) switchToXimalaya(activeAudio, '固定使用喜马拉雅', true);
+      });
+    } else if (mode === 'ximalaya') switchToXimalaya(activeAudio, '固定使用喜马拉雅');
     else switchToApple(activeAudio);
   }
 
@@ -181,15 +373,19 @@
     activeAudio = audio;
     if (Date.now() - lastPlayIntentAt < 15000) audio.dataset.apSourcePlayIntent = '1';
     const detectedMapping = mappingFor(audio);
-    if (!detectedMapping) return;
-    activeMapping = detectedMapping;
+    if (!detectedMapping && !isHalloPage()) return;
+    activeMapping = detectedMapping || null;
     ensureControl();
+    if (!detectedMapping) resolveHalloMapping(audio);
 
     if (!originalUrl.has(audio) && !isXimalayaUrl(mediaUrl(audio))) {
-      originalUrl.set(audio, mediaUrl(audio) || activeMapping.appleUrl);
+      originalUrl.set(audio, mediaUrl(audio) || activeMapping?.appleUrl || '');
     }
     if (attachedAudio.has(audio)) {
-      if (mode === 'ximalaya' && !isXimalayaUrl(mediaUrl(audio))) switchToXimalaya(audio);
+      if (mode === 'ximalaya' && !isXimalayaUrl(mediaUrl(audio))) {
+        if (mappingFor(audio)) switchToXimalaya(audio);
+        else resolveHalloMapping(audio);
+      }
       return;
     }
     attachedAudio.add(audio);
@@ -198,9 +394,10 @@
       activeAudio = audio;
       const nextMapping = mappingFor(audio);
       if (!nextMapping && !isXimalayaUrl(mediaUrl(audio))) {
-        originalUrl.delete(audio);
+        if (!originalUrl.has(audio)) originalUrl.set(audio, mediaUrl(audio));
         activeMapping = null;
         ensureControl();
+        resolveHalloMapping(audio);
         return;
       }
       activeMapping = nextMapping || activeMapping;
@@ -212,6 +409,7 @@
     });
     audio.addEventListener('play', () => {
       audio.dataset.apSourcePlayIntent = '1';
+      if (!mappingFor(audio)) resolveHalloMapping(audio);
       if (mode === 'auto') armWatchdog(audio);
     });
     audio.addEventListener('playing', () => {
@@ -226,7 +424,12 @@
     });
     audio.addEventListener('error', () => {
       if (mode === 'auto' && !isXimalayaUrl(mediaUrl(audio))) {
-        switchToXimalaya(audio, '原播放源失败，已自动切换', audio.dataset.apSourcePlayIntent === '1');
+        const mapping = mappingFor(audio);
+        if (mapping) {
+          switchToXimalaya(audio, '原播放源失败，已自动切换', audio.dataset.apSourcePlayIntent === '1');
+        } else {
+          resolveHalloMapping(audio);
+        }
       } else {
         clearWatchdog();
         updateControl('当前播放源加载失败');
@@ -238,7 +441,8 @@
       });
     }
 
-    if (mode === 'ximalaya') switchToXimalaya(audio, '固定使用喜马拉雅');
+    if (mode === 'ximalaya' && mappingFor(audio)) switchToXimalaya(audio, '固定使用喜马拉雅');
+    else if (mode === 'ximalaya') resolveHalloMapping(audio);
     else {
       currentProvider = isXimalayaUrl(mediaUrl(audio)) ? 'ximalaya' : 'apple';
       updateControl();
@@ -248,13 +452,13 @@
 
   function ensureControl() {
     const mapping = mappingFor() || activeMapping || SOURCE_MAP[episodeIdFromLocation()];
-    if (!mapping) {
+    if (!mapping && !isHalloPage()) {
       controlHost?.remove();
       controlHost = null;
       controlRoot = null;
       return;
     }
-    activeMapping = mapping;
+    if (mapping) activeMapping = mapping;
     if (controlHost?.isConnected) return;
 
     controlHost = document.createElement('div');
@@ -301,7 +505,7 @@
       ensureControl();
     }
     document.querySelectorAll('audio').forEach(attachAudio);
-    if (activeMapping) ensureControl();
+    if (activeMapping || isHalloPage()) ensureControl();
   }
 
   function start() {
@@ -311,7 +515,14 @@
       const label = `${button.getAttribute('aria-label') || ''} ${button.textContent || ''}`.trim();
       if (/^(?:Play|播放)(?:\b|[，,])/i.test(label)) {
         lastPlayIntentAt = Date.now();
+        const clickedTitle = button.closest('[data-testid="episode-wrapper"]')
+          ?.querySelector('[data-testid="episode-lockup-title"]')?.textContent?.trim();
+        if (clickedTitle) {
+          pendingEpisodeTitle = clickedTitle;
+          pendingEpisodeTitleAt = Date.now();
+        }
         if (activeAudio) activeAudio.dataset.apSourcePlayIntent = '1';
+        window.setTimeout(() => resolveHalloMapping(activeAudio), 0);
       }
     }, true);
     scan();
