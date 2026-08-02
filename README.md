@@ -15,7 +15,7 @@
 | [`google-apple.user.css`](google-apple.user.css) | 1.5.26 | `google.com` 及 8 个地区域名 | 搜索结果与顶部控件的动效和磨砂玻璃 |
 | [`xiaohongshu-apple.user.css`](xiaohongshu-apple.user.css) | 1.14.4 | `xiaohongshu.com` | 左侧导航按钮和图文卡片的悬浮动效，吸顶搜索框与侧栏磨砂玻璃 |
 | [`instagram-apple.user.css`](instagram-apple.user.css) | 1.0.5 | `instagram.com` | 左侧导航、快拍 Dock 单点放大、信息流与评论卡片、Messages 浮钮；材质与位移分层渲染 |
-| [`apple-podcasts-cards-effect.user.css`](apple-podcasts-cards-effect.user.css) | 3.9.1 | `podcasts.apple.com` | 新版 Web 端节目卡片、左侧导航和播放器按钮的悬浮动效 |
+| [`apple-podcasts-cards-effect.user.css`](apple-podcasts-cards-effect.user.css) | 3.9.2 | `podcasts.apple.com` | 新版 Web 端节目卡片、左侧导航和播放器按钮的悬浮动效；首页普通卡片采用轻蒙版替代外投影 |
 
 `global.user.css` 与各站点样式表相互独立，可以只装其中一部分。
 

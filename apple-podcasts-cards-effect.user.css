@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           Apple Podcasts Web 卡片悬浮动画（新版）
 @namespace      apple-podcasts-card-motion
-@version        3.9.1
+@version        3.9.2
 @description    为新版 Apple Podcasts Web 添加节目卡片、左侧导航和播放器按钮的克制悬浮动效
 @match          https://podcasts.apple.com/*
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/apple-podcasts-cards-effect.user.css
@@ -741,5 +741,56 @@
       translate: none !important;
       scale: none !important;
     }
+  }
+}
+
+/* Podcast 首页：普通卡片采用 Popular Shows 式的轻蒙版，不再生成外投影。 */
+@-moz-document regexp("^https://podcasts\\.apple\\.com/[^/]+/home(?:[/?#].*)?$") {
+  .shelf-grid__list-item:has(:is(
+    .episode-hero,
+    .show-hero,
+    .episode,
+    .show
+  )):hover,
+  .episode:not(.shelf-grid__list-item *):hover {
+    filter: none !important;
+  }
+
+  main :is(
+    .episode-hero,
+    .show-hero,
+    .episode:not(.episode-hero *),
+    .show:not(.show-hero *)
+  ) {
+    position: relative;
+    isolation: isolate;
+  }
+
+  main :is(
+    .episode-hero,
+    .show-hero,
+    .episode:not(.episode-hero *),
+    .show:not(.show-hero *)
+  )::after {
+    content: "";
+    position: absolute;
+    z-index: 20;
+    inset: 0;
+    border-radius: inherit;
+    background: rgb(15 23 42 / 0%);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity var(--ap-motion-duration) var(--ap-motion-ease);
+  }
+
+  .shelf-grid__list-item:hover :is(
+    .episode-hero,
+    .show-hero,
+    .episode,
+    .show
+  )::after,
+  .episode:not(.shelf-grid__list-item *):hover::after {
+    background: rgb(15 23 42 / 4%);
+    opacity: 1;
   }
 }
