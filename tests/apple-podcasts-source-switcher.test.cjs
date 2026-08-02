@@ -281,17 +281,25 @@ function createHarness({ hallo = true, requestDelay = 0 } = {}) {
         item.button.label = `${item === card ? 'Pause' : 'Play'}, ${item.button.remaining}`;
         item.button.icon = new FakeIcon(item === card ? 'native-pause' : 'play');
         item.button.icon.owner = item.button;
+        item.bars.classList.toggle('playing', item === card);
       }
     }
   }
 
   function clickPause() {
-    const button = episodeCards.find((item) => /^Pause\b/.test(item.button.label))?.button;
+    const activeCard = episodeCards.find((item) => /^Pause\b/.test(item.button.label));
+    const button = activeCard?.button;
     listeners.get('click')?.({
       target: button,
       preventDefault() {},
       stopImmediatePropagation() {}
     });
+    if (activeCard) {
+      activeCard.button.label = `Play, ${activeCard.button.remaining}`;
+      activeCard.button.icon = new FakeIcon('play');
+      activeCard.button.icon.owner = activeCard.button;
+      activeCard.bars.classList.toggle('playing', false);
+    }
   }
 
   function loadAppleSource(url, time = 0) {
@@ -384,12 +392,12 @@ async function settle() {
   const staleCardState = createHarness();
   staleCardState.clickPlay('节目甲');
   await settle();
-  staleCardState.clickPlay('节目乙', { nativeVisualSwitch: false });
+  staleCardState.clickPlay('节目乙');
   await settle();
   assert.deepEqual(staleCardState.cardStates(), [
     { label: 'Play, 10 minutes remaining', icon: 'play', indicatorPlaying: false },
     { label: 'Pause, 20 minutes remaining', icon: 'native-pause', indicatorPlaying: true }
-  ], 'Apple 未切换卡片状态时，脚本应迁移按钮声波并切换标题上方声波动画');
+  ], '切换剧集时应由 Apple 原生状态同时迁移按钮声波和标题上方的持续声波动画');
 
   const other = createHarness({ hallo: false });
   other.clickPlay('节目甲');
