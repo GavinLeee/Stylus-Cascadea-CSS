@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Apple Podcasts 哈喽怪谈透明播放源
 // @namespace    apple-podcasts-source-switcher
-// @version      1.2.2
+// @version      1.2.3
 // @description  保留 Apple Podcasts 原生播放与切集体验，仅在后台将《哈喽怪谈》的音频替换为喜马拉雅播放源
 // @author       Codex
 // @match        https://podcasts.apple.com/*
@@ -85,6 +85,26 @@
 
     const slug = decodeURIComponent(location.pathname.split('/').at(-2) || '');
     return slug.replace(/-/g, ' ').trim();
+  }
+
+  function syncPlayerTitle(title, previousTitleKey = '') {
+    const titleKey = normalizeTitle(title);
+    if (!titleKey) return;
+    const candidateKeys = new Set([titleKey, previousTitleKey, appliedTitleKey].filter(Boolean));
+    for (const node of document.querySelectorAll('[data-testid="marquee-text-item"]')) {
+      const currentText = node.textContent?.trim() || '';
+      const currentKey = normalizeTitle(currentText);
+      if (node.dataset?.halloXimalayaTitle !== '1' && !candidateKeys.has(currentKey)) continue;
+      if (node.dataset) node.dataset.halloXimalayaTitle = '1';
+      if (currentText !== title) node.textContent = title;
+      const button = node.closest?.('button');
+      if (button) {
+        const label = button.getAttribute('aria-label') || '';
+        if (label && currentText && label.includes(currentText)) {
+          button.setAttribute('aria-label', label.replace(currentText, title));
+        }
+      }
+    }
   }
 
   function requestJson(url) {
@@ -259,6 +279,7 @@
 
       const switchedWhileOldEpisodeStillLoaded = isXimalayaUrl(mediaUrl(audio))
         && appliedTitleKey && appliedTitleKey !== resolved.titleKey;
+      const previousTitleKey = appliedTitleKey || normalizeTitle(marqueeTitle());
       const resumeTime = switchedWhileOldEpisodeStillLoaded
         ? 0
         : (Number.isFinite(audio.currentTime) ? audio.currentTime : 0);
@@ -267,6 +288,7 @@
       audio.src = resolved.url;
       audio.load();
       appliedTitleKey = resolved.titleKey;
+      syncPlayerTitle(resolved.title, previousTitleKey);
       queueMicrotask(() => { applyingSource = false; });
       restoreAndPlay(audio, resumeTime, generation, resolved.titleKey);
       debug('已使用喜马拉雅播放源', resolved.title, resolved.trackId);
@@ -344,9 +366,7 @@
     if (audio) attach(audio);
     if (!isHalloPage()) return;
 
-    if (pendingTitle && normalizeTitle(marqueeTitle()) === normalizeTitle(pendingTitle)) {
-      pendingTitle = '';
-    }
+    if (pendingTitle) syncPlayerTitle(pendingTitle);
     const title = playerTitle();
     if (!title) return;
     const titleChanged = normalizeTitle(title) !== activeTitleKey;

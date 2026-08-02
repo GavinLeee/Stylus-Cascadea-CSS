@@ -17,6 +17,12 @@ function createHarness({ hallo = true, requestDelay = 0 } = {}) {
   let currentPlayerTitle = '节目甲';
   let decryptResult = XM_A;
   let intervalCallback = null;
+  const marqueeNodes = [
+    { textContent: '节目甲', dataset: {}, closest: () => null },
+    { textContent: '节目甲', dataset: {}, closest: () => null },
+    { textContent: '今天', dataset: {}, closest: () => null },
+    { textContent: '今天', dataset: {}, closest: () => null }
+  ];
 
   class Element {
     closest() { return null; }
@@ -84,11 +90,14 @@ function createHarness({ hallo = true, requestDelay = 0 } = {}) {
     querySelector(selector) {
       if (selector === '#apple-music-player, audio') return audio;
       if (selector === '[data-testid="marquee-text-item"]') {
-        return { textContent: currentPlayerTitle };
+        return marqueeNodes[0];
       }
       return null;
     },
-    querySelectorAll() { return []; }
+    querySelectorAll(selector) {
+      if (selector === '[data-testid="marquee-text-item"]') return marqueeNodes;
+      return [];
+    }
   };
 
   const context = {
@@ -168,7 +177,11 @@ function createHarness({ hallo = true, requestDelay = 0 } = {}) {
   vm.runInContext(script, context, { filename: 'apple-podcasts-source-switcher.user.js' });
 
   function clickPlay(title, { updateMarquee = true } = {}) {
-    if (updateMarquee) currentPlayerTitle = title;
+    if (updateMarquee) {
+      currentPlayerTitle = title;
+      marqueeNodes[0].textContent = title;
+      marqueeNodes[1].textContent = title;
+    }
     class FakeButton extends Element {
       getAttribute(name) { return name === 'aria-label' ? 'Play, remaining' : ''; }
       get textContent() { return ''; }
@@ -209,7 +222,12 @@ function createHarness({ hallo = true, requestDelay = 0 } = {}) {
     clickPause,
     loadAppleSource,
     runScan() { intervalCallback?.(); },
-    setTitle(title) { currentPlayerTitle = title; }
+    playerTitles() { return marqueeNodes.map((node) => node.textContent); },
+    setTitle(title) {
+      currentPlayerTitle = title;
+      marqueeNodes[0].textContent = title;
+      marqueeNodes[1].textContent = title;
+    }
   };
 }
 
@@ -264,6 +282,8 @@ async function settle() {
   await settle();
   assert.equal(staleMarquee.audio.currentSrc, XM_B,
     'Apple 播放器标题尚未更新时，不得被旧标题切回上一集');
+  assert.deepEqual(staleMarquee.playerTitles(), ['节目乙', '节目乙', '今天', '今天'],
+    '换源后应同步两份播放器标题，同时不得覆盖日期');
 
   const other = createHarness({ hallo: false });
   other.clickPlay('节目甲');
