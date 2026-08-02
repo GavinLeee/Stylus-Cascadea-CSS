@@ -42,6 +42,31 @@ function createHarness({ hallo = true, requestDelay = 0 } = {}) {
     }
   }
 
+  class FakeClassList {
+    constructor() { this.values = new Set(); }
+    add(value) { this.values.add(value); }
+    toggle(value, force) {
+      if (force) this.values.add(value);
+      else this.values.delete(value);
+    }
+    contains(value) { return this.values.has(value); }
+  }
+
+  class FakeBars extends Element {
+    constructor() {
+      super();
+      this.classList = new FakeClassList();
+    }
+    cloneNode() {
+      const clone = new FakeBars();
+      for (const value of this.classList.values) clone.classList.add(value);
+      return clone;
+    }
+    querySelectorAll(selector) {
+      return selector === '[data-testid="playback-bars"]' ? [this] : [];
+    }
+  }
+
   class FakeEpisodeButton extends Element {
     constructor(title, remaining) {
       super();
@@ -75,11 +100,16 @@ function createHarness({ hallo = true, requestDelay = 0 } = {}) {
     { title: '节目乙', button: new FakeEpisodeButton('节目乙', '20 minutes remaining') }
   ];
   for (const card of episodeCards) {
+    card.bars = new FakeBars();
     card.wrapper = {
       querySelector(selector) {
         if (selector === '[data-testid="episode-lockup-title"]') return { textContent: card.title };
         if (selector === 'button[data-testid="hero__play-button"]') return card.button;
+        if (selector === '.episode-details__playing-bars-inner') return card.bars;
         return null;
+      },
+      querySelectorAll(selector) {
+        return selector === '[data-testid="playback-bars"]' ? [card.bars] : [];
       }
     };
     card.button.wrapper = card.wrapper;
@@ -280,7 +310,11 @@ function createHarness({ hallo = true, requestDelay = 0 } = {}) {
     loadAppleSource,
     runScan() { intervalCallback?.(); },
     cardStates() {
-      return episodeCards.map((card) => ({ label: card.button.label, icon: card.button.icon.kind }));
+      return episodeCards.map((card) => ({
+        label: card.button.label,
+        icon: card.button.icon.kind,
+        indicatorPlaying: card.bars.classList.contains('playing')
+      }));
     },
     playerTitles() { return marqueeNodes.map((node) => node.textContent); },
     setTitle(title) {
@@ -353,9 +387,9 @@ async function settle() {
   staleCardState.clickPlay('节目乙', { nativeVisualSwitch: false });
   await settle();
   assert.deepEqual(staleCardState.cardStates(), [
-    { label: 'Play, 10 minutes remaining', icon: 'play' },
-    { label: 'Pause, 20 minutes remaining', icon: 'pause' }
-  ], 'Apple 未切换卡片状态时，脚本应把原生声波节点迁移到新剧集');
+    { label: 'Play, 10 minutes remaining', icon: 'play', indicatorPlaying: false },
+    { label: 'Pause, 20 minutes remaining', icon: 'pause', indicatorPlaying: true }
+  ], 'Apple 未切换卡片状态时，脚本应迁移按钮声波并切换标题上方声波动画');
 
   const other = createHarness({ hallo: false });
   other.clickPlay('节目甲');

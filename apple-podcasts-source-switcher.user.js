@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Apple Podcasts 哈喽怪谈透明播放源
 // @namespace    apple-podcasts-source-switcher
-// @version      1.2.5
+// @version      1.2.6
 // @description  保留 Apple Podcasts 原生播放与切集体验，仅在后台将《哈喽怪谈》的音频替换为喜马拉雅播放源
 // @author       Codex
 // @match        https://podcasts.apple.com/*
@@ -131,9 +131,32 @@
     icon.replaceWith(template.cloneNode(true));
   }
 
-  function setButtonMode(button, playing) {
+  function buildPauseIconTemplate(wrapper, button) {
+    if (pauseIconTemplate) return;
+    const icon = button?.querySelector('[data-testid="button-icon"]');
+    const indicator = wrapper?.querySelector('.episode-details__playing-bars-inner');
+    if (!icon?.cloneNode || !indicator?.cloneNode) return;
+    const clone = icon.cloneNode(false);
+    const bars = indicator.cloneNode(true);
+    for (const node of bars.querySelectorAll?.('[data-testid="playback-bars"]') || []) {
+      node.classList?.add('playing');
+    }
+    if (!clone.append) return;
+    clone.replaceChildren?.();
+    clone.append(bars);
+    pauseIconTemplate = clone;
+  }
+
+  function syncPlayingBars(wrapper, playing) {
+    for (const bars of wrapper?.querySelectorAll?.('[data-testid="playback-bars"]') || []) {
+      bars.classList?.toggle('playing', playing);
+    }
+  }
+
+  function setButtonMode(button, playing, wrapper = null) {
     if (!button) return;
     cacheButtonIcon(button);
+    if (playing) buildPauseIconTemplate(wrapper, button);
     replaceButtonIcon(button, playing ? pauseIconTemplate : playIconTemplate);
     const label = button.getAttribute('aria-label') || '';
     button.setAttribute('aria-label', label.replace(/^(?:Play|Pause)\b/i, playing ? 'Pause' : 'Play'));
@@ -154,9 +177,13 @@
       const label = item.button.getAttribute('aria-label') || '';
       const wasManaged = item.button.dataset.halloXimalayaManaged === '1';
       if (isTarget) {
-        setButtonMode(item.button, playing);
+        syncPlayingBars(item.wrapper, playing);
+        setButtonMode(item.button, playing, item.wrapper);
       } else if (/^Pause\b/i.test(label) || wasManaged) {
-        setButtonMode(item.button, false);
+        syncPlayingBars(item.wrapper, false);
+        setButtonMode(item.button, false, item.wrapper);
+      } else {
+        syncPlayingBars(item.wrapper, false);
       }
     }
   }
