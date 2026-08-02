@@ -264,8 +264,10 @@ async function settle() {
   delayed.clickPlay('节目甲');
   delayed.clickPause();
   await settle();
-  assert.equal(delayed.audio.currentSrc, XM_A, '暂停期间仍可完成后台换源');
-  assert.equal(delayed.audio.paused, true, '异步换源完成后不得推翻用户的暂停操作');
+  assert.equal(delayed.audio.paused, true, '异步解析完成后不得推翻用户的暂停操作');
+  delayed.clickPlay('节目甲');
+  await settle();
+  assert.equal(delayed.audio.currentSrc, XM_A, '暂停后再次播放时应完成喜马拉雅换源');
 
   const rapid = createHarness({ requestDelay: 10 });
   rapid.clickPlay('节目甲');

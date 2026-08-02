@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Apple Podcasts 哈喽怪谈透明播放源
 // @namespace    apple-podcasts-source-switcher
-// @version      1.2.3
+// @version      1.2.4
 // @description  保留 Apple Podcasts 原生播放与切集体验，仅在后台将《哈喽怪谈》的音频替换为喜马拉雅播放源
 // @author       Codex
 // @match        https://podcasts.apple.com/*
@@ -412,13 +412,14 @@
           const generation = setEpisode(clickedTitle, true);
           requestedGeneration = generation;
           prewarm(clickedTitle);
-          if (activeAudio) useXimalaya(activeAudio, clickedTitle, generation);
         } else {
           desiredPlaying = true;
           lastExplicitPlayAt = Date.now();
         }
         window.setTimeout(() => {
-          if (desiredPlaying && requestedGeneration === activeGeneration) ensureCurrentSource(false);
+          requestAnimationFrame(() => {
+            if (desiredPlaying && requestedGeneration === activeGeneration) ensureCurrentSource(false);
+          });
         }, 0);
       }
     }, true);
