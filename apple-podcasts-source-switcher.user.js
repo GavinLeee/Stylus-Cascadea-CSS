@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Apple Podcasts 哈喽怪谈透明播放源
 // @namespace    apple-podcasts-source-switcher
-// @version      1.2.6
+// @version      1.2.7
 // @description  保留 Apple Podcasts 原生播放与切集体验，仅在后台将《哈喽怪谈》的音频替换为喜马拉雅播放源
 // @author       Codex
 // @match        https://podcasts.apple.com/*
@@ -131,33 +131,18 @@
     icon.replaceWith(template.cloneNode(true));
   }
 
-  function buildPauseIconTemplate(wrapper, button) {
-    if (pauseIconTemplate) return;
-    const icon = button?.querySelector('[data-testid="button-icon"]');
-    const indicator = wrapper?.querySelector('.episode-details__playing-bars-inner');
-    if (!icon?.cloneNode || !indicator?.cloneNode) return;
-    const clone = icon.cloneNode(false);
-    const bars = indicator.cloneNode(true);
-    for (const node of bars.querySelectorAll?.('[data-testid="playback-bars"]') || []) {
-      node.classList?.add('playing');
-    }
-    if (!clone.append) return;
-    clone.replaceChildren?.();
-    clone.append(bars);
-    pauseIconTemplate = clone;
-  }
-
   function syncPlayingBars(wrapper, playing) {
     for (const bars of wrapper?.querySelectorAll?.('[data-testid="playback-bars"]') || []) {
       bars.classList?.toggle('playing', playing);
     }
   }
 
-  function setButtonMode(button, playing, wrapper = null) {
+  function setButtonMode(button, playing) {
     if (!button) return;
     cacheButtonIcon(button);
-    if (playing) buildPauseIconTemplate(wrapper, button);
-    replaceButtonIcon(button, playing ? pauseIconTemplate : playIconTemplate);
+    const template = playing ? pauseIconTemplate : playIconTemplate;
+    if (!template) return;
+    replaceButtonIcon(button, template);
     const label = button.getAttribute('aria-label') || '';
     button.setAttribute('aria-label', label.replace(/^(?:Play|Pause)\b/i, playing ? 'Pause' : 'Play'));
     button.dataset.halloXimalayaManaged = '1';
@@ -178,10 +163,10 @@
       const wasManaged = item.button.dataset.halloXimalayaManaged === '1';
       if (isTarget) {
         syncPlayingBars(item.wrapper, playing);
-        setButtonMode(item.button, playing, item.wrapper);
+        setButtonMode(item.button, playing);
       } else if (/^Pause\b/i.test(label) || wasManaged) {
         syncPlayingBars(item.wrapper, false);
-        setButtonMode(item.button, false, item.wrapper);
+        setButtonMode(item.button, false);
       } else {
         syncPlayingBars(item.wrapper, false);
       }
@@ -512,12 +497,17 @@
         }
         window.setTimeout(() => {
           requestAnimationFrame(() => {
-            if (desiredPlaying && requestedGeneration === activeGeneration) {
-              syncEpisodeCardState(playerTitle(), true);
-              ensureCurrentSource(false);
-            }
+            requestAnimationFrame(() => {
+              if (desiredPlaying && requestedGeneration === activeGeneration) {
+                // Wait for Apple's Svelte component to render its real pause icon.
+                // We clone that exact native node instead of synthesizing a waveform.
+                for (const item of episodeCardEntries()) cacheButtonIcon(item.button);
+                syncEpisodeCardState(playerTitle(), true);
+                ensureCurrentSource(false);
+              }
+            });
           });
-        }, 0);
+        }, 48);
       }
     }, true);
 

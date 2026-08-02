@@ -279,7 +279,7 @@ function createHarness({ hallo = true, requestDelay = 0 } = {}) {
     if (nativeVisualSwitch) {
       for (const item of episodeCards) {
         item.button.label = `${item === card ? 'Pause' : 'Play'}, ${item.button.remaining}`;
-        item.button.icon = new FakeIcon(item === card ? 'pause' : 'play');
+        item.button.icon = new FakeIcon(item === card ? 'native-pause' : 'play');
         item.button.icon.owner = item.button;
       }
     }
@@ -326,7 +326,7 @@ function createHarness({ hallo = true, requestDelay = 0 } = {}) {
 }
 
 async function settle() {
-  await new Promise((resolve) => setTimeout(resolve, 25));
+  await new Promise((resolve) => setTimeout(resolve, 90));
   await new Promise((resolve) => setTimeout(resolve, 0));
 }
 
@@ -388,7 +388,7 @@ async function settle() {
   await settle();
   assert.deepEqual(staleCardState.cardStates(), [
     { label: 'Play, 10 minutes remaining', icon: 'play', indicatorPlaying: false },
-    { label: 'Pause, 20 minutes remaining', icon: 'pause', indicatorPlaying: true }
+    { label: 'Pause, 20 minutes remaining', icon: 'native-pause', indicatorPlaying: true }
   ], 'Apple 未切换卡片状态时，脚本应迁移按钮声波并切换标题上方声波动画');
 
   const other = createHarness({ hallo: false });
