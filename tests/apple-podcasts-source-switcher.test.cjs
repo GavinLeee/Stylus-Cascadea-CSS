@@ -80,6 +80,9 @@ function createHarness({ hallo = true, requestDelay = 0 } = {}) {
       this.dataset = {};
     }
     cloneNode() { return new FakeProgress(this.value, this.max); }
+    remove() {
+      if (this.owner) this.owner.progress = null;
+    }
     setAttribute(name, value) {
       if (name === 'value') this.value = Number(value);
       if (name === 'max') this.max = Number(value);
@@ -90,13 +93,17 @@ function createHarness({ hallo = true, requestDelay = 0 } = {}) {
     constructor(progress = null) {
       super();
       this.progress = progress;
+      if (this.progress) this.progress.owner = this;
       this.owner = null;
     }
     cloneNode() { return new FakeProgressContainer(this.progress?.cloneNode() || null); }
     querySelector(selector) {
       return selector === 'progress[data-testid="progress-bar"]' ? this.progress : null;
     }
-    append(progress) { this.progress = progress; }
+    append(progress) {
+      this.progress = progress;
+      progress.owner = this;
+    }
     replaceWith(next) {
       if (!this.owner) return;
       this.owner.progressContainer = next;
@@ -349,7 +356,9 @@ function createHarness({ hallo = true, requestDelay = 0 } = {}) {
         item.button.icon.owner = item.button;
         item.bars.classList.toggle('playing', item === card);
         if (item === card && !item.button.progressContainer.progress) {
-          item.button.progressContainer.progress = new FakeProgress(1, 100);
+          const progress = new FakeProgress(1, 100);
+          progress.owner = item.button.progressContainer;
+          item.button.progressContainer.progress = progress;
         }
       }
     }

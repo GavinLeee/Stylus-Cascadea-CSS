@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Apple Podcasts 哈喽怪谈透明播放源
 // @namespace    apple-podcasts-source-switcher
-// @version      1.2.10
+// @version      1.2.11
 // @description  保留 Apple Podcasts 原生播放与切集体验，仅在后台将《哈喽怪谈》的音频替换为喜马拉雅播放源
 // @author       Codex
 // @match        https://podcasts.apple.com/*
@@ -43,7 +43,8 @@
   let playIconTemplate = null;
   let pauseIconTemplate = null;
   let progressTemplate = null;
-  const idleCardTemplates = new Map();
+  let topBarsTemplate = null;
+  let cardReconcileToken = 0;
 
   function debug(...args) {
     console.debug('[Hallo Ximalaya]', ...args);
@@ -120,28 +121,21 @@
   }
 
   function captureNativeButtonTemplates() {
-    for (const { title, button } of episodeCardEntries()) {
+    for (const { wrapper, button } of episodeCardEntries()) {
       const icon = button.querySelector('[data-testid="button-icon"]');
       if (!icon?.cloneNode) continue;
       const label = button.getAttribute('aria-label') || '';
       const progress = button.querySelector('progress[data-testid="progress-bar"]');
       if (progress?.cloneNode) progressTemplate = progress.cloneNode(true);
+      const topBars = wrapper.querySelector(
+        '.episode-details__playing-bars-inner [data-testid="playback-bars"]'
+      );
+      if (topBars?.cloneNode) topBarsTemplate = topBars.cloneNode(true);
       if (/^Pause\b/i.test(label) && icon.querySelector('[data-testid="playback-bars"].playing')) {
         pauseIconTemplate = icon.cloneNode(true);
       } else if (!playIconTemplate && /^Play\b/i.test(label)
         && icon.querySelector('[data-testid="invertible-mask-svg"]')) {
         playIconTemplate = icon.cloneNode(true);
-      }
-      const titleKey = normalizeTitle(title);
-      if (/^Play\b/i.test(label) && button.dataset.halloXimalayaManaged !== '1'
-        && titleKey && !idleCardTemplates.has(titleKey)) {
-        const progressContainer = button.querySelector('.progress-bar');
-        const text = button.querySelector('[data-testid="hero__play-button-text"]');
-        idleCardTemplates.set(titleKey, {
-          label,
-          progressContainer: progressContainer?.cloneNode?.(true) || null,
-          text: text?.cloneNode?.(true) || null
-        });
       }
     }
   }
@@ -166,22 +160,20 @@
   }
 
   function setCardPlayingBars(wrapper, playing) {
-    const bars = wrapper?.querySelector('.episode-details__playing-bars-inner [data-testid="playback-bars"]');
+    const container = wrapper?.querySelector('.episode-details__playing-bars-inner');
+    let bars = container?.querySelector?.('[data-testid="playback-bars"]')
+      || wrapper?.querySelector('.episode-details__playing-bars-inner [data-testid="playback-bars"]');
+    if (!bars && container?.append && topBarsTemplate?.cloneNode) {
+      bars = topBarsTemplate.cloneNode(true);
+      container.append(bars);
+    }
     bars?.classList?.toggle('playing', playing);
   }
 
-  function restoreIdleCard(item) {
-    const titleKey = normalizeTitle(item.title);
-    const idle = idleCardTemplates.get(titleKey);
-    if (!idle || item.button.dataset.halloXimalayaIdleRestored === titleKey) return;
-    const progressContainer = item.button.querySelector('.progress-bar');
-    if (progressContainer?.replaceWith && idle.progressContainer?.cloneNode) {
-      progressContainer.replaceWith(idle.progressContainer.cloneNode(true));
-    }
-    const text = item.button.querySelector('[data-testid="hero__play-button-text"]');
-    if (text?.replaceWith && idle.text?.cloneNode) text.replaceWith(idle.text.cloneNode(true));
-    item.button.setAttribute('aria-label', idle.label);
-    item.button.dataset.halloXimalayaIdleRestored = titleKey;
+  function removeManagedProgress(button, force = false) {
+    const progress = button?.querySelector('progress[data-testid="progress-bar"]');
+    if (!progress || (!force && progress.dataset?.halloXimalayaProgress !== '1')) return;
+    progress.remove?.();
   }
 
   function syncActiveCardProgress(item) {
@@ -224,16 +216,18 @@
       if (item === target) continue;
       setCardPlayingBars(item.wrapper, false);
       const label = item.button.getAttribute('aria-label') || '';
-      if (/^Pause\b/i.test(label) || item.button.dataset.halloXimalayaManaged === '1') {
-        restoreIdleCard(item);
+      const wasActive = /^Pause\b/i.test(label)
+        || buttonHasPlayingIcon(item.button)
+        || item.button.dataset.halloXimalayaActive === '1';
+      removeManagedProgress(item.button, wasActive);
+      if (wasActive || item.button.dataset.halloXimalayaManaged === '1') {
         if (!buttonHasPlayIcon(item.button)) replaceButtonIcon(item.button, playIconTemplate);
-        const restoredLabel = item.button.getAttribute('aria-label') || label;
-        item.button.setAttribute('aria-label', restoredLabel.replace(/^(?:Play|Pause)\b/i, 'Play'));
+        item.button.setAttribute('aria-label', label.replace(/^(?:Play|Pause)\b/i, 'Play'));
         item.button.dataset.halloXimalayaManaged = '1';
       }
+      delete item.button.dataset.halloXimalayaActive;
     }
 
-    delete target.button.dataset.halloXimalayaIdleRestored;
     setCardPlayingBars(target.wrapper, playing);
     if (playing ? !buttonHasPlayingIcon(target.button) : !buttonHasPlayIcon(target.button)) {
       replaceButtonIcon(target.button, playing ? pauseIconTemplate : playIconTemplate);
@@ -244,8 +238,25 @@
       playing ? 'Pause' : 'Play'
     ));
     target.button.dataset.halloXimalayaManaged = '1';
-    if (playing) syncActiveCardProgress(target);
+    if (playing) {
+      target.button.dataset.halloXimalayaActive = '1';
+      syncActiveCardProgress(target);
+    } else {
+      delete target.button.dataset.halloXimalayaActive;
+    }
     return true;
+  }
+
+  function scheduleCardReconcile(title) {
+    const titleKey = normalizeTitle(title);
+    if (!titleKey) return;
+    const token = ++cardReconcileToken;
+    for (const delay of [0, 48, 140, 320, 720]) {
+      window.setTimeout(() => {
+        if (token !== cardReconcileToken || titleKey !== activeTitleKey) return;
+        reconcileNativeCardState(title, desiredPlaying && !activeAudio?.paused);
+      }, delay);
+    }
   }
 
   function requestJson(url) {
@@ -431,6 +442,7 @@
       appliedTitleKey = resolved.titleKey;
       syncPlayerTitle(resolved.title, previousTitleKey);
       reconcileNativeCardState(title, desiredPlaying);
+      scheduleCardReconcile(title);
       queueMicrotask(() => { applyingSource = false; });
       restoreAndPlay(audio, resumeTime, generation, resolved.titleKey);
       debug('已使用喜马拉雅播放源', resolved.title, resolved.trackId);
@@ -568,6 +580,7 @@
           const generation = setEpisode(clickedTitle, true);
           requestedGeneration = generation;
           prewarm(clickedTitle);
+          scheduleCardReconcile(clickedTitle);
         } else {
           desiredPlaying = true;
           lastExplicitPlayAt = Date.now();
