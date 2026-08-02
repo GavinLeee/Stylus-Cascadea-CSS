@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Apple Podcasts 播放源自动切换
 // @namespace    apple-podcasts-source-switcher
-// @version      1.0.0
+// @version      1.0.1
 // @description  原播放源失败时自动切换到已匹配的喜马拉雅音频，并提供苹果风手动播放源控件
 // @author       Codex
 // @match        https://podcasts.apple.com/*
@@ -23,6 +23,15 @@
       appleToken: 'WPDL_kyAEYpYwxGhJvvqhXQLejeaRVaWCsJPNhqcBngYZLurVTfbSjDejZPqxrH-87',
       ximalayaTrackId: '1001881016',
       ximalayaUrl: 'https://jt.ximalaya.com//GKwRIDoOM2hABVhLkwS50N5I.m4a?channel=rss&album_id=25133280&track_id=1001881016&uid=1029792&jt=https://aod.cos.tx.xmcdn.com/storages/3e04-audiofreehighqps/3F/C2/GKwRIDoOM2hABVhLkwS50N5I.m4a'
+    }),
+    // Apple Podcasts: 禁忌游戏 上——影榴莲
+    // Ximalaya: album 25133280 / track 1003109714 / 02:46:05
+    '1000778499442': Object.freeze({
+      title: '禁忌游戏 上——影榴莲',
+      appleUrl: 'https://tk.wavpub.com/WPDL_FksRvthygsMQesmSQQSGEfnhqMXPvfmAGtFSashKHhqJaBRNHNJJSueHLQ-61.mp3',
+      appleToken: 'WPDL_FksRvthygsMQesmSQQSGEfnhqMXPvfmAGtFSashKHhqJaBRNHNJJSueHLQ-61',
+      ximalayaTrackId: '1003109714',
+      ximalayaUrl: 'https://jt.ximalaya.com//GKwRIW4OPKQSBM7x6gS9rplk.m4a?channel=rss&album_id=25133280&track_id=1003109714&uid=1029792&jt=https://aod.cos.tx.xmcdn.com/storages/f935-audiofreehighqps/BD/9C/GKwRIW4OPKQSBM7x6gS9rplk.m4a'
     })
   });
 
