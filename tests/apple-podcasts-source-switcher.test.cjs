@@ -399,7 +399,8 @@ function createHarness({ hallo = true, requestDelay = 0 } = {}) {
       return episodeCards.map((card) => ({
         label: card.button.label,
         icon: card.button.icon.kind,
-        indicatorPlaying: card.bars.classList.contains('playing')
+        indicatorPlaying: card.bars.classList.contains('playing'),
+        text: card.button.text.textContent
       }));
     },
     progressStates() {
@@ -479,8 +480,14 @@ async function settle() {
   staleCardState.clickPlay('节目乙', { nativeVisualSwitch: false });
   await settle();
   assert.deepEqual(staleCardState.cardStates(), [
-    { label: 'Play, 10 minutes remaining', icon: 'play', indicatorPlaying: false },
-    { label: 'Pause, 20 minutes remaining', icon: 'native-pause', indicatorPlaying: true }
+    {
+      label: 'Play, 10 minutes remaining', icon: 'play', indicatorPlaying: false,
+      text: '10 minutes remaining'
+    },
+    {
+      label: 'Pause, 20 minutes remaining', icon: 'native-pause', indicatorPlaying: true,
+      text: '20 minutes remaining'
+    }
   ], 'Apple 换源后未迁移卡片状态时，脚本应把两处原生持续声波动画迁移到当前剧集');
   assert.deepEqual(staleCardState.progressStates(), [null, { value: 0, max: 100 }],
     '切换剧集时应清除旧卡片的错误活动进度，并把当前音频进度迁移到新卡片');

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Apple Podcasts 哈喽怪谈透明播放源
 // @namespace    apple-podcasts-source-switcher
-// @version      1.2.11
+// @version      1.2.12
 // @description  保留 Apple Podcasts 原生播放与切集体验，仅在后台将《哈喽怪谈》的音频替换为喜马拉雅播放源
 // @author       Codex
 // @match        https://podcasts.apple.com/*
@@ -45,6 +45,7 @@
   let progressTemplate = null;
   let topBarsTemplate = null;
   let cardReconcileToken = 0;
+  const idleCardMetadata = new Map();
 
   function debug(...args) {
     console.debug('[Hallo Ximalaya]', ...args);
@@ -121,7 +122,7 @@
   }
 
   function captureNativeButtonTemplates() {
-    for (const { wrapper, button } of episodeCardEntries()) {
+    for (const { title, wrapper, button } of episodeCardEntries()) {
       const icon = button.querySelector('[data-testid="button-icon"]');
       if (!icon?.cloneNode) continue;
       const label = button.getAttribute('aria-label') || '';
@@ -136,6 +137,13 @@
       } else if (!playIconTemplate && /^Play\b/i.test(label)
         && icon.querySelector('[data-testid="invertible-mask-svg"]')) {
         playIconTemplate = icon.cloneNode(true);
+      }
+      const titleKey = normalizeTitle(title);
+      if (/^Play\b/i.test(label) && titleKey && !idleCardMetadata.has(titleKey)) {
+        idleCardMetadata.set(titleKey, {
+          label,
+          text: button.querySelector('[data-testid="hero__play-button-text"]')?.textContent || ''
+        });
       }
     }
   }
@@ -174,6 +182,14 @@
     const progress = button?.querySelector('progress[data-testid="progress-bar"]');
     if (!progress || (!force && progress.dataset?.halloXimalayaProgress !== '1')) return;
     progress.remove?.();
+  }
+
+  function restoreIdleMetadata(item, fallbackLabel = '') {
+    const idle = idleCardMetadata.get(normalizeTitle(item.title));
+    const label = idle?.label || fallbackLabel.replace(/^(?:Play|Pause)\b/i, 'Play');
+    if (label) item.button.setAttribute('aria-label', label);
+    const text = item.button.querySelector('[data-testid="hero__play-button-text"]');
+    if (text && idle?.text) text.textContent = idle.text;
   }
 
   function syncActiveCardProgress(item) {
@@ -222,7 +238,7 @@
       removeManagedProgress(item.button, wasActive);
       if (wasActive || item.button.dataset.halloXimalayaManaged === '1') {
         if (!buttonHasPlayIcon(item.button)) replaceButtonIcon(item.button, playIconTemplate);
-        item.button.setAttribute('aria-label', label.replace(/^(?:Play|Pause)\b/i, 'Play'));
+        restoreIdleMetadata(item, label);
         item.button.dataset.halloXimalayaManaged = '1';
       }
       delete item.button.dataset.halloXimalayaActive;
