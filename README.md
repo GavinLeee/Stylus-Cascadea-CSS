@@ -26,7 +26,7 @@
 | 脚本 | 版本 | 生效范围 | 作用 |
 | --- | --- | --- | --- |
 | [`youtube-follow-system-theme.user.js`](youtube-follow-system-theme.user.js) | 1.3.16 | `youtube.com` | 自动跟随系统深浅色、刷新组件，并为浅色播放页补实时环境光 |
-| [`apple-podcasts-source-switcher.user.js`](apple-podcasts-source-switcher.user.js) | 1.2.4 | `podcasts.apple.com` | 保留 Apple 原生播放与切集体验，仅在原生界面完成切换后将《哈喽怪谈》的音频替换为喜马拉雅播放源；同步暂停、切集、标题与卡片动画状态 |
+| [`apple-podcasts-source-switcher.user.js`](apple-podcasts-source-switcher.user.js) | 1.2.5 | `podcasts.apple.com` | 保留 Apple 原生播放与切集体验，将《哈喽怪谈》的音频替换为喜马拉雅播放源，并同步暂停、切集、标题、播放按钮与原生声波动画 |
 | [`xiaohongshu-panel-close.user.js`](xiaohongshu-panel-close.user.js) | 1.3.0 | `xiaohongshu.com` | 给搜索建议面板补收起动画：严格反向播放原生展开动画（站点是直接从 DOM 移除面板，CSS 无从附着） |
 
 需要 [Tampermonkey](https://www.tampermonkey.net/) 一类的用户脚本管理器，安装方式同样是点开文件后点 **Raw**。

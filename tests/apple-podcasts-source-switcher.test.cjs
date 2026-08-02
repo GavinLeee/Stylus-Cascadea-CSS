@@ -28,6 +28,63 @@ function createHarness({ hallo = true, requestDelay = 0 } = {}) {
     closest() { return null; }
   }
 
+  class FakeIcon extends Element {
+    constructor(kind) {
+      super();
+      this.kind = kind;
+      this.owner = null;
+    }
+    cloneNode() { return new FakeIcon(this.kind); }
+    replaceWith(next) {
+      if (!this.owner) return;
+      this.owner.icon = next;
+      next.owner = this.owner;
+    }
+  }
+
+  class FakeEpisodeButton extends Element {
+    constructor(title, remaining) {
+      super();
+      this.title = title;
+      this.remaining = remaining;
+      this.label = `Play, ${remaining}`;
+      this.dataset = {};
+      this.icon = new FakeIcon('play');
+      this.icon.owner = this;
+      this.wrapper = null;
+    }
+    getAttribute(name) {
+      if (name === 'aria-label') return this.label;
+      return '';
+    }
+    setAttribute(name, value) {
+      if (name === 'aria-label') this.label = value;
+    }
+    querySelector(selector) {
+      return selector === '[data-testid="button-icon"]' ? this.icon : null;
+    }
+    closest(selector) {
+      if (selector === 'button') return this;
+      if (selector === '[data-testid="episode-wrapper"]') return this.wrapper;
+      return null;
+    }
+  }
+
+  const episodeCards = [
+    { title: '节目甲', button: new FakeEpisodeButton('节目甲', '10 minutes remaining') },
+    { title: '节目乙', button: new FakeEpisodeButton('节目乙', '20 minutes remaining') }
+  ];
+  for (const card of episodeCards) {
+    card.wrapper = {
+      querySelector(selector) {
+        if (selector === '[data-testid="episode-lockup-title"]') return { textContent: card.title };
+        if (selector === 'button[data-testid="hero__play-button"]') return card.button;
+        return null;
+      }
+    };
+    card.button.wrapper = card.wrapper;
+  }
+
   class HTMLMediaElement extends Element {}
   HTMLMediaElement.HAVE_METADATA = 1;
   HTMLMediaElement.HAVE_CURRENT_DATA = 2;
@@ -96,6 +153,7 @@ function createHarness({ hallo = true, requestDelay = 0 } = {}) {
     },
     querySelectorAll(selector) {
       if (selector === '[data-testid="marquee-text-item"]') return marqueeNodes;
+      if (selector === '[data-testid="episode-wrapper"]') return episodeCards.map((card) => card.wrapper);
       return [];
     }
   };
@@ -176,35 +234,34 @@ function createHarness({ hallo = true, requestDelay = 0 } = {}) {
   vm.createContext(context);
   vm.runInContext(script, context, { filename: 'apple-podcasts-source-switcher.user.js' });
 
-  function clickPlay(title, { updateMarquee = true } = {}) {
+  function clickPlay(title, { updateMarquee = true, nativeVisualSwitch = true } = {}) {
     if (updateMarquee) {
       currentPlayerTitle = title;
       marqueeNodes[0].textContent = title;
       marqueeNodes[1].textContent = title;
     }
-    class FakeButton extends Element {
-      getAttribute(name) { return name === 'aria-label' ? 'Play, remaining' : ''; }
-      get textContent() { return ''; }
-      closest(selector) {
-        if (selector === 'button') return this;
-        if (selector === '[data-testid="episode-wrapper"]') {
-          return {
-            querySelector: () => ({ textContent: title })
-          };
-        }
-        return null;
+    const card = episodeCards.find((item) => item.title === title);
+    listeners.get('click')?.({
+      target: card.button,
+      preventDefault() {},
+      stopImmediatePropagation() {}
+    });
+    if (nativeVisualSwitch) {
+      for (const item of episodeCards) {
+        item.button.label = `${item === card ? 'Pause' : 'Play'}, ${item.button.remaining}`;
+        item.button.icon = new FakeIcon(item === card ? 'pause' : 'play');
+        item.button.icon.owner = item.button;
       }
     }
-    listeners.get('click')?.({ target: new FakeButton() });
   }
 
   function clickPause() {
-    class FakeButton extends Element {
-      getAttribute(name) { return name === 'aria-label' ? 'Pause, remaining' : ''; }
-      get textContent() { return ''; }
-      closest(selector) { return selector === 'button' ? this : null; }
-    }
-    listeners.get('click')?.({ target: new FakeButton() });
+    const button = episodeCards.find((item) => /^Pause\b/.test(item.button.label))?.button;
+    listeners.get('click')?.({
+      target: button,
+      preventDefault() {},
+      stopImmediatePropagation() {}
+    });
   }
 
   function loadAppleSource(url, time = 0) {
@@ -222,6 +279,9 @@ function createHarness({ hallo = true, requestDelay = 0 } = {}) {
     clickPause,
     loadAppleSource,
     runScan() { intervalCallback?.(); },
+    cardStates() {
+      return episodeCards.map((card) => ({ label: card.button.label, icon: card.button.icon.kind }));
+    },
     playerTitles() { return marqueeNodes.map((node) => node.textContent); },
     setTitle(title) {
       currentPlayerTitle = title;
@@ -286,6 +346,16 @@ async function settle() {
     'Apple 播放器标题尚未更新时，不得被旧标题切回上一集');
   assert.deepEqual(staleMarquee.playerTitles(), ['节目乙', '节目乙', '今天', '今天'],
     '换源后应同步两份播放器标题，同时不得覆盖日期');
+
+  const staleCardState = createHarness();
+  staleCardState.clickPlay('节目甲');
+  await settle();
+  staleCardState.clickPlay('节目乙', { nativeVisualSwitch: false });
+  await settle();
+  assert.deepEqual(staleCardState.cardStates(), [
+    { label: 'Play, 10 minutes remaining', icon: 'play' },
+    { label: 'Pause, 20 minutes remaining', icon: 'pause' }
+  ], 'Apple 未切换卡片状态时，脚本应把原生声波节点迁移到新剧集');
 
   const other = createHarness({ hallo: false });
   other.clickPlay('节目甲');
