@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Apple Podcasts 哈喽怪谈透明播放源
 // @namespace    apple-podcasts-source-switcher
-// @version      1.2.1
+// @version      1.2.2
 // @description  保留 Apple Podcasts 原生播放与切集体验，仅在后台将《哈喽怪谈》的音频替换为喜马拉雅播放源
 // @author       Codex
 // @match        https://podcasts.apple.com/*
@@ -23,7 +23,6 @@
   const TRACK_CACHE_MAX_AGE = 12 * 60 * 60 * 1000;
   const AUDIO_CACHE_MAX_AGE = 15 * 60 * 1000;
   const AES_KEY = 'aaad3e4fd540b0f79dca95606e72bf93';
-  const PENDING_TITLE_WINDOW = 15000;
 
   const attachedAudio = new WeakSet();
   const audioCache = new Map();
@@ -35,7 +34,6 @@
   let activeTitleKey = '';
   let activeGeneration = 0;
   let pendingTitle = '';
-  let pendingTitleAt = 0;
   let desiredPlaying = false;
   let lastExplicitPlayAt = 0;
   let applyingSource = false;
@@ -66,10 +64,14 @@
     return /(?:ximalaya\.com|xmcdn\.com)/i.test(url || '');
   }
 
-  function playerTitle() {
-    if (pendingTitle && Date.now() - pendingTitleAt < PENDING_TITLE_WINDOW) return pendingTitle;
+  function marqueeTitle() {
+    return document.querySelector('[data-testid="marquee-text-item"]')?.textContent?.trim() || '';
+  }
 
-    const marquee = document.querySelector('[data-testid="marquee-text-item"]')?.textContent?.trim();
+  function playerTitle() {
+    if (pendingTitle) return pendingTitle;
+
+    const marquee = marqueeTitle();
     if (marquee) return marquee;
 
     const episodeId = new URL(location.href).searchParams.get('i');
@@ -267,7 +269,6 @@
       appliedTitleKey = resolved.titleKey;
       queueMicrotask(() => { applyingSource = false; });
       restoreAndPlay(audio, resumeTime, generation, resolved.titleKey);
-      if (normalizeTitle(pendingTitle) === resolved.titleKey) pendingTitle = '';
       debug('已使用喜马拉雅播放源', resolved.title, resolved.trackId);
     } catch (error) {
       debug('播放源替换失败', title, error?.message || error);
@@ -343,6 +344,9 @@
     if (audio) attach(audio);
     if (!isHalloPage()) return;
 
+    if (pendingTitle && normalizeTitle(marqueeTitle()) === normalizeTitle(pendingTitle)) {
+      pendingTitle = '';
+    }
     const title = playerTitle();
     if (!title) return;
     const titleChanged = normalizeTitle(title) !== activeTitleKey;
@@ -375,7 +379,6 @@
 
       if (/^(?:Pause|暂停)(?:\b|[，,])/i.test(label)) {
         desiredPlaying = false;
-        pendingTitle = '';
         if (activeAudio && !activeAudio.paused) activeAudio.pause();
         return;
       }
@@ -386,7 +389,6 @@
           ?.querySelector('[data-testid="episode-lockup-title"]')?.textContent?.trim();
         if (clickedTitle) {
           pendingTitle = clickedTitle;
-          pendingTitleAt = Date.now();
           const generation = setEpisode(clickedTitle, true);
           requestedGeneration = generation;
           prewarm(clickedTitle);

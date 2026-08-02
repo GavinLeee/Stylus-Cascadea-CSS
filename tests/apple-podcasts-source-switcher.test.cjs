@@ -16,6 +16,7 @@ function createHarness({ hallo = true, requestDelay = 0 } = {}) {
   const requests = [];
   let currentPlayerTitle = '节目甲';
   let decryptResult = XM_A;
+  let intervalCallback = null;
 
   class Element {
     closest() { return null; }
@@ -109,7 +110,7 @@ function createHarness({ hallo = true, requestDelay = 0 } = {}) {
     },
     MutationObserver: class { observe() {} },
     requestAnimationFrame(callback) { callback(); },
-    setInterval() { return 1; },
+    setInterval(callback) { intervalCallback = callback; return 1; },
     clearInterval() {},
     setTimeout,
     clearTimeout,
@@ -166,8 +167,8 @@ function createHarness({ hallo = true, requestDelay = 0 } = {}) {
   vm.createContext(context);
   vm.runInContext(script, context, { filename: 'apple-podcasts-source-switcher.user.js' });
 
-  function clickPlay(title) {
-    currentPlayerTitle = title;
+  function clickPlay(title, { updateMarquee = true } = {}) {
+    if (updateMarquee) currentPlayerTitle = title;
     class FakeButton extends Element {
       getAttribute(name) { return name === 'aria-label' ? 'Play, remaining' : ''; }
       get textContent() { return ''; }
@@ -207,6 +208,7 @@ function createHarness({ hallo = true, requestDelay = 0 } = {}) {
     clickPlay,
     clickPause,
     loadAppleSource,
+    runScan() { intervalCallback?.(); },
     setTitle(title) { currentPlayerTitle = title; }
   };
 }
@@ -252,6 +254,16 @@ async function settle() {
   rapid.clickPlay('节目乙');
   await settle();
   assert.equal(rapid.audio.currentSrc, XM_B, '快速连续切集时只允许最新一集生效');
+
+  const staleMarquee = createHarness();
+  staleMarquee.clickPlay('节目甲');
+  await settle();
+  staleMarquee.clickPlay('节目乙', { updateMarquee: false });
+  await settle();
+  staleMarquee.runScan();
+  await settle();
+  assert.equal(staleMarquee.audio.currentSrc, XM_B,
+    'Apple 播放器标题尚未更新时，不得被旧标题切回上一集');
 
   const other = createHarness({ hallo: false });
   other.clickPlay('节目甲');
