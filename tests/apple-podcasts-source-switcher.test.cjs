@@ -35,6 +35,11 @@ function createHarness({ hallo = true, requestDelay = 0 } = {}) {
       this.owner = null;
     }
     cloneNode() { return new FakeIcon(this.kind); }
+    querySelector(selector) {
+      if (selector === '[data-testid="playback-bars"].playing' && this.kind === 'native-pause') return {};
+      if (selector === '[data-testid="invertible-mask-svg"]' && this.kind === 'play') return {};
+      return null;
+    }
     replaceWith(next) {
       if (!this.owner) return;
       this.owner.icon = next;
@@ -86,7 +91,14 @@ function createHarness({ hallo = true, requestDelay = 0 } = {}) {
       if (name === 'aria-label') this.label = value;
     }
     querySelector(selector) {
-      return selector === '[data-testid="button-icon"]' ? this.icon : null;
+      if (selector === '[data-testid="button-icon"]') return this.icon;
+      if (selector === '[data-testid="button-icon"] [data-testid="playback-bars"].playing') {
+        return this.icon.querySelector('[data-testid="playback-bars"].playing');
+      }
+      if (selector === '[data-testid="button-icon"] [data-testid="invertible-mask-svg"]') {
+        return this.icon.querySelector('[data-testid="invertible-mask-svg"]');
+      }
+      return null;
     }
     closest(selector) {
       if (selector === 'button') return this;
@@ -106,6 +118,7 @@ function createHarness({ hallo = true, requestDelay = 0 } = {}) {
         if (selector === '[data-testid="episode-lockup-title"]') return { textContent: card.title };
         if (selector === 'button[data-testid="hero__play-button"]') return card.button;
         if (selector === '.episode-details__playing-bars-inner') return card.bars;
+        if (selector === '.episode-details__playing-bars-inner [data-testid="playback-bars"]') return card.bars;
         return null;
       },
       querySelectorAll(selector) {
@@ -392,12 +405,12 @@ async function settle() {
   const staleCardState = createHarness();
   staleCardState.clickPlay('节目甲');
   await settle();
-  staleCardState.clickPlay('节目乙');
+  staleCardState.clickPlay('节目乙', { nativeVisualSwitch: false });
   await settle();
   assert.deepEqual(staleCardState.cardStates(), [
     { label: 'Play, 10 minutes remaining', icon: 'play', indicatorPlaying: false },
     { label: 'Pause, 20 minutes remaining', icon: 'native-pause', indicatorPlaying: true }
-  ], '切换剧集时应由 Apple 原生状态同时迁移按钮声波和标题上方的持续声波动画');
+  ], 'Apple 换源后未迁移卡片状态时，脚本应把两处原生持续声波动画迁移到当前剧集');
 
   const other = createHarness({ hallo: false });
   other.clickPlay('节目甲');

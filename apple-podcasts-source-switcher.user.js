@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Apple Podcasts 哈喽怪谈透明播放源
 // @namespace    apple-podcasts-source-switcher
-// @version      1.2.8
+// @version      1.2.9
 // @description  保留 Apple Podcasts 原生播放与切集体验，仅在后台将《哈喽怪谈》的音频替换为喜马拉雅播放源
 // @author       Codex
 // @match        https://podcasts.apple.com/*
@@ -40,6 +40,8 @@
   let appliedTitleKey = '';
   let observer = null;
   let scanQueued = false;
+  let playIconTemplate = null;
+  let pauseIconTemplate = null;
 
   function debug(...args) {
     console.debug('[Hallo Ximalaya]', ...args);
@@ -105,6 +107,85 @@
         }
       }
     }
+  }
+
+  function episodeCardEntries() {
+    return [...document.querySelectorAll('[data-testid="episode-wrapper"]')].map((wrapper) => ({
+      wrapper,
+      title: wrapper.querySelector('[data-testid="episode-lockup-title"]')?.textContent?.trim() || '',
+      button: wrapper.querySelector('button[data-testid="hero__play-button"]')
+    })).filter((item) => item.title && item.button);
+  }
+
+  function captureNativeButtonTemplates() {
+    for (const { button } of episodeCardEntries()) {
+      const icon = button.querySelector('[data-testid="button-icon"]');
+      if (!icon?.cloneNode) continue;
+      const label = button.getAttribute('aria-label') || '';
+      if (/^Pause\b/i.test(label) && icon.querySelector('[data-testid="playback-bars"].playing')) {
+        pauseIconTemplate = icon.cloneNode(true);
+      } else if (!playIconTemplate && /^Play\b/i.test(label)
+        && icon.querySelector('[data-testid="invertible-mask-svg"]')) {
+        playIconTemplate = icon.cloneNode(true);
+      }
+    }
+  }
+
+  function replaceButtonIcon(button, template) {
+    const icon = button?.querySelector('[data-testid="button-icon"]');
+    if (!icon?.replaceWith || !template?.cloneNode) return false;
+    icon.replaceWith(template.cloneNode(true));
+    return true;
+  }
+
+  function buttonHasPlayingIcon(button) {
+    return Boolean(button?.querySelector(
+      '[data-testid="button-icon"] [data-testid="playback-bars"].playing'
+    ));
+  }
+
+  function buttonHasPlayIcon(button) {
+    return Boolean(button?.querySelector(
+      '[data-testid="button-icon"] [data-testid="invertible-mask-svg"]'
+    ));
+  }
+
+  function setCardPlayingBars(wrapper, playing) {
+    const bars = wrapper?.querySelector('.episode-details__playing-bars-inner [data-testid="playback-bars"]');
+    bars?.classList?.toggle('playing', playing);
+  }
+
+  function reconcileNativeCardState(title, playing) {
+    captureNativeButtonTemplates();
+    if (!playIconTemplate || (playing && !pauseIconTemplate)) return false;
+    const titleKey = normalizeTitle(title);
+    const entries = episodeCardEntries();
+    const target = entries.find((item) => normalizeTitle(item.title) === titleKey);
+    if (!target) return false;
+
+    // Restore non-target cards first so the cloned SVG remains unique in the page.
+    for (const item of entries) {
+      if (item === target) continue;
+      setCardPlayingBars(item.wrapper, false);
+      const label = item.button.getAttribute('aria-label') || '';
+      if (/^Pause\b/i.test(label) || item.button.dataset.halloXimalayaManaged === '1') {
+        if (!buttonHasPlayIcon(item.button)) replaceButtonIcon(item.button, playIconTemplate);
+        item.button.setAttribute('aria-label', label.replace(/^(?:Play|Pause)\b/i, 'Play'));
+        item.button.dataset.halloXimalayaManaged = '1';
+      }
+    }
+
+    setCardPlayingBars(target.wrapper, playing);
+    if (playing ? !buttonHasPlayingIcon(target.button) : !buttonHasPlayIcon(target.button)) {
+      replaceButtonIcon(target.button, playing ? pauseIconTemplate : playIconTemplate);
+    }
+    const targetLabel = target.button.getAttribute('aria-label') || '';
+    target.button.setAttribute('aria-label', targetLabel.replace(
+      /^(?:Play|Pause)\b/i,
+      playing ? 'Pause' : 'Play'
+    ));
+    target.button.dataset.halloXimalayaManaged = '1';
+    return true;
   }
 
   function requestJson(url) {
@@ -289,6 +370,7 @@
       audio.load();
       appliedTitleKey = resolved.titleKey;
       syncPlayerTitle(resolved.title, previousTitleKey);
+      reconcileNativeCardState(title, desiredPlaying);
       queueMicrotask(() => { applyingSource = false; });
       restoreAndPlay(audio, resumeTime, generation, resolved.titleKey);
       debug('已使用喜马拉雅播放源', resolved.title, resolved.trackId);
@@ -319,6 +401,7 @@
     audio.addEventListener('play', () => {
       if (!isHalloPage()) return;
       desiredPlaying = true;
+      reconcileNativeCardState(playerTitle(), true);
       if (!isXimalayaUrl(mediaUrl(audio))) ensureCurrentSource(true);
     });
 
@@ -327,6 +410,7 @@
       window.setTimeout(() => {
         if (audio.paused && Date.now() - lastExplicitPlayAt > 400) {
           desiredPlaying = false;
+          reconcileNativeCardState(playerTitle(), false);
         }
       }, 0);
     });
@@ -370,6 +454,7 @@
 
     if (pendingTitle) {
       syncPlayerTitle(pendingTitle);
+      reconcileNativeCardState(pendingTitle, desiredPlaying);
     }
     const title = playerTitle();
     if (!title) return;
@@ -403,6 +488,7 @@
       if (/^(?:Pause|暂停)(?:\b|[，,])/i.test(label)) {
         desiredPlaying = false;
         if (activeAudio && !activeAudio.paused) activeAudio.pause();
+        reconcileNativeCardState(playerTitle(), false);
         return;
       }
 
@@ -423,6 +509,7 @@
           requestAnimationFrame(() => {
             requestAnimationFrame(() => {
               if (desiredPlaying && requestedGeneration === activeGeneration) {
+                reconcileNativeCardState(playerTitle(), true);
                 ensureCurrentSource(false);
               }
             });
@@ -431,7 +518,10 @@
       }
     }, true);
 
-    observer = new MutationObserver(queueScan);
+    observer = new MutationObserver(() => {
+      captureNativeButtonTemplates();
+      queueScan();
+    });
     observer.observe(document.documentElement, {
       childList: true,
       subtree: true,
