@@ -1,0 +1,234 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
+
+const script = fs.readFileSync(
+  path.join(__dirname, '..', 'apple-podcasts-source-switcher.user.js'),
+  'utf8'
+);
+
+const XM_A = 'https://a.xmcdn.com/a.m4a';
+const XM_B = 'https://a.xmcdn.com/b.m4a';
+
+function createHarness({ hallo = true } = {}) {
+  const listeners = new Map();
+  const requests = [];
+  let currentPlayerTitle = '节目甲';
+  let decryptResult = XM_A;
+
+  class Element {
+    closest() { return null; }
+  }
+
+  class HTMLMediaElement extends Element {}
+  HTMLMediaElement.HAVE_METADATA = 1;
+  HTMLMediaElement.HAVE_CURRENT_DATA = 2;
+
+  class FakeAudio extends HTMLMediaElement {
+    constructor() {
+      super();
+      this.src = 'https://apple.example/a.mp3';
+      this.currentSrc = this.src;
+      this.currentTime = 0;
+      this.duration = 100;
+      this.readyState = 0;
+      this.paused = true;
+      this.events = new Map();
+      this.playCount = 0;
+    }
+
+    addEventListener(name, handler, options = {}) {
+      const wrapped = options.once
+        ? (...args) => { this.removeEventListener(name, wrapped); handler(...args); }
+        : handler;
+      const handlers = this.events.get(name) || [];
+      handlers.push(wrapped);
+      this.events.set(name, handlers);
+    }
+
+    removeEventListener(name, handler) {
+      this.events.set(name, (this.events.get(name) || []).filter((item) => item !== handler));
+    }
+
+    emit(name) {
+      for (const handler of [...(this.events.get(name) || [])]) handler({ type: name });
+    }
+
+    pause() { this.paused = true; }
+
+    load() {
+      this.currentSrc = this.src;
+      this.emit('loadstart');
+      queueMicrotask(() => {
+        this.readyState = HTMLMediaElement.HAVE_METADATA;
+        this.emit('loadedmetadata');
+      });
+    }
+
+    async play() {
+      this.paused = false;
+      this.playCount += 1;
+      this.emit('play');
+    }
+  }
+
+  const audio = new FakeAudio();
+  const storage = new Map();
+  const document = {
+    readyState: 'complete',
+    title: hallo ? '哈喽怪谈 - Podcast - Apple Podcasts' : '其他播客 - Apple Podcasts',
+    documentElement: {},
+    addEventListener(name, handler) { listeners.set(name, handler); },
+    querySelector(selector) {
+      if (selector === '#apple-music-player, audio') return audio;
+      if (selector === '[data-testid="marquee-text-item"]') {
+        return { textContent: currentPlayerTitle };
+      }
+      return null;
+    },
+    querySelectorAll() { return []; }
+  };
+
+  const context = {
+    console,
+    document,
+    Element,
+    HTMLMediaElement,
+    location: {
+      href: hallo
+        ? 'https://podcasts.apple.com/us/podcast/hallo/id512426799'
+        : 'https://podcasts.apple.com/us/podcast/other/id999999999',
+      pathname: hallo
+        ? '/us/podcast/hallo/id512426799'
+        : '/us/podcast/other/id999999999'
+    },
+    localStorage: {
+      getItem(key) { return storage.get(key) || null; },
+      setItem(key, value) { storage.set(key, value); }
+    },
+    MutationObserver: class { observe() {} },
+    requestAnimationFrame(callback) { callback(); },
+    setInterval() { return 1; },
+    clearInterval() {},
+    setTimeout,
+    clearTimeout,
+    queueMicrotask,
+    URL,
+    CryptoJS: {
+      AES: { decrypt: () => ({ toString: () => decryptResult }) },
+      enc: {
+        Base64url: { parse: (value) => value },
+        Hex: { parse: (value) => value },
+        Utf8: 'utf8'
+      },
+      mode: { ECB: 'ecb' },
+      pad: { Pkcs7: 'pkcs7' }
+    },
+    GM_xmlhttpRequest(options) {
+      requests.push(options.url);
+      if (options.url.includes('queryAlbumPage')) {
+        queueMicrotask(() => options.onload({
+          status: 200,
+          responseText: JSON.stringify({
+            data: {
+              typeSpecData: {
+                freeOrSingleAlbumData: {
+                  albumPageTrackRecords: {
+                    trackDetailInfos: [
+                      { trackInfo: { id: 101, title: '节目甲' } },
+                      { trackInfo: { id: 102, title: '节目乙' } }
+                    ]
+                  }
+                }
+              }
+            }
+          })
+        }));
+        return;
+      }
+      if (options.url.includes('trackId=101')) decryptResult = XM_A;
+      if (options.url.includes('trackId=102')) decryptResult = XM_B;
+      queueMicrotask(() => options.onload({
+        status: 200,
+        responseText: JSON.stringify({
+          trackInfo: { playUrlList: [{ type: 'M4A_64', url: 'ciphertext' }] }
+        })
+      }));
+    }
+  };
+  context.window = context;
+  context.globalThis = context;
+  vm.createContext(context);
+  vm.runInContext(script, context, { filename: 'apple-podcasts-source-switcher.user.js' });
+
+  function clickPlay(title) {
+    currentPlayerTitle = title;
+    class FakeButton extends Element {
+      getAttribute(name) { return name === 'aria-label' ? 'Play, remaining' : ''; }
+      get textContent() { return ''; }
+      closest(selector) {
+        if (selector === 'button') return this;
+        if (selector === '[data-testid="episode-wrapper"]') {
+          return {
+            querySelector: () => ({ textContent: title })
+          };
+        }
+        return null;
+      }
+    }
+    listeners.get('click')?.({ target: new FakeButton() });
+  }
+
+  function loadAppleSource(url, time = 0) {
+    audio.src = url;
+    audio.currentSrc = url;
+    audio.currentTime = time;
+    audio.readyState = 0;
+    audio.emit('loadstart');
+  }
+
+  return {
+    audio,
+    requests,
+    clickPlay,
+    loadAppleSource,
+    setTitle(title) { currentPlayerTitle = title; }
+  };
+}
+
+async function settle() {
+  await new Promise((resolve) => setTimeout(resolve, 25));
+  await new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+(async () => {
+  const hallo = createHarness();
+  hallo.clickPlay('节目甲');
+  hallo.loadAppleSource('https://apple.example/a.mp3', 18);
+  await settle();
+  assert.equal(hallo.audio.currentSrc, XM_A, '首次播放应透明替换为喜马拉雅地址');
+  assert.equal(hallo.audio.currentTime, 18, '同一集替换播放源时应保留当前进度');
+  assert.ok(hallo.audio.playCount >= 1, '替换后应继续使用原生 audio 播放');
+
+  hallo.clickPlay('节目乙');
+  hallo.loadAppleSource('https://apple.example/b.mp3', 0);
+  await settle();
+  assert.equal(hallo.audio.currentSrc, XM_B, '切换节目后应使用新一集的喜马拉雅地址');
+  assert.equal(hallo.audio.currentTime, 0, '切换节目不得继承上一集播放进度');
+  assert.equal(hallo.requests.filter((url) => url.includes('queryAlbumPage')).length, 1,
+    '节目目录在同一页面中只应请求一次');
+
+  const other = createHarness({ hallo: false });
+  other.clickPlay('节目甲');
+  other.loadAppleSource('https://apple.example/other.mp3', 7);
+  await settle();
+  assert.equal(other.audio.currentSrc, 'https://apple.example/other.mp3',
+    '非《哈喽怪谈》节目必须保持 Apple 原播放源');
+  assert.equal(other.requests.length, 0, '非《哈喽怪谈》不得请求喜马拉雅接口');
+
+  console.log('apple-podcasts-source-switcher: all tests passed');
+})().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});
