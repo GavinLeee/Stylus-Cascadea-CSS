@@ -23,6 +23,7 @@ function createHarness({ hallo = true, requestDelay = 0 } = {}) {
     { textContent: '今天', dataset: {}, closest: () => null },
     { textContent: '今天', dataset: {}, closest: () => null }
   ];
+  let fakeNodeId = 0;
 
   class Element {
     closest() { return null; }
@@ -60,7 +61,10 @@ function createHarness({ hallo = true, requestDelay = 0 } = {}) {
   class FakeBars extends Element {
     constructor() {
       super();
+      this.id = `bars-${++fakeNodeId}`;
       this.classList = new FakeClassList();
+      this.dataset = {};
+      this.owner = null;
     }
     cloneNode() {
       const clone = new FakeBars();
@@ -69,6 +73,14 @@ function createHarness({ hallo = true, requestDelay = 0 } = {}) {
     }
     querySelectorAll(selector) {
       return selector === '[data-testid="playback-bars"]' ? [this] : [];
+    }
+    querySelector(selector) {
+      return selector === '[data-testid="playback-bars"]' ? this : null;
+    }
+    replaceWith(next) {
+      if (!this.owner) return;
+      this.owner.bars = next;
+      next.owner = this.owner;
     }
   }
 
@@ -92,9 +104,11 @@ function createHarness({ hallo = true, requestDelay = 0 } = {}) {
   class FakeProgressContainer extends Element {
     constructor(progress = null) {
       super();
+      this.id = `progress-${++fakeNodeId}`;
       this.progress = progress;
       if (this.progress) this.progress.owner = this;
       this.owner = null;
+      this.dataset = {};
     }
     cloneNode() { return new FakeProgressContainer(this.progress?.cloneNode() || null); }
     querySelector(selector) {
@@ -174,17 +188,19 @@ function createHarness({ hallo = true, requestDelay = 0 } = {}) {
   for (const card of episodeCards) {
     card.bars = new FakeBars();
     card.wrapper = {
+      bars: card.bars,
       querySelector(selector) {
         if (selector === '[data-testid="episode-lockup-title"]') return { textContent: card.title };
         if (selector === 'button[data-testid="hero__play-button"]') return card.button;
-        if (selector === '.episode-details__playing-bars-inner') return card.bars;
-        if (selector === '.episode-details__playing-bars-inner [data-testid="playback-bars"]') return card.bars;
+        if (selector === '.episode-details__playing-bars-inner') return this.bars;
+        if (selector === '.episode-details__playing-bars-inner [data-testid="playback-bars"]') return this.bars;
         return null;
       },
       querySelectorAll(selector) {
-        return selector === '[data-testid="playback-bars"]' ? [card.bars] : [];
+        return selector === '[data-testid="playback-bars"]' ? [this.bars] : [];
       }
     };
+    card.bars.owner = card.wrapper;
     card.button.wrapper = card.wrapper;
   }
 
@@ -247,6 +263,17 @@ function createHarness({ hallo = true, requestDelay = 0 } = {}) {
     title: hallo ? '哈喽怪谈 - Podcast - Apple Podcasts' : '其他播客 - Apple Podcasts',
     documentElement: {},
     addEventListener(name, handler) { listeners.set(name, handler); },
+    createComment() {
+      return {
+        owner: null,
+        replaceWith(next) {
+          if (!this.owner) return;
+          if (this.owner.progressContainer === this) this.owner.progressContainer = next;
+          if (this.owner.bars === this) this.owner.bars = next;
+          next.owner = this.owner;
+        }
+      };
+    },
     querySelector(selector) {
       if (selector === '#apple-music-player, audio') return audio;
       if (selector === '[data-testid="marquee-text-item"]') {
@@ -354,7 +381,7 @@ function createHarness({ hallo = true, requestDelay = 0 } = {}) {
         item.button.label = `${item === card ? 'Pause' : 'Play'}, ${item.button.remaining}`;
         item.button.icon = new FakeIcon(item === card ? 'native-pause' : 'play');
         item.button.icon.owner = item.button;
-        item.bars.classList.toggle('playing', item === card);
+        item.wrapper.bars.classList.toggle('playing', item === card);
         if (item === card && !item.button.progressContainer.progress) {
           const progress = new FakeProgress(1, 100);
           progress.owner = item.button.progressContainer;
@@ -376,7 +403,7 @@ function createHarness({ hallo = true, requestDelay = 0 } = {}) {
       activeCard.button.label = `Play, ${activeCard.button.remaining}`;
       activeCard.button.icon = new FakeIcon('play');
       activeCard.button.icon.owner = activeCard.button;
-      activeCard.bars.classList.toggle('playing', false);
+      activeCard.wrapper.bars.classList.toggle('playing', false);
     }
   }
 
@@ -399,7 +426,7 @@ function createHarness({ hallo = true, requestDelay = 0 } = {}) {
       return episodeCards.map((card) => ({
         label: card.button.label,
         icon: card.button.icon.kind,
-        indicatorPlaying: card.bars.classList.contains('playing'),
+        indicatorPlaying: card.wrapper.bars.classList.contains('playing'),
         text: card.button.text.textContent
       }));
     },
@@ -408,6 +435,14 @@ function createHarness({ hallo = true, requestDelay = 0 } = {}) {
         const progress = card.button.progressContainer.progress;
         return progress ? { value: progress.value, max: progress.max } : null;
       });
+    },
+    containerStates() {
+      return episodeCards.map((card) => ({
+        progressId: card.button.progressContainer.id,
+        progressActive: card.button.progressContainer.dataset.halloXimalayaActiveContainer === '1',
+        topBarsId: card.wrapper.bars.id,
+        topBarsActive: card.wrapper.bars.dataset.halloXimalayaActiveContainer === '1'
+      }));
     },
     playerTitles() { return marqueeNodes.map((node) => node.textContent); },
     setTitle(title) {
@@ -477,6 +512,7 @@ async function settle() {
   const staleCardState = createHarness();
   staleCardState.clickPlay('节目甲');
   await settle();
+  const firstActiveContainers = staleCardState.containerStates();
   staleCardState.clickPlay('节目乙', { nativeVisualSwitch: false });
   await settle();
   assert.deepEqual(staleCardState.cardStates(), [
@@ -491,6 +527,15 @@ async function settle() {
   ], 'Apple 换源后未迁移卡片状态时，脚本应把两处原生持续声波动画迁移到当前剧集');
   assert.deepEqual(staleCardState.progressStates(), [null, { value: 0, max: 100 }],
     '切换剧集时应清除旧卡片的错误活动进度，并把当前音频进度迁移到新卡片');
+  const secondActiveContainers = staleCardState.containerStates();
+  assert.equal(secondActiveContainers[1].progressId, firstActiveContainers[0].progressId,
+    '必须把同一个 progress-bar 外层容器物理迁移到新剧集卡片');
+  assert.equal(secondActiveContainers[1].topBarsId, firstActiveContainers[0].topBarsId,
+    '必须把同一个 playing-bars 外层容器物理迁移到新剧集卡片');
+  assert.deepEqual(secondActiveContainers.map((item) => item.progressActive), [false, true],
+    '只有当前剧集可以持有活动进度容器');
+  assert.deepEqual(secondActiveContainers.map((item) => item.topBarsActive), [false, true],
+    '只有当前剧集可以持有活动标题声波容器');
 
   const other = createHarness({ hallo: false });
   other.clickPlay('节目甲');

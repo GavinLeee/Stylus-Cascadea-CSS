@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Apple Podcasts 哈喽怪谈透明播放源
 // @namespace    apple-podcasts-source-switcher
-// @version      1.2.12
+// @version      1.2.13
 // @description  保留 Apple Podcasts 原生播放与切集体验，仅在后台将《哈喽怪谈》的音频替换为喜马拉雅播放源
 // @author       Codex
 // @match        https://podcasts.apple.com/*
@@ -43,8 +43,9 @@
   let playIconTemplate = null;
   let pauseIconTemplate = null;
   let progressTemplate = null;
-  let topBarsTemplate = null;
   let cardReconcileToken = 0;
+  let activeProgressContainer = null;
+  let activeTopBarsContainer = null;
   const idleCardMetadata = new Map();
 
   function debug(...args) {
@@ -128,10 +129,6 @@
       const label = button.getAttribute('aria-label') || '';
       const progress = button.querySelector('progress[data-testid="progress-bar"]');
       if (progress?.cloneNode) progressTemplate = progress.cloneNode(true);
-      const topBars = wrapper.querySelector(
-        '.episode-details__playing-bars-inner [data-testid="playback-bars"]'
-      );
-      if (topBars?.cloneNode) topBarsTemplate = topBars.cloneNode(true);
       if (/^Pause\b/i.test(label) && icon.querySelector('[data-testid="playback-bars"].playing')) {
         pauseIconTemplate = icon.cloneNode(true);
       } else if (!playIconTemplate && /^Play\b/i.test(label)
@@ -169,13 +166,55 @@
 
   function setCardPlayingBars(wrapper, playing) {
     const container = wrapper?.querySelector('.episode-details__playing-bars-inner');
-    let bars = container?.querySelector?.('[data-testid="playback-bars"]')
+    const bars = container?.querySelector?.('[data-testid="playback-bars"]')
       || wrapper?.querySelector('.episode-details__playing-bars-inner [data-testid="playback-bars"]');
-    if (!bars && container?.append && topBarsTemplate?.cloneNode) {
-      bars = topBarsTemplate.cloneNode(true);
-      container.append(bars);
-    }
     bars?.classList?.toggle('playing', playing);
+  }
+
+  function swapDomNodes(first, second) {
+    if (!first || !second || first === second || !first.replaceWith || !second.replaceWith) return false;
+    const marker = document.createComment('hallo-ximalaya-swap');
+    first.replaceWith(marker);
+    second.replaceWith(first);
+    marker.replaceWith(second);
+    return true;
+  }
+
+  function moveActiveContainersTo(target, entries) {
+    const targetProgress = target.button.querySelector('.progress-bar');
+    const connectedProgress = activeProgressContainer?.isConnected === false
+      ? null : activeProgressContainer;
+    activeProgressContainer = connectedProgress
+      || entries.map((item) => item.button.querySelector('.progress-bar'))
+        .find((node) => node?.dataset?.halloXimalayaActiveContainer === '1')
+      || targetProgress;
+    if (activeProgressContainer && targetProgress && activeProgressContainer !== targetProgress) {
+      swapDomNodes(activeProgressContainer, targetProgress);
+    }
+
+    const targetTopBars = target.wrapper.querySelector('.episode-details__playing-bars-inner');
+    const connectedTopBars = activeTopBarsContainer?.isConnected === false
+      ? null : activeTopBarsContainer;
+    activeTopBarsContainer = connectedTopBars
+      || entries.map((item) => item.wrapper.querySelector('.episode-details__playing-bars-inner'))
+        .find((node) => node?.dataset?.halloXimalayaActiveContainer === '1')
+      || targetTopBars;
+    if (activeTopBarsContainer && targetTopBars && activeTopBarsContainer !== targetTopBars) {
+      swapDomNodes(activeTopBarsContainer, targetTopBars);
+    }
+
+    for (const item of entries) {
+      const progressContainer = item.button.querySelector('.progress-bar');
+      const topBarsContainer = item.wrapper.querySelector('.episode-details__playing-bars-inner');
+      if (progressContainer?.dataset) delete progressContainer.dataset.halloXimalayaActiveContainer;
+      if (topBarsContainer?.dataset) delete topBarsContainer.dataset.halloXimalayaActiveContainer;
+    }
+    if (activeProgressContainer?.dataset) {
+      activeProgressContainer.dataset.halloXimalayaActiveContainer = '1';
+    }
+    if (activeTopBarsContainer?.dataset) {
+      activeTopBarsContainer.dataset.halloXimalayaActiveContainer = '1';
+    }
   }
 
   function removeManagedProgress(button, force = false) {
@@ -227,7 +266,9 @@
     const target = entries.find((item) => normalizeTitle(item.title) === titleKey);
     if (!target) return false;
 
-    // Restore non-target cards first so the cloned SVG remains unique in the page.
+    if (playing) moveActiveContainersTo(target, entries);
+
+    // Restore non-target cards after moving the two exact native containers.
     for (const item of entries) {
       if (item === target) continue;
       setCardPlayingBars(item.wrapper, false);
