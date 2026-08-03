@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Apple Podcasts 哈喽怪谈透明播放源
 // @namespace    apple-podcasts-source-switcher
-// @version      1.2.14
+// @version      1.2.15
 // @description  保留 Apple Podcasts 原生播放与切集体验，仅在后台将《哈喽怪谈》的音频替换为喜马拉雅播放源
 // @author       Codex
 // @match        https://podcasts.apple.com/*
@@ -35,6 +35,7 @@
   let activeGeneration = 0;
   let pendingTitle = '';
   let desiredPlaying = false;
+  let pendingPlaybackGeneration = 0;
   let lastExplicitPlayAt = 0;
   let applyingSource = false;
   let appliedTitleKey = '';
@@ -345,7 +346,7 @@
     for (const delay of [0, 48, 140, 320, 720]) {
       window.setTimeout(() => {
         if (token !== cardReconcileToken || titleKey !== activeTitleKey) return;
-        reconcileNativeCardState(title, desiredPlaying && !activeAudio?.paused);
+        reconcileNativeCardState(title, desiredPlaying);
       }, delay);
     }
   }
@@ -488,6 +489,7 @@
     if (requestPlayback) {
       desiredPlaying = true;
       lastExplicitPlayAt = Date.now();
+      pendingPlaybackGeneration = activeGeneration;
     }
     return activeGeneration;
   }
@@ -564,6 +566,9 @@
     audio.addEventListener('play', () => {
       if (!isHalloContext()) return;
       desiredPlaying = true;
+      if (isXimalayaUrl(mediaUrl(audio)) && appliedTitleKey === activeTitleKey) {
+        pendingPlaybackGeneration = 0;
+      }
       reconcileNativeCardState(playerTitle(), true);
       if (!isXimalayaUrl(mediaUrl(audio))) ensureCurrentSource(true);
     });
@@ -571,6 +576,7 @@
     audio.addEventListener('pause', () => {
       if (!isHalloContext() || applyingSource) return;
       window.setTimeout(() => {
+        if (desiredPlaying && pendingPlaybackGeneration === activeGeneration) return;
         if (audio.paused && Date.now() - lastExplicitPlayAt > 400) {
           desiredPlaying = false;
           reconcileNativeCardState(playerTitle(), false);
@@ -660,6 +666,7 @@
         if (!activeHalloContext) {
           pendingTitle = '';
           desiredPlaying = false;
+          pendingPlaybackGeneration = 0;
           return;
         }
       } else if (!isHalloContext()) {
@@ -667,6 +674,7 @@
       }
       if (/^(?:Pause|暂停)(?:\b|[，,])/i.test(label)) {
         desiredPlaying = false;
+        pendingPlaybackGeneration = 0;
         if (activeAudio && !activeAudio.paused) activeAudio.pause();
         reconcileNativeCardState(playerTitle(), false);
         return;

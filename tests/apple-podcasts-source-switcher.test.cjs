@@ -446,6 +446,10 @@ function createHarness({ hallo = true, home = false, requestDelay = 0 } = {}) {
     titles: episodeCards.map((card) => card.title),
     clickPlay,
     clickPause,
+    nativePause() {
+      audio.paused = true;
+      audio.emit('pause');
+    },
     loadAppleSource,
     runScan() { intervalCallback?.(); },
     cardStates() {
@@ -516,6 +520,23 @@ async function settle() {
   delayed.clickPlay('节目甲');
   await settle();
   assert.equal(delayed.audio.currentSrc, XM_A, '暂停后再次播放时应完成喜马拉雅换源');
+
+  const nativeSwitchPause = createHarness({ requestDelay: 220 });
+  nativeSwitchPause.clickPlay(nativeSwitchPause.titles[1]);
+  nativeSwitchPause.nativePause();
+  await new Promise((resolve) => setTimeout(resolve, 900));
+  assert.equal(nativeSwitchPause.audio.currentSrc, XM_B,
+    '切集解析期间 Apple 的内部 pause 不得取消新的播放请求');
+  assert.equal(nativeSwitchPause.audio.paused, false,
+    '新剧集完成换源后应自动继续播放');
+  assert.equal(nativeSwitchPause.cardStates()[0].indicatorPlaying, false,
+    '切集后旧卡片的标题声波必须停止');
+  assert.equal(nativeSwitchPause.cardStates()[1].indicatorPlaying, true,
+    '切集后标题声波必须迁移到新卡片并保持动画');
+  assert.equal(nativeSwitchPause.containerStates()[1].progressActive, true,
+    '切集后活动进度容器必须迁移到新卡片');
+  assert.equal(nativeSwitchPause.containerStates()[1].topBarsActive, true,
+    '切集后活动标题声波容器必须迁移到新卡片');
 
   const rapid = createHarness({ requestDelay: 10 });
   rapid.clickPlay('节目甲');
