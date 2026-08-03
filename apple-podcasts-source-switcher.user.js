@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Apple Podcasts 哈喽怪谈透明播放源
 // @namespace    apple-podcasts-source-switcher
-// @version      1.2.17
+// @version      1.2.18
 // @description  保留 Apple Podcasts 原生播放与切集体验，仅在后台将《哈喽怪谈》的音频替换为喜马拉雅播放源
 // @author       Codex
 // @match        https://podcasts.apple.com/*
@@ -250,15 +250,6 @@
     bars?.classList?.toggle('playing', playing);
   }
 
-  function swapDomNodes(first, second) {
-    if (!first || !second || first === second || !first.replaceWith || !second.replaceWith) return false;
-    const marker = document.createComment('hallo-ximalaya-swap');
-    first.replaceWith(marker);
-    second.replaceWith(first);
-    marker.replaceWith(second);
-    return true;
-  }
-
   function progressContainerOf(item) {
     return item?.button?.querySelector('.progress-bar') || null;
   }
@@ -267,51 +258,22 @@
     return item?.wrapper?.querySelector('.episode-details__playing-bars-inner') || null;
   }
 
-  /* Svelte 重建卡片后，我们记住的引用会变成游离节点。只有明确报告
-     isConnected === false 才判定失效——测试替身没有这个属性，不能用 !isConnected。 */
-  function isDetachedNode(node) {
-    return Boolean(node) && node.isConnected === false;
-  }
-
-  /* 重新认领"当前有效的活动容器"：优先用仍然在文档里的既有引用，其次用 DOM 里
-     仍带标记的节点（Svelte 重建后引用失效，但标记可能还在新节点上），最后退回
-     目标卡片自己的原生节点。始终从最新 DOM 查询，不操作失效引用。 */
-  function adoptActiveContainer(tracked, entries, pick, fallback) {
-    const live = isDetachedNode(tracked) ? null : tracked;
-    if (live) return live;
-    for (const item of entries) {
-      const node = pick(item);
-      if (node?.dataset?.halloXimalayaActiveContainer === '1') return node;
-    }
-    return fallback;
-  }
-
+  /*
+   * 切集时不再交换 DOM 节点，只切换"谁是当前播放集"这个状态。
+   *
+   * 实测：每张剧集卡片都自带 .episode-details__playing-bars-inner 和
+   * .progress-bar，未播放的卡片同样有。以前把这两个容器在卡片之间互换，带来
+   * 两个与原生行为不符的后果：
+   *   1) 声波容器被搬到别处，动画留在了错误的卡片上；
+   *   2) 上一集自己的进度条被一起搬走，于是"切集后上一集的进度条不见了"——
+   *      而原生 Podcasts 里，听过一部分的剧集会一直显示自己的进度。
+   * 现在各卡片一律保留自己的原生容器，脚本只负责把活动标记落到目标卡片，
+   * 由 setCardPlayingBars / syncActiveCardProgress 驱动对应卡片自己的节点。
+   * Svelte 事后重建卡片也不再有"引用失效"问题：每次都从最新 DOM 重新查询。
+   */
   function moveActiveContainersTo(target, entries) {
-    const targetProgress = progressContainerOf(target);
-    activeProgressContainer = adoptActiveContainer(
-      activeProgressContainer, entries, progressContainerOf, targetProgress
-    );
-    if (activeProgressContainer && targetProgress && activeProgressContainer !== targetProgress) {
-      swapDomNodes(activeProgressContainer, targetProgress);
-    }
-    /* 交换后目标卡片应当就地持有活动容器；若交换没生效（节点已失效等），
-       立刻改认目标卡片自己的原生节点，绝不把活动标记留在旧卡片上。 */
-    const settledProgress = progressContainerOf(target);
-    if (settledProgress && settledProgress !== activeProgressContainer) {
-      activeProgressContainer = settledProgress;
-    }
-
-    const targetTopBars = topBarsContainerOf(target);
-    activeTopBarsContainer = adoptActiveContainer(
-      activeTopBarsContainer, entries, topBarsContainerOf, targetTopBars
-    );
-    if (activeTopBarsContainer && targetTopBars && activeTopBarsContainer !== targetTopBars) {
-      swapDomNodes(activeTopBarsContainer, targetTopBars);
-    }
-    const settledTopBars = topBarsContainerOf(target);
-    if (settledTopBars && settledTopBars !== activeTopBarsContainer) {
-      activeTopBarsContainer = settledTopBars;
-    }
+    activeProgressContainer = progressContainerOf(target);
+    activeTopBarsContainer = topBarsContainerOf(target);
 
     for (const item of entries) {
       const progressContainer = progressContainerOf(item);
@@ -362,12 +324,6 @@
     if (strayActive || strayBars) return false;
     if (!playing) return true;
     return progressCount === 1 && topBarsCount === 1;
-  }
-
-  function removeManagedProgress(button, force = false) {
-    const progress = button?.querySelector('progress[data-testid="progress-bar"]');
-    if (!progress || (!force && progress.dataset?.halloXimalayaProgress !== '1')) return;
-    progress.remove?.();
   }
 
   function restoreIdleMetadata(item, fallbackLabel = '') {
@@ -427,7 +383,9 @@
       const wasActive = PAUSE_LABEL_PATTERN.test(label)
         || buttonHasPlayingIcon(item.button)
         || item.button.dataset.halloXimalayaActive === '1';
-      removeManagedProgress(item.button, wasActive);
+      /* 刻意不再删除非当前剧集的进度条：原生 Podcasts 里听过一部分的剧集会
+         一直显示自己的进度，删掉就成了"切集后上一集进度条消失"。这里只摘掉
+         活动标记，进度值停在离开时的位置，与原生表现一致。 */
       if (wasActive || item.button.dataset.halloXimalayaManaged === '1') {
         if (playIconTemplate && !buttonHasPlayIcon(item.button)) {
           replaceButtonIcon(item.button, playIconTemplate);

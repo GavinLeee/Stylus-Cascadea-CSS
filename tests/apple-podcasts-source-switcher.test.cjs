@@ -572,13 +572,16 @@ async function settle() {
       text: '20 minutes remaining'
     }
   ], 'Apple 换源后未迁移卡片状态时，脚本应把两处原生持续声波动画迁移到当前剧集');
-  assert.deepEqual(staleCardState.progressStates(), [null, { value: 0, max: 100 }],
-    '切换剧集时应清除旧卡片的错误活动进度，并把当前音频进度迁移到新卡片');
+  const progressAfterSwitch = staleCardState.progressStates();
+  assert.ok(progressAfterSwitch[0],
+    '切集后上一集必须保留自己的进度条：原生 Podcasts 里听过一部分的剧集会一直显示进度');
+  assert.deepEqual(progressAfterSwitch[1], { value: 0, max: 100 },
+    '新剧集的进度条应跟随新音频，且不得继承上一集的进度');
   const secondActiveContainers = staleCardState.containerStates();
-  assert.equal(secondActiveContainers[1].progressId, firstActiveContainers[0].progressId,
-    '必须把同一个 progress-bar 外层容器物理迁移到新剧集卡片');
-  assert.equal(secondActiveContainers[1].topBarsId, firstActiveContainers[0].topBarsId,
-    '必须把同一个 playing-bars 外层容器物理迁移到新剧集卡片');
+  assert.equal(secondActiveContainers[0].progressId, firstActiveContainers[0].progressId,
+    '各卡片必须保留自己的 progress-bar 容器，不得在卡片之间搬运');
+  assert.equal(secondActiveContainers[1].topBarsId, firstActiveContainers[1].topBarsId,
+    '各卡片必须保留自己的 playing-bars 容器，不得在卡片之间搬运');
   assert.deepEqual(secondActiveContainers.map((item) => item.progressActive), [false, true],
     '只有当前剧集可以持有活动进度容器');
   assert.deepEqual(secondActiveContainers.map((item) => item.topBarsActive), [false, true],
