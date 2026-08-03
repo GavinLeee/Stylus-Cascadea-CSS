@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Apple Podcasts 哈喽怪谈透明播放源
 // @namespace    apple-podcasts-source-switcher
-// @version      1.2.16
+// @version      1.2.17
 // @description  保留 Apple Podcasts 原生播放与切集体验，仅在后台将《哈喽怪谈》的音频替换为喜马拉雅播放源
 // @author       Codex
 // @match        https://podcasts.apple.com/*
@@ -98,6 +98,40 @@
     return { showId, title, link };
   }
 
+  /*
+   * 播放/暂停的判定必须与界面语言无关。
+   *
+   * 实测：日文区按钮的 aria-label 是「再生、残り2時間12分」/「一時停止、…」，
+   * 既不含 Play/Pause 也不含播放/暂停，且分隔符是顿号「、」；旧代码的
+   * /^(?:Play|播放)(?:\b|[，,])/ 一条都匹配不上，于是整个脚本在日文区完全惰性
+   * ——不换源、不迁移、连 data-hallo-ximalaya-managed 都不会写。繁体区的
+   * 「暫停」同理（与简体「暂停」不是同一个字）。
+   *
+   * 这里两手准备：先按中英日词表匹配文案，匹配不上再退回原生图标判定
+   * （按钮此刻显示"正在播放"图标，就说明这次点击的意图是暂停）。图标判定
+   * 完全不依赖语言，是最终兜底。
+   */
+  const LABEL_SEPARATOR = '(?:\\b|[\\s，,、：:]|$)';
+  const PLAY_LABEL_PATTERN = new RegExp(`^(?:play|播放|再生)${LABEL_SEPARATOR}`, 'i');
+  const PAUSE_LABEL_PATTERN =
+    new RegExp(`^(?:pause|暂停|暫停|一時停止|一时停止)${LABEL_SEPARATOR}`, 'i');
+
+  /* 同一语言内的「播放 ↔ 暂停」词对，用于改写 aria-label 时保持语言一致。 */
+  const LABEL_STATE_WORDS = [
+    { play: 'Play', pause: 'Pause', match: /^(?:play|pause)/i },
+    { play: '再生', pause: '一時停止', match: /^(?:再生|一時停止)/ },
+    { play: '播放', pause: '暫停', match: /^暫停/ },
+    { play: '播放', pause: '暂停', match: /^(?:播放|暂停|一时停止)/ }
+  ];
+
+  function rewriteLabelState(label, playing) {
+    for (const words of LABEL_STATE_WORDS) {
+      if (!words.match.test(label)) continue;
+      return label.replace(words.match, playing ? words.pause : words.play);
+    }
+    return label;
+  }
+
   function normalizeTitle(value) {
     return String(value || '')
       .normalize('NFKC')
@@ -171,14 +205,17 @@
       const label = button.getAttribute('aria-label') || '';
       const progress = button.querySelector('progress[data-testid="progress-bar"]');
       if (progress?.cloneNode) progressTemplate = progress.cloneNode(true);
-      if (/^Pause\b/i.test(label) && icon.querySelector('[data-testid="playback-bars"].playing')) {
+      /* 采模板只看图标本身，不再要求 aria-label 是英文的 Play/Pause——
+         日文/繁体区文案对不上会导致模板永远采不到，图标也就永远换不了。 */
+      const showsPlaying = Boolean(icon.querySelector('[data-testid="playback-bars"].playing'));
+      const showsPlay = Boolean(icon.querySelector('[data-testid="invertible-mask-svg"]'));
+      if (showsPlaying) {
         pauseIconTemplate = icon.cloneNode(true);
-      } else if (!playIconTemplate && /^Play\b/i.test(label)
-        && icon.querySelector('[data-testid="invertible-mask-svg"]')) {
+      } else if (!playIconTemplate && showsPlay) {
         playIconTemplate = icon.cloneNode(true);
       }
       const titleKey = normalizeTitle(title);
-      if (/^Play\b/i.test(label) && titleKey && !idleCardMetadata.has(titleKey)) {
+      if (showsPlay && titleKey && !idleCardMetadata.has(titleKey)) {
         idleCardMetadata.set(titleKey, {
           label,
           text: button.querySelector('[data-testid="hero__play-button-text"]')?.textContent || ''
@@ -335,7 +372,7 @@
 
   function restoreIdleMetadata(item, fallbackLabel = '') {
     const idle = idleCardMetadata.get(normalizeTitle(item.title));
-    const label = idle?.label || fallbackLabel.replace(/^(?:Play|Pause)\b/i, 'Play');
+    const label = idle?.label || rewriteLabelState(fallbackLabel, false);
     if (label) item.button.setAttribute('aria-label', label);
     const text = item.button.querySelector('[data-testid="hero__play-button-text"]');
     if (text && idle?.text) text.textContent = idle.text;
@@ -387,7 +424,7 @@
       if (item === target) continue;
       setCardPlayingBars(item.wrapper, false);
       const label = item.button.getAttribute('aria-label') || '';
-      const wasActive = /^Pause\b/i.test(label)
+      const wasActive = PAUSE_LABEL_PATTERN.test(label)
         || buttonHasPlayingIcon(item.button)
         || item.button.dataset.halloXimalayaActive === '1';
       removeManagedProgress(item.button, wasActive);
@@ -407,10 +444,7 @@
       replaceButtonIcon(target.button, playing ? pauseIconTemplate : playIconTemplate);
     }
     const targetLabel = target.button.getAttribute('aria-label') || '';
-    target.button.setAttribute('aria-label', targetLabel.replace(
-      /^(?:Play|Pause)\b/i,
-      playing ? 'Pause' : 'Play'
-    ));
+    target.button.setAttribute('aria-label', rewriteLabelState(targetLabel, playing));
     target.button.dataset.halloXimalayaManaged = '1';
     if (playing) {
       target.button.dataset.halloXimalayaActive = '1';
@@ -785,7 +819,14 @@
       } else if (!isHalloContext()) {
         return;
       }
-      if (/^(?:Pause|暂停)(?:\b|[，,])/i.test(label)) {
+      /* 文案匹配不上（未知语言）时退回图标判定：按钮此刻显示"正在播放"图标，
+         就说明这次点击的意图是暂停；显示三角形播放图标则是播放。 */
+      const wantsPause = PAUSE_LABEL_PATTERN.test(label)
+        || (!PLAY_LABEL_PATTERN.test(label) && buttonHasPlayingIcon(button));
+      const wantsPlay = !wantsPause && (PLAY_LABEL_PATTERN.test(label)
+        || buttonHasPlayIcon(button));
+
+      if (wantsPause) {
         userPaused = true;
         desiredPlaying = false;
         pendingPlaybackGeneration = 0;
@@ -794,7 +835,7 @@
         return;
       }
 
-      if (/^(?:Play|播放)(?:\b|[，,])/i.test(label)) {
+      if (wantsPlay) {
         userPaused = false;
         let requestedGeneration = activeGeneration;
         const clickedTitle = episodeContext?.title
