@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Apple Podcasts 哈喽怪谈透明播放源
 // @namespace    apple-podcasts-source-switcher
-// @version      1.2.15
+// @version      1.2.16
 // @description  保留 Apple Podcasts 原生播放与切集体验，仅在后台将《哈喽怪谈》的音频替换为喜马拉雅播放源
 // @author       Codex
 // @match        https://podcasts.apple.com/*
@@ -48,7 +48,14 @@
   let activeProgressContainer = null;
   let activeTopBarsContainer = null;
   let activeHalloContext = false;
+  let userPaused = false;
   const idleCardMetadata = new Map();
+
+  /* 卡片状态校正：不再用一串写死的延迟去赌 Svelte 什么时候重渲染完，而是反复
+     校正到"实测状态已正确"为止，最长不超过这个窗口。每次重排后都会重新认领
+     当前有效的原生节点，因此中途 Svelte 重建卡片也能被纠正回来。 */
+  const CARD_RECONCILE_WINDOW = 2000;
+  const CARD_RECONCILE_INTERVAL = 60;
 
   function debug(...args) {
     console.debug('[Hallo Ximalaya]', ...args);
@@ -215,32 +222,63 @@
     return true;
   }
 
+  function progressContainerOf(item) {
+    return item?.button?.querySelector('.progress-bar') || null;
+  }
+
+  function topBarsContainerOf(item) {
+    return item?.wrapper?.querySelector('.episode-details__playing-bars-inner') || null;
+  }
+
+  /* Svelte 重建卡片后，我们记住的引用会变成游离节点。只有明确报告
+     isConnected === false 才判定失效——测试替身没有这个属性，不能用 !isConnected。 */
+  function isDetachedNode(node) {
+    return Boolean(node) && node.isConnected === false;
+  }
+
+  /* 重新认领"当前有效的活动容器"：优先用仍然在文档里的既有引用，其次用 DOM 里
+     仍带标记的节点（Svelte 重建后引用失效，但标记可能还在新节点上），最后退回
+     目标卡片自己的原生节点。始终从最新 DOM 查询，不操作失效引用。 */
+  function adoptActiveContainer(tracked, entries, pick, fallback) {
+    const live = isDetachedNode(tracked) ? null : tracked;
+    if (live) return live;
+    for (const item of entries) {
+      const node = pick(item);
+      if (node?.dataset?.halloXimalayaActiveContainer === '1') return node;
+    }
+    return fallback;
+  }
+
   function moveActiveContainersTo(target, entries) {
-    const targetProgress = target.button.querySelector('.progress-bar');
-    const connectedProgress = activeProgressContainer?.isConnected === false
-      ? null : activeProgressContainer;
-    activeProgressContainer = connectedProgress
-      || entries.map((item) => item.button.querySelector('.progress-bar'))
-        .find((node) => node?.dataset?.halloXimalayaActiveContainer === '1')
-      || targetProgress;
+    const targetProgress = progressContainerOf(target);
+    activeProgressContainer = adoptActiveContainer(
+      activeProgressContainer, entries, progressContainerOf, targetProgress
+    );
     if (activeProgressContainer && targetProgress && activeProgressContainer !== targetProgress) {
       swapDomNodes(activeProgressContainer, targetProgress);
     }
+    /* 交换后目标卡片应当就地持有活动容器；若交换没生效（节点已失效等），
+       立刻改认目标卡片自己的原生节点，绝不把活动标记留在旧卡片上。 */
+    const settledProgress = progressContainerOf(target);
+    if (settledProgress && settledProgress !== activeProgressContainer) {
+      activeProgressContainer = settledProgress;
+    }
 
-    const targetTopBars = target.wrapper.querySelector('.episode-details__playing-bars-inner');
-    const connectedTopBars = activeTopBarsContainer?.isConnected === false
-      ? null : activeTopBarsContainer;
-    activeTopBarsContainer = connectedTopBars
-      || entries.map((item) => item.wrapper.querySelector('.episode-details__playing-bars-inner'))
-        .find((node) => node?.dataset?.halloXimalayaActiveContainer === '1')
-      || targetTopBars;
+    const targetTopBars = topBarsContainerOf(target);
+    activeTopBarsContainer = adoptActiveContainer(
+      activeTopBarsContainer, entries, topBarsContainerOf, targetTopBars
+    );
     if (activeTopBarsContainer && targetTopBars && activeTopBarsContainer !== targetTopBars) {
       swapDomNodes(activeTopBarsContainer, targetTopBars);
     }
+    const settledTopBars = topBarsContainerOf(target);
+    if (settledTopBars && settledTopBars !== activeTopBarsContainer) {
+      activeTopBarsContainer = settledTopBars;
+    }
 
     for (const item of entries) {
-      const progressContainer = item.button.querySelector('.progress-bar');
-      const topBarsContainer = item.wrapper.querySelector('.episode-details__playing-bars-inner');
+      const progressContainer = progressContainerOf(item);
+      const topBarsContainer = topBarsContainerOf(item);
       if (progressContainer?.dataset) delete progressContainer.dataset.halloXimalayaActiveContainer;
       if (topBarsContainer?.dataset) delete topBarsContainer.dataset.halloXimalayaActiveContainer;
     }
@@ -250,6 +288,43 @@
     if (activeTopBarsContainer?.dataset) {
       activeTopBarsContainer.dataset.halloXimalayaActiveContainer = '1';
     }
+  }
+
+  /* 迁移后的验收：全页任意时刻最多一个活动声波容器、一个活动进度容器，
+     且都必须落在当前目标卡片上。校正循环用它判断"已经对了，可以停"。 */
+  function activeCardStateSettled(title, playing) {
+    const titleKey = normalizeTitle(title);
+    if (!titleKey) return false;
+    const entries = episodeCardEntries();
+    const target = entries.find((item) => normalizeTitle(item.title) === titleKey);
+    if (!target) return false;
+
+    const targetProgress = progressContainerOf(target);
+    const targetTopBars = topBarsContainerOf(target);
+    let progressCount = 0;
+    let topBarsCount = 0;
+    let strayActive = false;
+    let strayBars = false;
+
+    for (const item of entries) {
+      const progressContainer = progressContainerOf(item);
+      const topBarsContainer = topBarsContainerOf(item);
+      if (progressContainer?.dataset?.halloXimalayaActiveContainer === '1') {
+        progressCount += 1;
+        if (progressContainer !== targetProgress) strayActive = true;
+      }
+      if (topBarsContainer?.dataset?.halloXimalayaActiveContainer === '1') {
+        topBarsCount += 1;
+        if (topBarsContainer !== targetTopBars) strayActive = true;
+      }
+      if (item === target) continue;
+      const bars = topBarsContainer?.querySelector?.('[data-testid="playback-bars"]');
+      if (bars?.classList?.contains?.('playing')) strayBars = true;
+    }
+
+    if (strayActive || strayBars) return false;
+    if (!playing) return true;
+    return progressCount === 1 && topBarsCount === 1;
   }
 
   function removeManagedProgress(button, force = false) {
@@ -295,11 +370,15 @@
 
   function reconcileNativeCardState(title, playing) {
     captureNativeButtonTemplates();
-    if (!playIconTemplate || (playing && !pauseIconTemplate)) return false;
     const titleKey = normalizeTitle(title);
     const entries = episodeCardEntries();
     const target = entries.find((item) => normalizeTitle(item.title) === titleKey);
     if (!target) return false;
+
+    /* 图标模板要等 Apple 自己渲染过一次暂停态才拿得到。以前模板没就位就整段
+       return false，连带把两个容器的迁移也跳过了——这正是"首次点播时声波和
+       进度条根本不迁移"的原因。现在容器归属先做，图标替换单独降级。 */
+    const canSwapIcons = Boolean(playIconTemplate) && (!playing || Boolean(pauseIconTemplate));
 
     if (playing) moveActiveContainersTo(target, entries);
 
@@ -313,7 +392,9 @@
         || item.button.dataset.halloXimalayaActive === '1';
       removeManagedProgress(item.button, wasActive);
       if (wasActive || item.button.dataset.halloXimalayaManaged === '1') {
-        if (!buttonHasPlayIcon(item.button)) replaceButtonIcon(item.button, playIconTemplate);
+        if (playIconTemplate && !buttonHasPlayIcon(item.button)) {
+          replaceButtonIcon(item.button, playIconTemplate);
+        }
         restoreIdleMetadata(item, label);
         item.button.dataset.halloXimalayaManaged = '1';
       }
@@ -321,7 +402,8 @@
     }
 
     setCardPlayingBars(target.wrapper, playing);
-    if (playing ? !buttonHasPlayingIcon(target.button) : !buttonHasPlayIcon(target.button)) {
+    if (canSwapIcons
+      && (playing ? !buttonHasPlayingIcon(target.button) : !buttonHasPlayIcon(target.button))) {
       replaceButtonIcon(target.button, playing ? pauseIconTemplate : playIconTemplate);
     }
     const targetLabel = target.button.getAttribute('aria-label') || '';
@@ -339,16 +421,30 @@
     return true;
   }
 
+  /*
+   * 以前是 [0, 48, 140, 320, 720] 五个写死的延迟各校正一次：Svelte 何时重渲染完
+   * 全靠猜，晚于 720ms 的重建就再也没人纠正，状态便留在旧卡片上。
+   *
+   * 改成带截止时间的自校正循环：每轮先重排，再用 activeCardStateSettled() 实测
+   * 是否已经"只有目标卡片持有活动容器且无残留声波"，正确即停，否则继续重试到
+   * 窗口用尽。token 保证快速连点 A→B→C 时旧循环立刻失效，activeTitleKey 保证
+   * 过期的目标不会把状态写回去。
+   */
   function scheduleCardReconcile(title) {
     const titleKey = normalizeTitle(title);
     if (!titleKey) return;
     const token = ++cardReconcileToken;
-    for (const delay of [0, 48, 140, 320, 720]) {
-      window.setTimeout(() => {
-        if (token !== cardReconcileToken || titleKey !== activeTitleKey) return;
-        reconcileNativeCardState(title, desiredPlaying);
-      }, delay);
-    }
+    const deadline = Date.now() + CARD_RECONCILE_WINDOW;
+
+    const step = () => {
+      if (token !== cardReconcileToken || titleKey !== activeTitleKey) return;
+      reconcileNativeCardState(title, desiredPlaying);
+      if (activeCardStateSettled(title, desiredPlaying)) return;
+      if (Date.now() >= deadline) return;
+      window.setTimeout(step, CARD_RECONCILE_INTERVAL);
+    };
+
+    step();
   }
 
   function requestJson(url) {
@@ -565,6 +661,7 @@
 
     audio.addEventListener('play', () => {
       if (!isHalloContext()) return;
+      userPaused = false;
       desiredPlaying = true;
       if (isXimalayaUrl(mediaUrl(audio)) && appliedTitleKey === activeTitleKey) {
         pendingPlaybackGeneration = 0;
@@ -576,6 +673,15 @@
     audio.addEventListener('pause', () => {
       if (!isHalloContext() || applyingSource) return;
       window.setTimeout(() => {
+        /* 用户主动暂停：由点击处理器置位，直接按暂停处理，不再依赖时间启发式。 */
+        if (userPaused) {
+          desiredPlaying = false;
+          pendingPlaybackGeneration = 0;
+          reconcileNativeCardState(playerTitle(), false);
+          return;
+        }
+        /* 换源期间 Apple 会对旧音频触发内部 pause。此时用户的播放意图仍然成立，
+           必须忽略，否则刚发起的切集会被自己取消。 */
         if (desiredPlaying && pendingPlaybackGeneration === activeGeneration) return;
         if (audio.paused && Date.now() - lastExplicitPlayAt > 400) {
           desiredPlaying = false;
@@ -638,6 +744,13 @@
     const generation = setEpisode(title, false);
     if (titleChanged) prewarm(title);
 
+    /* scan() 由全局 MutationObserver 驱动（另有 1s 兜底），因此 Svelte 事后
+       重建卡片、把活动节点放回旧剧集时，这里会实测出状态不对并重新校正归属。
+       只在确实不对时才动手，正常情况下不产生任何写操作。 */
+    if (desiredPlaying && !activeCardStateSettled(title, true)) {
+      reconcileNativeCardState(title, true);
+    }
+
     if (activeAudio && isXimalayaUrl(mediaUrl(activeAudio))) {
       if (appliedTitleKey === normalizeTitle(title)) return;
       if (desiredPlaying) useXimalaya(activeAudio, title, generation);
@@ -673,6 +786,7 @@
         return;
       }
       if (/^(?:Pause|暂停)(?:\b|[，,])/i.test(label)) {
+        userPaused = true;
         desiredPlaying = false;
         pendingPlaybackGeneration = 0;
         if (activeAudio && !activeAudio.paused) activeAudio.pause();
@@ -681,6 +795,7 @@
       }
 
       if (/^(?:Play|播放)(?:\b|[，,])/i.test(label)) {
+        userPaused = false;
         let requestedGeneration = activeGeneration;
         const clickedTitle = episodeContext?.title
           || button.closest('[data-testid="episode-wrapper"]')
