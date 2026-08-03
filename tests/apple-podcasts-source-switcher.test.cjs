@@ -11,7 +11,7 @@ const script = fs.readFileSync(
 const XM_A = 'https://a.xmcdn.com/a.m4a';
 const XM_B = 'https://a.xmcdn.com/b.m4a';
 
-function createHarness({ hallo = true, requestDelay = 0 } = {}) {
+function createHarness({ hallo = true, home = false, requestDelay = 0 } = {}) {
   const listeners = new Map();
   const requests = [];
   let currentPlayerTitle = '节目甲';
@@ -153,6 +153,7 @@ function createHarness({ hallo = true, requestDelay = 0 } = {}) {
       this.text = new FakeButtonText(remaining);
       this.text.owner = this;
       this.wrapper = null;
+      this.homeScope = null;
     }
     getAttribute(name) {
       if (name === 'aria-label') return this.label;
@@ -177,6 +178,7 @@ function createHarness({ hallo = true, requestDelay = 0 } = {}) {
     closest(selector) {
       if (selector === 'button') return this;
       if (selector === '[data-testid="episode-wrapper"]') return this.wrapper;
+      if (selector.includes('[data-testid="episode-hero"]')) return this.homeScope;
       return null;
     }
   }
@@ -202,6 +204,25 @@ function createHarness({ hallo = true, requestDelay = 0 } = {}) {
     };
     card.bars.owner = card.wrapper;
     card.button.wrapper = card.wrapper;
+    if (home) {
+      const href = hallo
+        ? `https://podcasts.apple.com/jp/podcast/episode/id512426799?i=${card === episodeCards[0] ? 1001 : 1002}`
+        : `https://podcasts.apple.com/jp/podcast/episode/id999999999?i=${card === episodeCards[0] ? 1001 : 1002}`;
+      const link = {
+        href,
+        getAttribute(name) {
+          return name === 'aria-label' ? `${card.title} Episode • ${hallo ? '哈喽怪谈' : '其他播客'}` : '';
+        }
+      };
+      card.button.homeScope = {
+        matches() { return false; },
+        querySelector(selector) {
+          if (selector === 'a[href*="?i="]') return link;
+          if (selector === 'h3') return { textContent: card.title };
+          return null;
+        }
+      };
+    }
   }
 
   class HTMLMediaElement extends Element {}
@@ -294,12 +315,16 @@ function createHarness({ hallo = true, requestDelay = 0 } = {}) {
     Element,
     HTMLMediaElement,
     location: {
-      href: hallo
-        ? 'https://podcasts.apple.com/us/podcast/hallo/id512426799'
-        : 'https://podcasts.apple.com/us/podcast/other/id999999999',
-      pathname: hallo
-        ? '/us/podcast/hallo/id512426799'
-        : '/us/podcast/other/id999999999'
+      href: home
+        ? 'https://podcasts.apple.com/us/home'
+        : (hallo
+          ? 'https://podcasts.apple.com/us/podcast/hallo/id512426799'
+          : 'https://podcasts.apple.com/us/podcast/other/id999999999'),
+      pathname: home
+        ? '/us/home'
+        : (hallo
+          ? '/us/podcast/hallo/id512426799'
+          : '/us/podcast/other/id999999999')
     },
     localStorage: {
       getItem(key) { return storage.get(key) || null; },
@@ -418,6 +443,7 @@ function createHarness({ hallo = true, requestDelay = 0 } = {}) {
   return {
     audio,
     requests,
+    titles: episodeCards.map((card) => card.title),
     clickPlay,
     clickPause,
     loadAppleSource,
@@ -536,6 +562,23 @@ async function settle() {
     '只有当前剧集可以持有活动进度容器');
   assert.deepEqual(secondActiveContainers.map((item) => item.topBarsActive), [false, true],
     '只有当前剧集可以持有活动标题声波容器');
+
+  const homeHallo = createHarness({ hallo: true, home: true });
+  homeHallo.clickPlay(homeHallo.titles[0]);
+  await settle();
+  assert.equal(homeHallo.audio.currentSrc, XM_A,
+    'Home page Hallo card should switch to the matching Ximalaya source');
+  assert.ok(homeHallo.audio.playCount >= 1,
+    'Home page Hallo card should start playback without visiting the show page');
+
+  const homeOther = createHarness({ hallo: false, home: true });
+  homeOther.clickPlay(homeOther.titles[0]);
+  homeOther.loadAppleSource('https://apple.example/home-other.mp3', 5);
+  await settle();
+  assert.equal(homeOther.audio.currentSrc, 'https://apple.example/home-other.mp3',
+    'Home page cards from other shows must keep the native Apple source');
+  assert.equal(homeOther.requests.length, 0,
+    'Home page cards from other shows must not request Ximalaya');
 
   const other = createHarness({ hallo: false });
   other.clickPlay('节目甲');

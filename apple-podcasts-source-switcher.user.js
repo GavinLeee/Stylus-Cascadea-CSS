@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Apple Podcasts 哈喽怪谈透明播放源
 // @namespace    apple-podcasts-source-switcher
-// @version      1.2.13
+// @version      1.2.14
 // @description  保留 Apple Podcasts 原生播放与切集体验，仅在后台将《哈喽怪谈》的音频替换为喜马拉雅播放源
 // @author       Codex
 // @match        https://podcasts.apple.com/*
@@ -46,6 +46,7 @@
   let cardReconcileToken = 0;
   let activeProgressContainer = null;
   let activeTopBarsContainer = null;
+  let activeHalloContext = false;
   const idleCardMetadata = new Map();
 
   function debug(...args) {
@@ -54,6 +55,39 @@
 
   function isHalloPage() {
     return location.pathname.includes(`/id${APPLE_SHOW_ID}`);
+  }
+
+  function isHalloContext() {
+    return isHalloPage() || activeHalloContext;
+  }
+
+  function episodeContextFromButton(button) {
+    if (!(button instanceof Element)) return null;
+    const scope = button.closest(
+      '[data-testid="episode-wrapper"], [data-testid="episode-hero"], '
+      + '[data-testid="episode-shelf-lockup-container"], a[href*="?i="]'
+    );
+    if (!scope) return null;
+
+    const link = scope.matches?.('a[href*="?i="]')
+      ? scope
+      : scope.querySelector?.('a[href*="?i="]');
+    if (!link?.href) return null;
+
+    let showId = '';
+    try {
+      showId = new URL(link.href, location.href).pathname.match(/\/id(\d+)/)?.[1] || '';
+    } catch {
+      return null;
+    }
+
+    const labelledTitle = (link.getAttribute?.('aria-label') || '')
+      .split(/\s+Episode\s+[•·]\s+/i)[0]
+      .trim();
+    const title = scope.querySelector?.('[data-testid="episode-lockup-title"]')?.textContent?.trim()
+      || scope.querySelector?.('h3')?.textContent?.trim()
+      || labelledTitle;
+    return { showId, title, link };
   }
 
   function normalizeTitle(value) {
@@ -472,7 +506,7 @@
   }
 
   async function useXimalaya(audio, title, generation, forceRefresh = false) {
-    if (!audio || !isHalloPage()) return;
+    if (!audio || !isHalloContext()) return;
     try {
       const resolved = await resolveEpisode(title, forceRefresh);
       if (generation !== activeGeneration || normalizeTitle(playerTitle()) !== resolved.titleKey) {
@@ -509,14 +543,14 @@
   }
 
   function prewarm(title) {
-    if (!title || !isHalloPage()) return;
+    if (!title || !isHalloContext()) return;
     resolveEpisode(title).catch((error) => debug('预解析失败', title, error?.message || error));
   }
 
   function ensureCurrentSource(requestPlayback = false, forceRefresh = false) {
     const audio = activeAudio;
     const title = playerTitle();
-    if (!audio || !title || !isHalloPage()) return;
+    if (!audio || !title || !isHalloContext()) return;
     const generation = setEpisode(title, requestPlayback);
     useXimalaya(audio, title, generation, forceRefresh);
   }
@@ -528,14 +562,14 @@
     attachedAudio.add(audio);
 
     audio.addEventListener('play', () => {
-      if (!isHalloPage()) return;
+      if (!isHalloContext()) return;
       desiredPlaying = true;
       reconcileNativeCardState(playerTitle(), true);
       if (!isXimalayaUrl(mediaUrl(audio))) ensureCurrentSource(true);
     });
 
     audio.addEventListener('pause', () => {
-      if (!isHalloPage() || applyingSource) return;
+      if (!isHalloContext() || applyingSource) return;
       window.setTimeout(() => {
         if (audio.paused && Date.now() - lastExplicitPlayAt > 400) {
           desiredPlaying = false;
@@ -545,7 +579,7 @@
     });
 
     audio.addEventListener('loadstart', () => {
-      if (!isHalloPage() || applyingSource) return;
+      if (!isHalloContext() || applyingSource) return;
       const title = playerTitle();
       if (!title) return;
       setEpisode(title, false);
@@ -556,20 +590,20 @@
 
     for (const eventName of ['loadedmetadata', 'durationchange', 'timeupdate']) {
       audio.addEventListener(eventName, () => {
-        if (isHalloPage() && desiredPlaying) syncCurrentCardProgress();
+        if (isHalloContext() && desiredPlaying) syncCurrentCardProgress();
       });
     }
 
     for (const eventName of ['waiting', 'stalled']) {
       audio.addEventListener(eventName, () => {
-        if (isHalloPage() && desiredPlaying && !isXimalayaUrl(mediaUrl(audio))) {
+        if (isHalloContext() && desiredPlaying && !isXimalayaUrl(mediaUrl(audio))) {
           ensureCurrentSource(true);
         }
       });
     }
 
     audio.addEventListener('error', () => {
-      if (!isHalloPage()) return;
+      if (!isHalloContext()) return;
       const failedUrl = mediaUrl(audio);
       if (isXimalayaUrl(failedUrl)) {
         const cached = [...audioCache.entries()].find(([, item]) => item.url === failedUrl);
@@ -585,7 +619,7 @@
     scanQueued = false;
     const audio = document.querySelector('#apple-music-player, audio');
     if (audio) attach(audio);
-    if (!isHalloPage()) return;
+    if (!isHalloContext()) return;
     captureNativeButtonTemplates();
 
     if (pendingTitle) {
@@ -617,10 +651,20 @@
 
   function start() {
     document.addEventListener('click', (event) => {
-      if (!isHalloPage()) return;
       const button = event.target instanceof Element ? event.target.closest('button') : null;
       if (!button) return;
       const label = `${button.getAttribute('aria-label') || ''} ${button.textContent || ''}`.trim();
+      const episodeContext = episodeContextFromButton(button);
+      if (episodeContext) {
+        activeHalloContext = episodeContext.showId === APPLE_SHOW_ID;
+        if (!activeHalloContext) {
+          pendingTitle = '';
+          desiredPlaying = false;
+          return;
+        }
+      } else if (!isHalloContext()) {
+        return;
+      }
       if (/^(?:Pause|暂停)(?:\b|[，,])/i.test(label)) {
         desiredPlaying = false;
         if (activeAudio && !activeAudio.paused) activeAudio.pause();
@@ -630,8 +674,9 @@
 
       if (/^(?:Play|播放)(?:\b|[，,])/i.test(label)) {
         let requestedGeneration = activeGeneration;
-        const clickedTitle = button.closest('[data-testid="episode-wrapper"]')
-          ?.querySelector('[data-testid="episode-lockup-title"]')?.textContent?.trim();
+        const clickedTitle = episodeContext?.title
+          || button.closest('[data-testid="episode-wrapper"]')
+            ?.querySelector('[data-testid="episode-lockup-title"]')?.textContent?.trim();
         if (clickedTitle) {
           pendingTitle = clickedTitle;
           const generation = setEpisode(clickedTitle, true);
