@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Apple Podcasts 哈喽怪谈透明播放源
 // @namespace    apple-podcasts-source-switcher
-// @version      1.2.31
+// @version      1.2.32
 // @description  保留 Apple Podcasts 原生播放与切集体验，仅在后台将《哈喽怪谈》的音频替换为喜马拉雅播放源
 // @author       Codex
 // @match        https://podcasts.apple.com/*
@@ -937,6 +937,23 @@
     return current !== appliedTitleKey && current !== normalizeTitle(pendingTitle);
   }
 
+  /*
+   * 是否允许把"非喜马拉雅的源"拉回哈喽怪谈。
+   *
+   * 只有两种情形该救：
+   *   1) 正在哈喽怪谈节目页——页面本身就限定了范围；
+   *   2) 用户刚点了哈喽怪谈的剧集，pendingTitle 还在——首页卡片直接播放走这条。
+   * 除此之外一律不碰。Home 页上别的播客刚被 Apple 设好源时，pendingTitle 已被
+   * 点击处理器清空（点到别的节目就 releaseHalloContext()），因此不会被抢走。
+   *
+   * 这条判据刻意不看播放器标题：Apple 的 marquee 更新是异步的，loadstart 触发
+   * 那一刻它往往还停在上一集，用标题比对会判定"没换内容"从而照样抢源——实测
+   * 用户在 Home 页点别的播客后 currentSrc 仍是 xmcdn，就是卡在这一点上。
+   */
+  function mayRescueSource() {
+    return isHalloPage() || Boolean(pendingTitle);
+  }
+
   function attach(audio) {
     if (!(audio instanceof HTMLMediaElement)) return;
     activeAudio = audio;
@@ -956,7 +973,7 @@
         pendingPlaybackGeneration = 0;
       }
       reconcileNativeCardState(playerTitle(), true);
-      if (!isXimalayaUrl(mediaUrl(audio))) ensureCurrentSource(true);
+      if (!isXimalayaUrl(mediaUrl(audio)) && mayRescueSource()) ensureCurrentSource(true);
     });
 
     audio.addEventListener('pause', () => {
@@ -989,7 +1006,7 @@
       const title = playerTitle();
       if (!title) return;
       setEpisode(title, false);
-      if (!isXimalayaUrl(mediaUrl(audio)) && desiredPlaying) {
+      if (!isXimalayaUrl(mediaUrl(audio)) && desiredPlaying && mayRescueSource()) {
         ensureCurrentSource(true);
       }
     });
@@ -1013,7 +1030,8 @@
 
     for (const eventName of ['waiting', 'stalled']) {
       audio.addEventListener(eventName, () => {
-        if (isHalloContext() && desiredPlaying && !isXimalayaUrl(mediaUrl(audio))) {
+        if (isHalloContext() && desiredPlaying
+          && !isXimalayaUrl(mediaUrl(audio)) && mayRescueSource()) {
           ensureCurrentSource(true);
         }
       });
