@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Apple Podcasts 哈喽怪谈透明播放源
 // @namespace    apple-podcasts-source-switcher
-// @version      1.2.26
+// @version      1.2.27
 // @description  保留 Apple Podcasts 原生播放与切集体验，仅在后台将《哈喽怪谈》的音频替换为喜马拉雅播放源
 // @author       Codex
 // @match        https://podcasts.apple.com/*
@@ -112,16 +112,24 @@
    * 或暂停，表现为"其他节目点了播不出来"。
    * 这里以地址里的节目 id 为准：只要当前页明确属于另一个节目，立刻释放上下文。
    */
+  function releaseHalloContext(reason) {
+    if (!activeHalloContext && !pendingTitle) return;
+    activeHalloContext = false;
+    pendingTitle = '';
+    desiredPlaying = false;
+    pendingPlaybackGeneration = 0;
+    /* 标题改写的标记必须一并清掉：syncPlayerTitle() 只要看到这个标记就会无条件
+       改写该节点，不清的话播放器 LCD 会被按在旧集标题上，不跟随新节目刷新。 */
+    for (const node of document.querySelectorAll('[data-testid="marquee-text-item"]')) {
+      if (node.dataset) delete node.dataset.halloXimalayaTitle;
+    }
+    debug('已离开哈喽怪谈，交还原生播放', reason);
+  }
+
   function releaseForeignShowContext() {
     const showId = pageShowId();
     if (!showId || showId === APPLE_SHOW_ID) return false;
-    if (activeHalloContext) {
-      activeHalloContext = false;
-      pendingTitle = '';
-      desiredPlaying = false;
-      pendingPlaybackGeneration = 0;
-      debug('已离开哈喽怪谈，交还原生播放', showId);
-    }
+    releaseHalloContext(showId);
     return true;
   }
 
@@ -1003,12 +1011,24 @@
       if (episodeContext) {
         activeHalloContext = episodeContext.showId === APPLE_SHOW_ID;
         if (!activeHalloContext) {
-          pendingTitle = '';
-          desiredPlaying = false;
-          pendingPlaybackGeneration = 0;
+          releaseHalloContext(episodeContext.showId);
           return;
         }
-      } else if (!isHalloContext()) {
+      } else if (!isHalloPage() && !isXimalayaUrl(mediaUrl(activeAudio))) {
+        /*
+         * 这次点击的按钮无法解析出剧集上下文（首页/搜索页的卡片结构不同、
+         * 迷你播放器的控件等），同时既不在哈喽怪谈节目页、当前音频也不是我们
+         * 换过的喜马拉雅源——也就是没有任何证据表明这次点击属于哈喽怪谈。
+         *
+         * 以前这里的条件是 !isHalloContext()：只要 activeHalloContext 还残留着
+         * true 就会继续往下走，于是在别的播客点播放会被当成哈喽怪谈处理——
+         * pendingTitle 还停在上一集，48ms 后 ensureCurrentSource() 把 audio.src
+         * 换回旧集并 pause()，表现就是「按钮根本没反应」。地址里没有 /id 段的
+         * 首页/搜索页尤其容易中招，releaseForeignShowContext() 也兜不住。
+         *
+         * 改成必须正面确认：确认不了就放手，并清掉残留上下文。
+         */
+        releaseHalloContext('无法确认点击归属');
         return;
       }
       /* 文案匹配不上（未知语言）时退回图标判定：按钮此刻显示"正在播放"图标，
