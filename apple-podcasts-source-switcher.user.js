@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Apple Podcasts 哈喽怪谈透明播放源
 // @namespace    apple-podcasts-source-switcher
-// @version      1.2.19
+// @version      1.2.20
 // @description  保留 Apple Podcasts 原生播放与切集体验，仅在后台将《哈喽怪谈》的音频替换为喜马拉雅播放源
 // @author       Codex
 // @match        https://podcasts.apple.com/*
@@ -276,8 +276,26 @@
 
     if (playing) {
       const buttonWrapper = wrapper?.querySelector?.('.detailed-play-button-wrapper');
-      buttonWrapper?.classList?.add?.('progress-bar-visible');
+      if (buttonWrapper?.classList?.add) {
+        buttonWrapper.classList.add('progress-bar-visible');
+        /* 记下"这个可见性是脚本打开的"，切集时才知道该还原哪些卡片，
+           不会误伤 Apple 自己给其他剧集画的进度。 */
+        if (buttonWrapper.dataset) buttonWrapper.dataset.halloXimalayaProgressVisible = '1';
+      }
     }
+  }
+
+  /* 切走当前集时，把脚本在这张卡片上加的进度显示原样撤掉：只移除自己打开的
+     progress-bar-visible 和自己注入的 progress 元素，Apple 原生的一律不动。 */
+  function clearManagedProgress(item) {
+    const buttonWrapper = item.button?.closest?.('.detailed-play-button-wrapper')
+      || item.wrapper?.querySelector?.('.detailed-play-button-wrapper');
+    if (buttonWrapper?.dataset?.halloXimalayaProgressVisible === '1') {
+      buttonWrapper.classList?.remove?.('progress-bar-visible');
+      delete buttonWrapper.dataset.halloXimalayaProgressVisible;
+    }
+    const progress = item.button?.querySelector?.('progress[data-testid="progress-bar"]');
+    if (progress?.dataset?.halloXimalayaProgress === '1') progress.remove?.();
   }
 
   function progressContainerOf(item) {
@@ -387,7 +405,10 @@
        按钮里的 .progress-bar 才会真的显示（否则 visibility:hidden、宽度 0）。 */
     const buttonWrapper = item.button?.closest?.('.detailed-play-button-wrapper')
       || item.wrapper?.querySelector?.('.detailed-play-button-wrapper');
-    buttonWrapper?.classList?.add?.('progress-bar-visible');
+    if (buttonWrapper?.classList?.add) {
+      buttonWrapper.classList.add('progress-bar-visible');
+      if (buttonWrapper.dataset) buttonWrapper.dataset.halloXimalayaProgressVisible = '1';
+    }
   }
 
   function syncCurrentCardProgress(title = playerTitle()) {
@@ -418,9 +439,9 @@
       const wasActive = PAUSE_LABEL_PATTERN.test(label)
         || buttonHasPlayingIcon(item.button)
         || item.button.dataset.halloXimalayaActive === '1';
-      /* 刻意不再删除非当前剧集的进度条：原生 Podcasts 里听过一部分的剧集会
-         一直显示自己的进度，删掉就成了"切集后上一集进度条消失"。这里只摘掉
-         活动标记，进度值停在离开时的位置，与原生表现一致。 */
+      /* 切走之后，这张卡片上由脚本打开的进度显示要撤掉（Apple 自己给其他
+         剧集画的进度不受影响）。 */
+      clearManagedProgress(item);
       if (wasActive || item.button.dataset.halloXimalayaManaged === '1') {
         if (playIconTemplate && !buttonHasPlayIcon(item.button)) {
           replaceButtonIcon(item.button, playIconTemplate);
