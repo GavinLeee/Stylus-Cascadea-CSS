@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Apple Podcasts 哈喽怪谈透明播放源
 // @namespace    apple-podcasts-source-switcher
-// @version      1.2.28
+// @version      1.2.29
 // @description  保留 Apple Podcasts 原生播放与切集体验，仅在后台将《哈喽怪谈》的音频替换为喜马拉雅播放源
 // @author       Codex
 // @match        https://podcasts.apple.com/*
@@ -152,6 +152,15 @@
       node = node.parentElement;
     }
     return '';
+  }
+
+  /* 底部播放器里的传输控件（播放/暂停/快进等）。它们本来就没有剧集链接，
+     只有这类按钮才允许用"当前音频是本脚本换的源"来判定归属。 */
+  function isPlayerTransportButton(button) {
+    return Boolean(button?.closest?.(
+      '[class*="player-lcd"], [class*="playback-controls"], [class*="web-player"], '
+      + '[data-testid*="player"], [class*="player-controls"]'
+    ));
   }
 
   function releaseForeignShowContext() {
@@ -1044,10 +1053,23 @@
         }
       } else if (nearestEpisodeShowId(button)
         && nearestEpisodeShowId(button) !== APPLE_SHOW_ID) {
-        /* 按钮所属的剧集链接明确指向别的节目：放手，交还原生播放。
-           这一条必须排在下面那条之前——"当前音频是喜马拉雅源"在哈喽怪谈
-           正在播时恒为真，单靠它会把别的播客的播放按钮也放行。 */
+        /* 按钮所属的剧集链接明确指向别的节目：放手，交还原生播放。 */
         releaseHalloContext(nearestEpisodeShowId(button));
+        return;
+      } else if (!nearestEpisodeShowId(button) && !isHalloPage()
+        && !isPlayerTransportButton(button)) {
+        /*
+         * 既解析不出剧集归属、又不在哈喽怪谈节目页，而且这不是播放器的传输控件
+         * ——那它就是某张卡片的播放键，只是版式不认识。此时一律放手。
+         *
+         * 实测依据：Home 页存在一类卡片，其播放键向上 8 层都没有
+         * a[href*="?i="]，episodeContextFromButton() 与 nearestEpisodeShowId()
+         * 双双落空。以前这里会退到"当前音频是喜马拉雅源"这条证据，而哈喽怪谈
+         * 正在播时它恒为真，于是照样放行、把别的播客当成哈喽怪谈处理——这正是
+         * 「Home 页播着哈喽怪谈时点别的节目没反应」的最后一块拼图。
+         * 那条证据只对传输控件成立，卡片播放键一概不适用。
+         */
+        releaseHalloContext('卡片播放键但归属不明');
         return;
       } else if (!isHalloPage() && !isXimalayaUrl(mediaUrl(activeAudio))) {
         /*
