@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Apple Podcasts 哈喽怪谈透明播放源
 // @namespace    apple-podcasts-source-switcher
-// @version      1.2.25
+// @version      1.2.26
 // @description  保留 Apple Podcasts 原生播放与切集体验，仅在后台将《哈喽怪谈》的音频替换为喜马拉雅播放源
 // @author       Codex
 // @match        https://podcasts.apple.com/*
@@ -28,8 +28,35 @@
   const audioCache = new Map();
   const resolvingAudio = new Map();
   /* 每集听到哪儿：切回旧剧集时要从这里续播，而不是从头开始（原生行为）。
-     键是归一化标题，值是秒。 */
+     键是归一化标题，值是 { time, duration }，并持久化到 localStorage，
+     刷新页面后仍能显示进度与续播。 */
   const episodePositions = new Map();
+  const POSITION_CACHE_KEY = 'ap-hallo-episode-positions-v1';
+  let positionSaveTimer = 0;
+
+  function loadEpisodePositions() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(POSITION_CACHE_KEY) || 'null');
+      if (!raw || typeof raw !== 'object') return;
+      for (const [key, value] of Object.entries(raw)) {
+        const time = Number(value?.time) || 0;
+        if (!key || time <= 0) continue;
+        episodePositions.set(key, { time, duration: Number(value?.duration) || 0 });
+      }
+    } catch { /* 存储不可用时退回内存态 */ }
+  }
+
+  function saveEpisodePositions() {
+    clearTimeout(positionSaveTimer);
+    positionSaveTimer = window.setTimeout(() => {
+      try {
+        localStorage.setItem(
+          POSITION_CACHE_KEY,
+          JSON.stringify(Object.fromEntries(episodePositions))
+        );
+      } catch { /* 存储不可用时忽略 */ }
+    }, 1000);
+  }
 
   let catalogPromise = null;
   let catalogMemory = null;
@@ -70,6 +97,32 @@
 
   function isHalloContext() {
     return isHalloPage() || activeHalloContext;
+  }
+
+  /* 当前地址属于哪个节目；首页/搜索页等没有 /id 段时返回空串。 */
+  function pageShowId() {
+    return location.pathname.match(/\/id(\d+)/)?.[1] || '';
+  }
+
+  /*
+   * activeHalloContext 是为了支持"在首页点哈喽怪谈的卡片直接播放"——那种场景
+   * isHalloPage() 为 false，只能靠这个标记。但它只在点到别的节目的剧集时才会
+   * 被清掉；如果用户是「跳转」到别的节目页（比如从哈喽怪谈进入奇了怪了），
+   * 标记就一直是 true，于是那边点播放会被本脚本当成哈喽怪谈去换源，音频被替换
+   * 或暂停，表现为"其他节目点了播不出来"。
+   * 这里以地址里的节目 id 为准：只要当前页明确属于另一个节目，立刻释放上下文。
+   */
+  function releaseForeignShowContext() {
+    const showId = pageShowId();
+    if (!showId || showId === APPLE_SHOW_ID) return false;
+    if (activeHalloContext) {
+      activeHalloContext = false;
+      pendingTitle = '';
+      desiredPlaying = false;
+      pendingPlaybackGeneration = 0;
+      debug('已离开哈喽怪谈，交还原生播放', showId);
+    }
+    return true;
   }
 
   function episodeContextFromButton(button) {
@@ -850,6 +903,7 @@
             time: position,
             duration: Number.isFinite(total) && total > 0 ? total : 0
           });
+          saveEpisodePositions();
         }
         syncCurrentCardProgress();
       });
@@ -880,6 +934,8 @@
     scanQueued = false;
     const audio = document.querySelector('#apple-music-player, audio');
     if (audio) attach(audio);
+    /* SPA 跳转到别的节目页时没有点击事件可依附，这里兜底释放上下文。 */
+    if (releaseForeignShowContext()) return;
     if (!isHalloContext()) return;
     captureNativeButtonTemplates();
 
@@ -941,6 +997,8 @@
       const button = event.target instanceof Element ? event.target.closest('button') : null;
       if (!button) return;
       const label = `${button.getAttribute('aria-label') || ''} ${button.textContent || ''}`.trim();
+      /* 当前页属于别的节目时立刻放手，避免把它的播放当成哈喽怪谈去换源。 */
+      if (releaseForeignShowContext()) return;
       const episodeContext = episodeContextFromButton(button);
       if (episodeContext) {
         activeHalloContext = episodeContext.showId === APPLE_SHOW_ID;
@@ -1008,6 +1066,7 @@
       attributes: true,
       attributeFilter: ['src']
     });
+    loadEpisodePositions();
     captureNativeButtonTemplates();
     scan();
     window.setInterval(scan, 1000);
