@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Apple Podcasts 哈喽怪谈透明播放源
 // @namespace    apple-podcasts-source-switcher
-// @version      1.2.29
+// @version      1.2.30
 // @description  保留 Apple Podcasts 原生播放与切集体验，仅在后台将《哈喽怪谈》的音频替换为喜马拉雅播放源
 // @author       Codex
 // @match        https://podcasts.apple.com/*
@@ -91,6 +91,25 @@
     console.debug('[Hallo Ximalaya]', ...args);
   }
 
+  /*
+   * 把 DOM 写操作挪出事件派发过程。
+   *
+   * 本脚本的点击监听挂在 capture 阶段（早于 Apple 自己的处理器）。实测：在 Home
+   * 页点别的播客时，点击变成了整页跳转到该剧集页、且跳转后什么都没播——那类卡片
+   * 的播放键嵌在 a[href*="?i="] 里，本该由 Apple 的处理器 preventDefault() 拦下，
+   * 我们在派发途中同步改 DOM 把它打断了。
+   *
+   * 但整个处理器都推迟也不行：换源依赖点击处理与随后 loadstart 之间的同步时序，
+   * 整体延后一个 tick 会导致首次播放不再换源（回归用例直接失败）。
+   * 因此只拆出 DOM 写操作走这里，判断与状态记录仍然同步完成。
+   */
+  function deferDomWrite(task) {
+    window.setTimeout(() => {
+      try { task(); }
+      catch (error) { debug('延迟 DOM 写入失败', error?.message || error); }
+    }, 0);
+  }
+
   function isHalloPage() {
     return location.pathname.includes(`/id${APPLE_SHOW_ID}`);
   }
@@ -114,15 +133,19 @@
    */
   function releaseHalloContext(reason) {
     if (!activeHalloContext && !pendingTitle) return;
+    /* 状态复位保持同步：后续的 loadstart/play 监听要立刻看到"已放手"。 */
     activeHalloContext = false;
     pendingTitle = '';
     desiredPlaying = false;
     pendingPlaybackGeneration = 0;
     /* 标题改写的标记必须一并清掉：syncPlayerTitle() 只要看到这个标记就会无条件
-       改写该节点，不清的话播放器 LCD 会被按在旧集标题上，不跟随新节目刷新。 */
-    for (const node of document.querySelectorAll('[data-testid="marquee-text-item"]')) {
-      if (node.dataset) delete node.dataset.halloXimalayaTitle;
-    }
+       改写该节点，不清的话播放器 LCD 会被按在旧集标题上，不跟随新节目刷新。
+       但这是 DOM 写操作，必须推迟到事件派发之后（原因见点击监听器处的说明）。 */
+    deferDomWrite(() => {
+      for (const node of document.querySelectorAll('[data-testid="marquee-text-item"]')) {
+        if (node.dataset) delete node.dataset.halloXimalayaTitle;
+      }
+    });
     debug('已离开哈喽怪谈，交还原生播放', reason);
   }
 
@@ -1099,8 +1122,10 @@
         userPaused = true;
         desiredPlaying = false;
         pendingPlaybackGeneration = 0;
+        /* 暂停音频本身保持同步，用户要的是立刻停；卡片状态是 DOM 写，推迟。 */
         if (activeAudio && !activeAudio.paused) activeAudio.pause();
-        reconcileNativeCardState(playerTitle(), false);
+        const pausedTitle = playerTitle();
+        deferDomWrite(() => reconcileNativeCardState(pausedTitle, false));
         return;
       }
 
@@ -1115,7 +1140,8 @@
           const generation = setEpisode(clickedTitle, true);
           requestedGeneration = generation;
           prewarm(clickedTitle);
-          scheduleCardReconcile(clickedTitle);
+          /* 自校正循环第一轮会立刻改 DOM，同样推迟到派发之后。 */
+          deferDomWrite(() => scheduleCardReconcile(clickedTitle));
         } else {
           desiredPlaying = true;
           lastExplicitPlayAt = Date.now();
