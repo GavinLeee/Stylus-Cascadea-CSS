@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Apple Podcasts 哈喽怪谈透明播放源
 // @namespace    apple-podcasts-source-switcher
-// @version      1.2.30
+// @version      1.2.31
 // @description  保留 Apple Podcasts 原生播放与切集体验，仅在后台将《哈喽怪谈》的音频替换为喜马拉雅播放源
 // @author       Codex
 // @match        https://podcasts.apple.com/*
@@ -913,6 +913,30 @@
     useXimalaya(audio, title, generation, forceRefresh);
   }
 
+  /*
+   * 播放器是否已经离开哈喽怪谈，去放别的内容了。
+   *
+   * play/loadstart 里有一句"当前源不是喜马拉雅就 ensureCurrentSource(true)"，
+   * 本意是把 Apple 重置回原生源的同一集再拉回喜马拉雅。但它不区分两种情况：
+   *   a) 同一集被 Apple 重置        —— 该救
+   *   b) 用户点了别的播客，Apple 正在放新内容 —— 不该碰
+   * 实测（用户在 Home 页播着哈喽怪谈时点别的播客）：点击后
+   *   location.pathname = /us/home（没跳转，说明点击链路已正常）
+   *   audio.currentSrc  = https://a.xmcdn.com/...（新播客的源被换回了哈喽怪谈）
+   * 正是 b) 被当成 a) 处理，于是新播客永远播不出来。
+   *
+   * 判据：不在哈喽怪谈页、当前源不是我们换的、而播放器标题又已经不是我们上次
+   * 应用的那一集——那就是用户换内容了，立刻放手，绝不救援。
+   */
+  function playerLeftHallo(audio) {
+    if (isHalloPage()) return false;
+    if (isXimalayaUrl(mediaUrl(audio))) return false;
+    if (!appliedTitleKey) return false;
+    const current = normalizeTitle(marqueeTitle());
+    if (!current) return false;
+    return current !== appliedTitleKey && current !== normalizeTitle(pendingTitle);
+  }
+
   function attach(audio) {
     if (!(audio instanceof HTMLMediaElement)) return;
     activeAudio = audio;
@@ -921,6 +945,11 @@
 
     audio.addEventListener('play', () => {
       if (!isHalloContext()) return;
+      /* 播放器已经在放别的内容：放手，别把人家的源抢过来。 */
+      if (playerLeftHallo(audio)) {
+        releaseHalloContext('播放器已切到别的内容');
+        return;
+      }
       userPaused = false;
       desiredPlaying = true;
       if (isXimalayaUrl(mediaUrl(audio)) && appliedTitleKey === activeTitleKey) {
@@ -952,6 +981,11 @@
 
     audio.addEventListener('loadstart', () => {
       if (!isHalloContext() || applyingSource) return;
+      /* 同上：Apple 正在为别的内容加载新源时不得介入。 */
+      if (playerLeftHallo(audio)) {
+        releaseHalloContext('播放器已切到别的内容');
+        return;
+      }
       const title = playerTitle();
       if (!title) return;
       setEpisode(title, false);

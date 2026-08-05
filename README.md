@@ -26,7 +26,7 @@
 | 脚本 | 版本 | 生效范围 | 作用 |
 | --- | --- | --- | --- |
 | [`youtube-follow-system-theme.user.js`](youtube-follow-system-theme.user.js) | 1.3.16 | `youtube.com` | 自动跟随系统深浅色、刷新组件，并为浅色播放页补实时环境光 |
-| [`apple-podcasts-source-switcher.user.js`](apple-podcasts-source-switcher.user.js) | 1.2.30 | `podcasts.apple.com` | 保留 Apple 原生播放与切集体验，将《哈喽怪谈》的音频替换为喜马拉雅播放源；支持从 Home 页卡片直接播放，切集时立即迁移进度与标题声波容器，并忽略换源期间的内部暂停；卡片状态自校正到实测正确为止，Svelte 重建后重新认领原生节点；播放/暂停判定与界面语言无关，日文区与繁简中文区同样生效 |
+| [`apple-podcasts-source-switcher.user.js`](apple-podcasts-source-switcher.user.js) | 1.2.31 | `podcasts.apple.com` | 保留 Apple 原生播放与切集体验，将《哈喽怪谈》的音频替换为喜马拉雅播放源；支持从 Home 页卡片直接播放，切集时立即迁移进度与标题声波容器，并忽略换源期间的内部暂停；卡片状态自校正到实测正确为止，Svelte 重建后重新认领原生节点；播放/暂停判定与界面语言无关，日文区与繁简中文区同样生效 |
 | [`xiaohongshu-panel-close.user.js`](xiaohongshu-panel-close.user.js) | 1.3.0 | `xiaohongshu.com` | 给搜索建议面板补收起动画：严格反向播放原生展开动画（站点是直接从 DOM 移除面板，CSS 无从附着） |
 
 需要 [Tampermonkey](https://www.tampermonkey.net/) 一类的用户脚本管理器，安装方式同样是点开文件后点 **Raw**。
