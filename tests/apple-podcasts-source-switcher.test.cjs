@@ -573,8 +573,8 @@ async function settle() {
     }
   ], 'Apple 换源后未迁移卡片状态时，脚本应把两处原生持续声波动画迁移到当前剧集');
   const progressAfterSwitch = staleCardState.progressStates();
-  assert.equal(progressAfterSwitch[0], null,
-    '切集后上一集卡片播放按钮处的进度条应消失');
+  assert.ok(progressAfterSwitch[0],
+    '切集后上一集必须继续显示自己的进度条：原生行为是保留进度、切回时续播');
   assert.deepEqual(progressAfterSwitch[1], { value: 0, max: 100 },
     '新剧集的进度条应跟随新音频，且不得继承上一集的进度');
   const secondActiveContainers = staleCardState.containerStates();

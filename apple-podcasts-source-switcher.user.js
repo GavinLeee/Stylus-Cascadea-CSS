@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Apple Podcasts 哈喽怪谈透明播放源
 // @namespace    apple-podcasts-source-switcher
-// @version      1.2.21
+// @version      1.2.22
 // @description  保留 Apple Podcasts 原生播放与切集体验，仅在后台将《哈喽怪谈》的音频替换为喜马拉雅播放源
 // @author       Codex
 // @match        https://podcasts.apple.com/*
@@ -27,6 +27,9 @@
   const attachedAudio = new WeakSet();
   const audioCache = new Map();
   const resolvingAudio = new Map();
+  /* 每集听到哪儿：切回旧剧集时要从这里续播，而不是从头开始（原生行为）。
+     键是归一化标题，值是秒。 */
+  const episodePositions = new Map();
 
   let catalogPromise = null;
   let catalogMemory = null;
@@ -462,9 +465,9 @@
       const wasActive = PAUSE_LABEL_PATTERN.test(label)
         || buttonHasPlayingIcon(item.button)
         || item.button.dataset.halloXimalayaActive === '1';
-      /* 切走之后，这张卡片上由脚本打开的进度显示要撤掉（Apple 自己给其他
-         剧集画的进度不受影响）。 */
-      clearManagedProgress(item);
+      /* 原生行为（实测确认）：切到新剧集后，旧剧集的进度条不收起，而是继续显示
+         离开时的进度；切回去时从该进度续播。所以这里不清除旧卡片的进度条，
+         只摘掉活动标记，进度值自然停在离开的位置。 */
       if (wasActive || item.button.dataset.halloXimalayaManaged === '1') {
         if (playIconTemplate && !buttonHasPlayIcon(item.button)) {
           replaceButtonIcon(item.button, playIconTemplate);
@@ -692,8 +695,11 @@
       const switchedWhileOldEpisodeStillLoaded = isXimalayaUrl(mediaUrl(audio))
         && appliedTitleKey && appliedTitleKey !== resolved.titleKey;
       const previousTitleKey = appliedTitleKey || normalizeTitle(marqueeTitle());
+      /* 切到另一集时不再一律从 0 开始：若这一集之前听过，回到它应当从当时的
+         位置续播（原生行为）。同一集内换源则保持当前进度不动。 */
+      const storedPosition = Number(episodePositions.get(resolved.titleKey)) || 0;
       const resumeTime = switchedWhileOldEpisodeStillLoaded
-        ? 0
+        ? storedPosition
         : (Number.isFinite(audio.currentTime) ? audio.currentTime : 0);
       applyingSource = true;
       audio.pause();
@@ -773,7 +779,13 @@
 
     for (const eventName of ['loadedmetadata', 'durationchange', 'timeupdate']) {
       audio.addEventListener(eventName, () => {
-        if (isHalloContext() && desiredPlaying) syncCurrentCardProgress();
+        if (!isHalloContext() || !desiredPlaying) return;
+        /* 记下当前这一集听到哪儿，切走再切回来时据此续播。 */
+        const position = Number(audio.currentTime);
+        if (appliedTitleKey && Number.isFinite(position) && position > 0) {
+          episodePositions.set(appliedTitleKey, position);
+        }
+        syncCurrentCardProgress();
       });
     }
 
