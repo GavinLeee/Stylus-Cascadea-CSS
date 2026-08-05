@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Apple Podcasts 哈喽怪谈透明播放源
 // @namespace    apple-podcasts-source-switcher
-// @version      1.2.18
+// @version      1.2.19
 // @description  保留 Apple Podcasts 原生播放与切集体验，仅在后台将《哈喽怪谈》的音频替换为喜马拉雅播放源
 // @author       Codex
 // @match        https://podcasts.apple.com/*
@@ -243,11 +243,41 @@
     ));
   }
 
+  /*
+   * 决定这两个指示器"显不显示"的，是 Apple 挂在祖先上的两个类，不是
+   * playback-bars 自己的 .playing：
+   *
+   *   section.episode-details-container.is-playing
+   *       → 驱动 .episode-details__playing-bars 的 transform: scaleX(0|1)，
+   *         即标题日期左侧那圈持续声波的展开/收起；
+   *   div.detailed-play-button-wrapper.progress-bar-visible
+   *       → 驱动按钮里 .progress-bar 的 visibility 与宽度。
+   *
+   * 实测依据（真实页面逐层比对旧卡与正在播的卡）：两张卡片的 class 与内联样式
+   * 完全相同，唯二差异就是这两个类；把它们搬到正在播的卡片后，该卡的
+   * .episode-details__playing-bars 由 matrix(0,…)（scaleX(0)）变为 matrix(1,…)，
+   * 声波 19/14、进度条 30 全部显示，旧卡则收起。
+   *
+   * 以前只切 .playing，类是加对了卡片，但容器被祖先按在 scaleX(0)/hidden 上，
+   * 所以"标记全对、画面全错"——这正是切集后指示器不跟随的真正原因。
+   *
+   * is-playing 必须互斥（只有当前集能有）；progress-bar-visible 不从其他卡片
+   * 摘除，因为原生行为是听过一部分的剧集会一直显示自己的进度。
+   */
   function setCardPlayingBars(wrapper, playing) {
     const container = wrapper?.querySelector('.episode-details__playing-bars-inner');
     const bars = container?.querySelector?.('[data-testid="playback-bars"]')
       || wrapper?.querySelector('.episode-details__playing-bars-inner [data-testid="playback-bars"]');
     bars?.classList?.toggle('playing', playing);
+
+    const section = wrapper?.querySelector?.('section.episode-details-container')
+      || wrapper?.querySelector?.('.episode-details-container');
+    section?.classList?.toggle?.('is-playing', playing);
+
+    if (playing) {
+      const buttonWrapper = wrapper?.querySelector?.('.detailed-play-button-wrapper');
+      buttonWrapper?.classList?.add?.('progress-bar-visible');
+    }
   }
 
   function progressContainerOf(item) {
@@ -353,6 +383,11 @@
     progress.setAttribute?.('max', String(duration));
     progress.setAttribute?.('value', String(progress.value));
     progress.dataset.halloXimalayaProgress = '1';
+    /* 只有 .detailed-play-button-wrapper 带上 progress-bar-visible，
+       按钮里的 .progress-bar 才会真的显示（否则 visibility:hidden、宽度 0）。 */
+    const buttonWrapper = item.button?.closest?.('.detailed-play-button-wrapper')
+      || item.wrapper?.querySelector?.('.detailed-play-button-wrapper');
+    buttonWrapper?.classList?.add?.('progress-bar-visible');
   }
 
   function syncCurrentCardProgress(title = playerTitle()) {
