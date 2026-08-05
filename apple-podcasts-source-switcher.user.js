@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Apple Podcasts 哈喽怪谈透明播放源
 // @namespace    apple-podcasts-source-switcher
-// @version      1.2.23
+// @version      1.2.24
 // @description  保留 Apple Podcasts 原生播放与切集体验，仅在后台将《哈喽怪谈》的音频替换为喜马拉雅播放源
 // @author       Codex
 // @match        https://podcasts.apple.com/*
@@ -302,6 +302,44 @@
    * 都不会留下撑宽的空容器；而真有原生 progress 的卡片（听过一部分的剧集）
    * 条件不成立，其进度照常保留，不受影响。
    */
+  /*
+   * 非当前集卡片的进度条维护。
+   *
+   * Svelte 重建卡片时会连带丢掉脚本注入的 <progress>，但挂在
+   * .detailed-play-button-wrapper 上的 progress-bar-visible 会留下来——于是出现
+   * "播放按钮被撑宽、里面却什么都没有"的空档（自动连播后尤其明显）。
+   *
+   * 原生行为是旧剧集继续显示自己的进度，所以这里优先按记录的位置把进度补回去；
+   * 确实没有可显示的进度时，才摘掉可见性类，绝不留一个撑宽的空容器。
+   */
+  function restoreEpisodeProgress(item) {
+    const container = progressContainerOf(item);
+    if (!container) return;
+    if (container.querySelector?.('progress[data-testid="progress-bar"]')) return;
+
+    const stored = episodePositions.get(normalizeTitle(item.title));
+    const time = Number(stored?.time) || 0;
+    const total = Number(stored?.duration) || 0;
+
+    if (time > 0 && total > 0 && progressTemplate?.cloneNode && container.append) {
+      const progress = progressTemplate.cloneNode(true);
+      container.append(progress);
+      progress.max = total;
+      progress.value = Math.max(0, Math.min(time, total));
+      progress.setAttribute?.('max', String(total));
+      progress.setAttribute?.('value', String(progress.value));
+      if (progress.dataset) progress.dataset.halloXimalayaProgress = '1';
+      const wrapper = playButtonWrapperOf(item);
+      if (wrapper?.classList?.add) {
+        wrapper.classList.add('progress-bar-visible');
+        if (wrapper.dataset) wrapper.dataset.halloXimalayaProgressVisible = '1';
+      }
+      return;
+    }
+
+    clearManagedProgress(item);
+  }
+
   function clearManagedProgress(item) {
     const buttonWrapper = playButtonWrapperOf(item);
     const progress = item.button?.querySelector?.('progress[data-testid="progress-bar"]');
@@ -466,8 +504,9 @@
         || buttonHasPlayingIcon(item.button)
         || item.button.dataset.halloXimalayaActive === '1';
       /* 原生行为（实测确认）：切到新剧集后，旧剧集的进度条不收起，而是继续显示
-         离开时的进度；切回去时从该进度续播。所以这里不清除旧卡片的进度条，
-         只摘掉活动标记，进度值自然停在离开的位置。 */
+         离开时的进度；切回去时从该进度续播。若 Svelte 重建把注入的 progress
+         丢了，这里按记录的位置补回去，避免留下被撑宽的空按钮。 */
+      restoreEpisodeProgress(item);
       if (wasActive || item.button.dataset.halloXimalayaManaged === '1') {
         if (playIconTemplate && !buttonHasPlayIcon(item.button)) {
           replaceButtonIcon(item.button, playIconTemplate);
@@ -697,7 +736,7 @@
       const previousTitleKey = appliedTitleKey || normalizeTitle(marqueeTitle());
       /* 切到另一集时不再一律从 0 开始：若这一集之前听过，回到它应当从当时的
          位置续播（原生行为）。同一集内换源则保持当前进度不动。 */
-      const storedPosition = Number(episodePositions.get(resolved.titleKey)) || 0;
+      const storedPosition = Number(episodePositions.get(resolved.titleKey)?.time) || 0;
       const resumeTime = switchedWhileOldEpisodeStillLoaded
         ? storedPosition
         : (Number.isFinite(audio.currentTime) ? audio.currentTime : 0);
@@ -782,8 +821,12 @@
         if (!isHalloContext() || !desiredPlaying) return;
         /* 记下当前这一集听到哪儿，切走再切回来时据此续播。 */
         const position = Number(audio.currentTime);
+        const total = Number(audio.duration);
         if (appliedTitleKey && Number.isFinite(position) && position > 0) {
-          episodePositions.set(appliedTitleKey, position);
+          episodePositions.set(appliedTitleKey, {
+            time: position,
+            duration: Number.isFinite(total) && total > 0 ? total : 0
+          });
         }
         syncCurrentCardProgress();
       });
