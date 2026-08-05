@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Apple Podcasts 哈喽怪谈透明播放源
 // @namespace    apple-podcasts-source-switcher
-// @version      1.2.20
+// @version      1.2.21
 // @description  保留 Apple Podcasts 原生播放与切集体验，仅在后台将《哈喽怪谈》的音频替换为喜马拉雅播放源
 // @author       Codex
 // @match        https://podcasts.apple.com/*
@@ -285,17 +285,33 @@
     }
   }
 
-  /* 切走当前集时，把脚本在这张卡片上加的进度显示原样撤掉：只移除自己打开的
-     progress-bar-visible 和自己注入的 progress 元素，Apple 原生的一律不动。 */
+  /*
+   * 切走当前集时撤掉脚本加的进度显示。
+   *
+   * 这里刻意用"结果导向"的不变量，而不是只信自己打过的标记：
+   * 先移除自己注入的 progress，然后——只要这张卡片的 .progress-bar 里已经
+   * 没有任何 progress 元素——就一定把 progress-bar-visible 摘掉。
+   *
+   * 原因：曾出现"首次切集后旧卡片进度条收起了，但播放按钮没缩回原宽度"
+   * （▶ 与时长之间留一段空白）。空的 .progress-bar 只要还带着可见性类，就会
+   * 继续占住按钮宽度（实测原生空闲按钮 85/88，带进度约 115）。用"没有 progress
+   * 就不该保留可见性"这条不变量收口，无论那个类当初是脚本加的还是页面自带的，
+   * 都不会留下撑宽的空容器；而真有原生 progress 的卡片（听过一部分的剧集）
+   * 条件不成立，其进度照常保留，不受影响。
+   */
   function clearManagedProgress(item) {
-    const buttonWrapper = item.button?.closest?.('.detailed-play-button-wrapper')
-      || item.wrapper?.querySelector?.('.detailed-play-button-wrapper');
-    if (buttonWrapper?.dataset?.halloXimalayaProgressVisible === '1') {
-      buttonWrapper.classList?.remove?.('progress-bar-visible');
-      delete buttonWrapper.dataset.halloXimalayaProgressVisible;
-    }
+    const buttonWrapper = playButtonWrapperOf(item);
     const progress = item.button?.querySelector?.('progress[data-testid="progress-bar"]');
     if (progress?.dataset?.halloXimalayaProgress === '1') progress.remove?.();
+
+    const container = progressContainerOf(item);
+    const stillHasProgress = Boolean(
+      container?.querySelector?.('progress[data-testid="progress-bar"]')
+    );
+    if (!stillHasProgress && buttonWrapper?.classList?.remove) {
+      buttonWrapper.classList.remove('progress-bar-visible');
+      if (buttonWrapper.dataset) delete buttonWrapper.dataset.halloXimalayaProgressVisible;
+    }
   }
 
   function progressContainerOf(item) {
@@ -304,6 +320,14 @@
 
   function topBarsContainerOf(item) {
     return item?.wrapper?.querySelector('.episode-details__playing-bars-inner') || null;
+  }
+
+  /* 加可见性类和撤销可见性类必须查到同一个节点，否则会出现"加在 A、去 B 上找"
+     而永远撤不掉的情况，因此统一走这一个入口。 */
+  function playButtonWrapperOf(item) {
+    return item?.button?.closest?.('.detailed-play-button-wrapper')
+      || item?.wrapper?.querySelector?.('.detailed-play-button-wrapper')
+      || null;
   }
 
   /*
@@ -403,8 +427,7 @@
     progress.dataset.halloXimalayaProgress = '1';
     /* 只有 .detailed-play-button-wrapper 带上 progress-bar-visible，
        按钮里的 .progress-bar 才会真的显示（否则 visibility:hidden、宽度 0）。 */
-    const buttonWrapper = item.button?.closest?.('.detailed-play-button-wrapper')
-      || item.wrapper?.querySelector?.('.detailed-play-button-wrapper');
+    const buttonWrapper = playButtonWrapperOf(item);
     if (buttonWrapper?.classList?.add) {
       buttonWrapper.classList.add('progress-bar-visible');
       if (buttonWrapper.dataset) buttonWrapper.dataset.halloXimalayaProgressVisible = '1';
