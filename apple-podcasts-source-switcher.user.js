@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Apple Podcasts 哈喽怪谈透明播放源
 // @namespace    apple-podcasts-source-switcher
-// @version      1.2.27
+// @version      1.2.28
 // @description  保留 Apple Podcasts 原生播放与切集体验，仅在后台将《哈喽怪谈》的音频替换为喜马拉雅播放源
 // @author       Codex
 // @match        https://podcasts.apple.com/*
@@ -124,6 +124,34 @@
       if (node.dataset) delete node.dataset.halloXimalayaTitle;
     }
     debug('已离开哈喽怪谈，交还原生播放', reason);
+  }
+
+  /*
+   * 沿 DOM 往上找这个按钮所属剧集链接里的节目 id。
+   *
+   * episodeContextFromButton() 依赖几个固定的 scope 选择器，首页/搜索页里其他
+   * 播客的卡片结构与之不符时会返回 null。而"当前音频是喜马拉雅源"这条证据在
+   * 哈喽怪谈正在播时恒为真，于是那种按钮会被误判成属于哈喽怪谈——这正是
+   * 「在 Home 页播着哈喽怪谈时点别的播客没反应」的成因。
+   * 这里只认剧集链接 a[href*="?i="] 上的 /id，与卡片结构无关；找不到链接
+   * （例如迷你播放器的传输控件）才返回空串，交给调用方按别的证据判断。
+   */
+  function nearestEpisodeShowId(button) {
+    let node = button;
+    for (let depth = 0; depth < 8 && node; depth += 1) {
+      const link = node.matches?.('a[href*="?i="]')
+        ? node
+        : node.querySelector?.('a[href*="?i="]');
+      if (link?.href) {
+        try {
+          return new URL(link.href, location.href).pathname.match(/\/id(\d+)/)?.[1] || '';
+        } catch {
+          return '';
+        }
+      }
+      node = node.parentElement;
+    }
+    return '';
   }
 
   function releaseForeignShowContext() {
@@ -1014,6 +1042,13 @@
           releaseHalloContext(episodeContext.showId);
           return;
         }
+      } else if (nearestEpisodeShowId(button)
+        && nearestEpisodeShowId(button) !== APPLE_SHOW_ID) {
+        /* 按钮所属的剧集链接明确指向别的节目：放手，交还原生播放。
+           这一条必须排在下面那条之前——"当前音频是喜马拉雅源"在哈喽怪谈
+           正在播时恒为真，单靠它会把别的播客的播放按钮也放行。 */
+        releaseHalloContext(nearestEpisodeShowId(button));
+        return;
       } else if (!isHalloPage() && !isXimalayaUrl(mediaUrl(activeAudio))) {
         /*
          * 这次点击的按钮无法解析出剧集上下文（首页/搜索页的卡片结构不同、
