@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Apple Podcasts 哈喽怪谈透明播放源
 // @namespace    apple-podcasts-source-switcher
-// @version      1.2.22
+// @version      1.2.23
 // @description  保留 Apple Podcasts 原生播放与切集体验，仅在后台将《哈喽怪谈》的音频替换为喜马拉雅播放源
 // @author       Codex
 // @match        https://podcasts.apple.com/*
@@ -817,6 +817,21 @@
     if (!isHalloContext()) return;
     captureNativeButtonTemplates();
 
+    /*
+     * pendingTitle 只是"点击了但 Apple 的播放器标题还没更新"这段空窗期的临时凭据。
+     * 以前它一旦设上就永不清除，而 playerTitle() 又优先返回它——于是一集播完
+     * 自动连播到下一集时（全程没有点击），脚本仍把上一集当成当前集，两个指示器
+     * 自然不会跟着走。
+     * 这里在播放器标题追上 pendingTitle 之后就把它释放，之后一律以 marquee 为准，
+     * 自动连播才能被跟随。marquee 尚未追上时保持不变，避免被旧标题切回上一集。
+     */
+    if (pendingTitle) {
+      const marquee = marqueeTitle();
+      if (marquee && normalizeTitle(marquee) === normalizeTitle(pendingTitle)) {
+        pendingTitle = '';
+      }
+    }
+
     if (pendingTitle) {
       syncPlayerTitle(pendingTitle);
       reconcileNativeCardState(pendingTitle, desiredPlaying);
@@ -825,7 +840,11 @@
     if (!title) return;
     const titleChanged = normalizeTitle(title) !== activeTitleKey;
     const generation = setEpisode(title, false);
-    if (titleChanged) prewarm(title);
+    if (titleChanged) {
+      prewarm(title);
+      /* 自动连播没有点击可依附，这里补一次自校正循环，让两个指示器跟着新集走。 */
+      if (desiredPlaying) scheduleCardReconcile(title);
+    }
 
     /* scan() 由全局 MutationObserver 驱动（另有 1s 兜底），因此 Svelte 事后
        重建卡片、把活动节点放回旧剧集时，这里会实测出状态不对并重新校正归属。
