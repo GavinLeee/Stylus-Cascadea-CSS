@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Apple Podcasts 哈喽怪谈透明播放源
 // @namespace    apple-podcasts-source-switcher
-// @version      1.2.24
+// @version      1.2.25
 // @description  保留 Apple Podcasts 原生播放与切集体验，仅在后台将《哈喽怪谈》的音频替换为喜马拉雅播放源
 // @author       Codex
 // @match        https://podcasts.apple.com/*
@@ -312,10 +312,33 @@
    * 原生行为是旧剧集继续显示自己的进度，所以这里优先按记录的位置把进度补回去；
    * 确实没有可显示的进度时，才摘掉可见性类，绝不留一个撑宽的空容器。
    */
+  /*
+   * 取容器里唯一的 progress，并顺手去重。
+   *
+   * 手动拖动跳转会密集触发 timeupdate/seeking，每次都要找"已有的进度条"。
+   * 以前只按 progress[data-testid="progress-bar"] 查，Svelte 重建后容器换了实例、
+   * 或克隆节点属性对不上时就会查空，于是又 append 一个——多次跳转后按钮里叠出
+   * 好几段进度条（用户报的那张图）。
+   * 这里改成按标签查全部：多于一个就只留一个（优先保留 Apple 原生那个，即没有
+   * halloXimalayaProgress 标记的），其余删掉。
+   */
+  function findProgressIn(container) {
+    if (!container) return null;
+    if (!container.querySelectorAll) {
+      return container.querySelector?.('progress[data-testid="progress-bar"]') || null;
+    }
+    const list = [...container.querySelectorAll('progress')];
+    if (!list.length) return null;
+    if (list.length === 1) return list[0];
+    const keep = list.find((node) => node.dataset?.halloXimalayaProgress !== '1') || list[0];
+    for (const node of list) if (node !== keep) node.remove?.();
+    return keep;
+  }
+
   function restoreEpisodeProgress(item) {
     const container = progressContainerOf(item);
     if (!container) return;
-    if (container.querySelector?.('progress[data-testid="progress-bar"]')) return;
+    if (findProgressIn(container)) return;
 
     const stored = episodePositions.get(normalizeTitle(item.title));
     const time = Number(stored?.time) || 0;
@@ -455,7 +478,7 @@
     if (!Number.isFinite(duration) || duration <= 0 || !Number.isFinite(currentTime)) return;
     const container = item.button.querySelector('.progress-bar');
     if (!container) return;
-    let progress = container.querySelector('progress[data-testid="progress-bar"]');
+    let progress = findProgressIn(container);
     if (!progress && progressTemplate?.cloneNode) {
       progress = progressTemplate.cloneNode(true);
       container.append(progress);
