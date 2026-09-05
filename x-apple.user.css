@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           X Apple 克制层次与交互反馈
 @namespace      x-apple-restrained-cards
-@version        1.8.0
+@version        1.9.0
 @description    为 X 的右栏模块、推文信息流和左侧导航添加克制的 Apple 风格层次与交互反馈，并修正中文被判成日文后套用日文字体的问题
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/x-apple.user.css
 ==/UserStyle== */
@@ -10,9 +10,10 @@
 
   :root {
     --x-apple-panel: rgba(255, 255, 255, 0.82);
-    --x-apple-panel-hover: rgba(245, 245, 247, 0.97);
-    --x-apple-tweet-hover: rgba(245, 245, 247, 0.97);
-    --x-apple-nav-hover: rgba(245, 245, 247, 0.97);
+    --x-apple-tweet-hover: rgba(15, 23, 42, 0.028);
+    --x-apple-nav-hover: rgba(15, 23, 42, 0.055);
+    --x-apple-focus: #007aff;
+    --x-apple-feedback-duration: 160ms;
     --x-apple-topbar: rgba(255, 255, 255, 0.85);   /* 实测自 X 原生 For you/Following 栏 */
     /* 推文分隔线与卡片外边框同色：X 原生分隔线是不透明实色，在深色背景上
        比卡片的半透明发丝边框显眼得多，两者并置时分隔线会先跳出来抢视线。
@@ -26,10 +27,7 @@
     --x-apple-sidebar-card-radius: 16px;
     --x-apple-shadow:
       0 1px 2px rgba(15, 23, 42, 0.035),
-      0 10px 28px rgba(38, 51, 77, 0.09);
-    --x-apple-shadow-hover:
-      0 2px 5px rgba(15, 23, 42, 0.055),
-      0 16px 40px rgba(38, 51, 77, 0.14);
+      0 4px 16px rgba(38, 51, 77, 0.045);
     --x-apple-ease: cubic-bezier(0.22, 0.8, 0.24, 1);
 
     /* 与 global.user.css 的字体栈保持一致（含义见下面第 0 段）。
@@ -60,9 +58,9 @@
     html[style*="color-scheme:dark"] body
   ) {
     --x-apple-panel: rgba(22, 24, 28, 0.76);
-    --x-apple-panel-hover: #111215;
-    --x-apple-tweet-hover: #111215;
-    --x-apple-nav-hover: #111215;
+    --x-apple-tweet-hover: rgba(255, 255, 255, 0.035);
+    --x-apple-nav-hover: rgba(255, 255, 255, 0.075);
+    --x-apple-focus: #64b5ff;
     --x-apple-topbar: rgba(0, 0, 0, 0.65);         /* X 深色主题原生顶栏 */
     --x-apple-tweet-divider: var(--x-apple-border);   /* 同浅色：跟随本块的 --x-apple-border */
     --x-apple-border: rgba(255, 255, 255, 0.095);
@@ -70,10 +68,13 @@
     --x-apple-outline-hover: rgba(255, 255, 255, 0.09);
     --x-apple-shadow:
       0 1px 2px rgba(0, 0, 0, 0.20),
-      0 12px 30px rgba(0, 0, 0, 0.28);
-    --x-apple-shadow-hover:
-      0 2px 5px rgba(0, 0, 0, 0.28),
-      0 18px 44px rgba(0, 0, 0, 0.40);
+      0 4px 16px rgba(0, 0, 0, 0.16);
+  }
+
+  /* Dim 保留蓝灰基调；悬停色使用透明叠层，兼容两种深色背景。 */
+  :root body[style*="rgb(21, 32, 43)"] {
+    --x-apple-panel: rgba(30, 42, 55, 0.88);
+    --x-apple-topbar: rgba(21, 32, 43, 0.85);
   }
 
   /*
@@ -119,37 +120,16 @@
     font-family: var(--x-apple-font) !important;
   }
 
-  /* 1. 右侧信息模块：结构性面板保留玻璃感和轻微上浮。
-     只有整块模块建立空间层级，内部列表行不再重复投影或位移。 */
+  /* 1. 信息模块是容器，不是整块按钮。固定圆角和轻投影表达层次，
+     指针进入时不改变容器，反馈只落在内部可交互条目上。 */
   [data-testid="sidebarColumn"] :is(
     .r-1867qdf.r-1phboty.r-rs99b7,
     .jetfuel-style-root > div
   ) {
-    position: relative !important;
-    z-index: 0 !important;
+    border-radius: var(--x-apple-sidebar-card-radius) !important;
     background-color: var(--x-apple-panel) !important;
     border-color: var(--x-apple-border) !important;
     box-shadow: var(--x-apple-shadow) !important;
-    transform: translateY(0);
-    transform-origin: center center;
-    transition:
-      transform 260ms var(--x-apple-ease),
-      background-color 220ms ease,
-      border-radius 220ms var(--x-apple-ease),
-      border-color 220ms ease,
-      box-shadow 260ms var(--x-apple-ease) !important;
-  }
-
-  [data-testid="sidebarColumn"] :is(
-    .r-1867qdf.r-1phboty.r-rs99b7,
-    .jetfuel-style-root > div
-  ):hover {
-    z-index: 3 !important;
-    border-radius: var(--x-apple-sidebar-card-radius) !important;
-    background-color: var(--x-apple-panel-hover) !important;
-    border-color: transparent !important;
-    box-shadow: var(--x-apple-shadow-hover) !important;
-    transform: translateY(-1px);
   }
 
   /* 2. 中间推文：时间线是连续阅读面，不把每条内容抬成独立浮层。
@@ -261,23 +241,19 @@
     filter: brightness(1.035) saturate(0.96);
   }
 
-  /* 4. 用户头像：保留可点击提示，但不再上浮或投射阴影。 */
+  /* 4. 头像只作亮度反馈，避免读时间线时反复缩放和回弹。 */
   :is(
     [data-testid^="UserAvatar-Container-"],
     [data-testid="Tweet-User-Avatar"]:not(:has([data-testid^="UserAvatar-Container-"]))
   ) {
-    transform-origin: center center;
     filter: brightness(1) saturate(1);
-    transition:
-      transform 240ms cubic-bezier(0.20, 0.88, 0.24, 1.16),
-      filter 180ms ease !important;
+    transition: filter var(--x-apple-feedback-duration) ease !important;
   }
 
   :is(
     [data-testid^="UserAvatar-Container-"],
     [data-testid="Tweet-User-Avatar"]:not(:has([data-testid^="UserAvatar-Container-"]))
   ):hover {
-    transform: scale(1.04);
     filter: brightness(1.025) saturate(1.025);
   }
 
@@ -336,9 +312,9 @@
     pointer-events: none;
   }
 
-  /* 清空搜索框内部多余底色，但保留联想面板自己的材质。 */
+  /* 只清空输入胶囊；不穿透下拉面板，避免覆盖候选行的悬停与选中底色。 */
   div.r-6gpygo:has(input[data-testid="SearchBox_Search_Input"])
-  *:not(.r-1r851ge):not(.r-1xfd6ze) {
+  form[role="search"] > div:first-child:has(input[data-testid="SearchBox_Search_Input"]):not(:has([role="listbox"])) {
     background-color: transparent !important;
   }
 
@@ -409,7 +385,6 @@
   ) *) {
     border-color: transparent !important;
     border-radius: 12px !important;
-    outline: none !important;
     background-color: transparent !important;
     box-shadow: none !important;
     transition:
@@ -426,7 +401,7 @@
     [data-testid="typeaheadResult"],
     div[role="button"],
     a[role="link"]
-  ) *):hover {
+  ) *):is(:hover, [aria-selected="true"], :focus-visible) {
     border-color: transparent !important;
     background-color: var(--x-apple-nav-hover) !important;
     box-shadow: none !important;
@@ -445,19 +420,15 @@
     box-shadow: none !important;
   }
 
-  /* 7. 顶部/侧栏 X 标志（图3）：保留轻微缩放，不改变垂直位置。
+  /* 7. 顶部/侧栏 X 标志：与导航一样使用底色反馈。
         用真实 DOM 校准：X 标志就是指向首页、aria-label 为 "X" 的链接，
         稳定且唯一（旧的类名组合会误伤 15 个元素）。 */
   a[href="/home"][aria-label="X"] {
-    transform-origin: center center;
-    transition:
-      transform 240ms cubic-bezier(0.20, 0.88, 0.24, 1.16),
-      filter 180ms ease !important;
+    transition: background-color var(--x-apple-feedback-duration) ease !important;
   }
 
   a[href="/home"][aria-label="X"]:hover {
-    transform: scale(1.04);
-    filter: brightness(1.035);
+    background-color: var(--x-apple-nav-hover) !important;
   }
 
   /* 8. 内联发帖框保持 X 原生状态。编辑区域本身已提供清晰的输入反馈，
@@ -482,7 +453,17 @@
     button.r-105ug2t.r-1e5uvyk.r-6026j.r-1xsrhxi
   ):hover {
     filter: brightness(1.035) saturate(0.98);
-    transform: scale(1.03);
+  }
+
+  /* 仅独立浮钮保留 2% 缩放，触屏和减少动态效果模式不启用。 */
+  @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+    :is(
+      button[aria-label="Grok"],
+      button[aria-label="Chat"],
+      button.r-105ug2t.r-1e5uvyk.r-6026j.r-1xsrhxi
+    ):hover {
+      transform: scale(1.02);
+    }
   }
 
   /* 10. 新推文提示条：它是时间线中的状态行，只做底色与发丝轮廓反馈。 */
@@ -566,10 +547,8 @@
     border-color: transparent !important;
     background-color: transparent !important;
     box-shadow: none !important;
-    outline: none !important;
-    transition:
-      background-color 180ms ease,
-      border-radius 180ms ease !important;
+    border-radius: 12px !important;
+    transition: background-color var(--x-apple-feedback-duration) ease !important;
   }
 
   [data-testid="sidebarColumn"] :is(
@@ -580,7 +559,7 @@
     a[role="link"][href*="/i/trending/"]:not([data-testid="trend"] *),
     a[role="link"][href*="/i/topics/"]:not([data-testid="trend"] *)
   ):hover {
-    border-radius: var(--x-apple-sidebar-card-radius) !important;
+    border-radius: 12px !important;
     border-color: transparent !important;
     background-color: var(--x-apple-nav-hover) !important;
     box-shadow: none !important;
@@ -596,6 +575,36 @@
   ):hover > div {
     border-color: transparent !important;
     background-color: transparent !important;
+  }
+
+  /* 键盘焦点使用可见内描边，不改变布局，也不依赖 hover。 */
+  :is(
+    header nav a,
+    header nav button,
+    [data-testid="SideNav_NewTweet_Button"],
+    [data-testid="SideNav_AccountSwitcher_Button"],
+    main [role="tablist"] [role="tab"],
+    form[role="search"] [role="option"],
+    form[role="search"] [role="listbox"] a,
+    form[role="search"] [role="listbox"] [role="button"],
+    [data-testid="sidebarColumn"] a,
+    [data-testid="sidebarColumn"] [role="link"],
+    button[data-testid$="-follow"],
+    button[data-testid$="-unfollow"],
+    a[href="/home"][aria-label="X"],
+    button[aria-label="Grok"],
+    button[aria-label="Chat"]
+  ):focus-visible {
+    outline: 2px solid var(--x-apple-focus) !important;
+    outline-offset: -2px !important;
+  }
+
+  /* 高对比度用户优先获得可辨识的边界。 */
+  @media (prefers-contrast: more) {
+    :root, body {
+      --x-apple-border: currentColor;
+      --x-apple-tweet-divider: currentColor;
+    }
   }
 
   /* 尊重系统的“减少动态效果”设置 */

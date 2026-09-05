@@ -11,7 +11,7 @@
 | [`global.user.css`](global.user.css) | 1.1.2 | 所有网站 | 统一字体栈为 Anthropic Sans + Noto Sans，并保留代码与图标字体 |
 | [`bilibili-apple.user.css`](bilibili-apple.user.css) | 8.21.0 | `bilibili.com` 主站 / 动态 / 搜索 / 空间 / 消息 | 首页网格、播放页推荐与播放器圆角、动态视频、动态页 Apple 背景、个人空间卡片、持续吸顶且随分类导航展开的无接缝顶栏玻璃、全站紫色强调色，并统一动态卡片字体（不再单独用苹方） |
 | [`youtube-apple.user.css`](youtube-apple.user.css) | 2.20.49 | `youtube.com` | 顶栏、分类栏、左侧导航和视频卡片的悬浮动效 |
-| [`x-apple.user.css`](x-apple.user.css) | 1.8.0 | `x.com`、`twitter.com` | 右栏模块保留结构性卡片层次，推文与重复列表改为克制的平面反馈，串联推文之间不画分隔线，并修正中文被判成日文后套用日文字体 |
+| [`x-apple.user.css`](x-apple.user.css) | 1.9.0 | `x.com`、`twitter.com` | 固定圆角与轻投影、平面列表反馈、Dim 深色适配及键盘焦点；仅独立浮钮保留轻微缩放，尊重减少动态效果设置，并保留串联推文分隔线与中文字体修正 |
 | [`google-apple.user.css`](google-apple.user.css) | 1.5.26 | `google.com` 及 8 个地区域名 | 搜索结果与顶部控件的动效和磨砂玻璃 |
 | [`xiaohongshu-apple.user.css`](xiaohongshu-apple.user.css) | 1.14.4 | `xiaohongshu.com` | 左侧导航按钮和图文卡片的悬浮动效，吸顶搜索框与侧栏磨砂玻璃 |
 | [`instagram-apple.user.css`](instagram-apple.user.css) | 1.0.5 | `instagram.com` | 左侧导航、快拍 Dock 单点放大、信息流与评论卡片、Messages 浮钮；材质与位移分层渲染 |
