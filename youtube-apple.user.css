@@ -1,7 +1,7 @@
 /* ==UserStyle==
 @name           YouTube Apple 克制卡片与动效
 @namespace      youtube-apple-card-motion
-@version        2.20.49
+@version        2.20.50
 @description    顶栏、分类栏、左侧导航和视频卡片的克制 Apple 风格悬浮动效
 @author         Codex
 @updateURL      https://raw.githubusercontent.com/GavinLeee/Stylus-Cascadea-CSS/main/youtube-apple.user.css
@@ -2338,12 +2338,31 @@
 
   /* Keep YouTube's original header height and description flow. Move only the
      Play-all control to the description's left edge, in the existing space
-     directly above it. */
-  ytd-shelf-renderer .grid-subheader:has(#play-button:not(:empty)) {
+     directly above it.
+
+     The :not(:has(#title-container)) guard is required since YouTube changed
+     the shelf DOM. .grid-subheader used to be a subtitle row sitting BELOW the
+     shelf heading, so top:-10px placed the button in the blank strip above the
+     description. It now wraps #title-container -- the heading itself -- so the
+     same offset lands the button directly on top of the shelf title. Measured
+     on a channel page, shelf "Play all" present:
+
+       native                 title x 83 w 120, button x 211  -> no overlap
+       rule without the guard title x 83 w 120, button x  83  -> OVERLAPS
+       rule with the guard    title x 83 w 120, button x 211  -> no overlap
+
+     Only shelves that actually carry a Play-all button were affected, which is
+     why a single heading on the page appeared doubled. The guard disables the
+     reposition on the current DOM and keeps it for any layout where
+     .grid-subheader is still a real subheader. */
+  ytd-shelf-renderer
+  .grid-subheader:not(:has(#title-container)):has(#play-button:not(:empty)) {
     position: relative !important;
   }
 
-  ytd-shelf-renderer .grid-subheader #play-button:not(:empty) {
+  ytd-shelf-renderer
+  .grid-subheader:not(:has(#title-container))
+  #play-button:not(:empty) {
     position: absolute !important;
     top: -10px !important;
     right: auto !important;
